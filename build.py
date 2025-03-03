@@ -31,18 +31,38 @@ class BuildGoBindings(Command):
             with open(init_path, "w") as f:
                 f.write("# Auto-generated __init__.py for ohbother package\n")
                 
-        # Set up Go environment
+        # Set up Go environment with platform-specific settings
         env = os.environ.copy()
-        env["ARCHFLAGS"] = "-arch arm64"
-        env["GOARCH"] = "arm64"
-        env["GOOS"] = "darwin"
         env["CGO_ENABLED"] = "1"
-        env["CC"] = "clang"
         env["GO111MODULE"] = "on"  # Force module mode
+        
+        # Detect platform and set appropriate architecture flags
+        if sys.platform.startswith('darwin'):
+            # macOS
+            if os.environ.get('GITHUB_ACTIONS') == 'true':
+                # In GitHub Actions, use x86_64 for macOS
+                env["ARCHFLAGS"] = "-arch x86_64"
+                env["GOARCH"] = "amd64"
+            else:
+                # Local development could use arm64 for M1/M2 Macs
+                env["ARCHFLAGS"] = "-arch arm64"
+                env["GOARCH"] = "arm64"
+            env["GOOS"] = "darwin"
+            env["CC"] = "clang"
+        elif sys.platform.startswith('win'):
+            # Windows
+            env["GOARCH"] = "amd64"
+            env["GOOS"] = "windows"
+        else:
+            # Linux and others
+            env["GOARCH"] = "amd64"
+            env["GOOS"] = "linux"
+            env["CC"] = "gcc"
         
         # Python interpreter path
         python_path = sys.executable
         print(f"Using Python interpreter: {python_path}")
+        print(f"Platform: {sys.platform}, GOARCH: {env['GOARCH']}, GOOS: {env['GOOS']}")
         
         # Create a temporary directory for the build
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -56,6 +76,17 @@ class BuildGoBindings(Command):
                     dst_file = os.path.join(temp_dir, filename)
                     shutil.copy2(src_file, dst_file)
                     print(f"Copied {src_file} to {dst_file}")
+            
+            # Check if go.mod exists and has correct module name
+            go_mod_path = os.path.join(temp_dir, "go.mod")
+            if os.path.exists(go_mod_path):
+                with open(go_mod_path, "r") as f:
+                    content = f.read()
+                    if not content.startswith("module ohbother"):
+                        # Update module name if needed
+                        with open(go_mod_path, "w") as fw:
+                            fw.write(content.replace("module py_gopacket", "module ohbother", 1))
+                        print("Updated go.mod to use module name 'ohbother'")
             
             # Change to the temporary directory
             os.chdir(temp_dir)
