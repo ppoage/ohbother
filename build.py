@@ -19,113 +19,98 @@ class BuildGoBindings(Command):
 
     def run(self):
         project_root = os.getcwd()
-        
-        # Ensure ohbother package directory exists
-        if not os.path.exists("ohbother"):
-            os.makedirs("ohbother")
-        
-        # Create __init__.py if it doesn't exist
-        init_path = os.path.join("ohbother", "__init__.py")
+        src_dir = os.path.join(project_root, "src")
+        if not os.path.isdir(src_dir):
+            raise SystemExit("src folder not found.")
+
+        # Change to src folder so go.mod and go files are found
+        os.chdir(src_dir)
+        print(f"Changed working directory to {src_dir}")
+
+        # Ensure ohbother package directory exists at the project root
+        ohbother_dir = os.path.join(project_root, "ohbother")
+        if not os.path.exists(ohbother_dir):
+            os.makedirs(ohbother_dir)
+        init_path = os.path.join(ohbother_dir, "__init__.py")
         if not os.path.exists(init_path):
             with open(init_path, "w") as f:
                 f.write("# Auto-generated __init__.py for ohbother package\n")
-                
+
         # Set up Go environment with platform-specific settings
         env = os.environ.copy()
         env["CGO_ENABLED"] = "1"
-        env["GO111MODULE"] = "on"  # Force module mode
-        
-        # Detect platform and set appropriate architecture flags
+        env["GO111MODULE"] = "on"
         if sys.platform.startswith('darwin'):
-            # macOS
             if os.environ.get('GITHUB_ACTIONS') == 'true':
-                # In GitHub Actions, use x86_64 for macOS
                 env["ARCHFLAGS"] = "-arch x86_64"
                 env["GOARCH"] = "amd64"
             else:
-                # Local development could use arm64 for M1/M2 Macs
                 env["ARCHFLAGS"] = "-arch arm64"
                 env["GOARCH"] = "arm64"
             env["GOOS"] = "darwin"
             env["CC"] = "clang"
         elif sys.platform.startswith('win'):
-            # Windows
             env["GOARCH"] = "amd64"
             env["GOOS"] = "windows"
         else:
-            # Linux and others
             env["GOARCH"] = "amd64"
             env["GOOS"] = "linux"
             env["CC"] = "gcc"
-        
-        # Python interpreter path
+
         python_path = sys.executable
         print(f"Using Python interpreter: {python_path}")
         print(f"Platform: {sys.platform}, GOARCH: {env['GOARCH']}, GOOS: {env['GOOS']}")
-        
-        # Create a temporary directory for the build
+
+        # Create a temporary directory for the build and copy files from src (now current dir)
         with tempfile.TemporaryDirectory() as temp_dir:
             print(f"Created temporary build directory: {temp_dir}")
+            for filename in os.listdir("."):
+                if filename.endswith(".go") or filename in ("go.mod", "go.sum"):
+                    shutil.copy2(filename, os.path.join(temp_dir, filename))
+                    print(f"Copied {filename} to temp directory")
             
-            # Copy all Go files and go.mod from src to temp directory
-            src_dir = os.path.join(project_root, "src")
-            for filename in os.listdir(src_dir):
-                if filename.endswith(".go") or filename == "go.mod" or filename == "go.sum":
-                    src_file = os.path.join(src_dir, filename)
-                    dst_file = os.path.join(temp_dir, filename)
-                    shutil.copy2(src_file, dst_file)
-                    print(f"Copied {src_file} to {dst_file}")
-            
-            # Check if go.mod exists and has correct module name
+            # Optionally update go.mod if needed
             go_mod_path = os.path.join(temp_dir, "go.mod")
             if os.path.exists(go_mod_path):
                 with open(go_mod_path, "r") as f:
                     content = f.read()
-                    if not content.startswith("module ohbother"):
-                        # Update module name if needed
-                        with open(go_mod_path, "w") as fw:
-                            fw.write(content.replace("module py_gopacket", "module ohbother", 1))
-                        print("Updated go.mod to use module name 'ohbother'")
-            
-            # Prepare environment PATH so goimports is found
+                if not content.startswith("module ohbother"):
+                    with open(go_mod_path, "w") as fw:
+                        fw.write(content.replace("module py_gopacket", "module ohbother", 1))
+                    print("Updated go.mod to use module name 'ohbother'")
+
+            # Add GOPATH/bin to PATH so goimports is found
             gopath = subprocess.check_output(["go", "env", "GOPATH"], env=env).decode().strip()
             env["PATH"] = env["PATH"] + ":" + os.path.join(gopath, "bin")
 
-            # Change to the temporary directory
+            # Change to the temporary directory and run gopy
             os.chdir(temp_dir)
-            
-            # Run gopy in the temporary directory
             cmd = [
-                "gopy", 
+                "gopy",
                 "pkg",
                 "-name", "ohbother",
                 "-output", os.path.join(project_root, "temp_out"),
                 "-vm", python_path,
-                "."  # Use current directory as source
+                "."
             ]
             print(f"Running gopy command from {os.getcwd()}: {' '.join(cmd)}")
             ret = subprocess.call(cmd, env=env, cwd=temp_dir)
-        
-        # Change back to project root (should happen automatically after the temp directory is deleted)
+            os.chdir(src_dir)  # ensure we're in src even after temp dir is removed
+
+        # Change back to project root for output copying
         os.chdir(project_root)
-        
-        if ret != 0:
-            raise SystemExit("gopy pkg failed")
-            
-        # Copy generated files to ohbother directory
         generated_dir = os.path.join("temp_out", "ohbother")
         if os.path.exists(generated_dir):
             for item in os.listdir(generated_dir):
                 src_file = os.path.join(generated_dir, item)
-                dst_file = os.path.join("ohbother", item)
+                dst_file = os.path.join(ohbother_dir, item)
                 if os.path.isfile(src_file):
                     shutil.copy2(src_file, dst_file)
                     print(f"Copied {src_file} to {dst_file}")
-                    
-            # Also copy go directory if it exists
+
             go_dir = os.path.join("temp_out", "go")
             if os.path.exists(go_dir):
-                ohbother_go_dir = os.path.join("ohbother", "go")
+                ohbother_go_dir = os.path.join(ohbother_dir, "go")
                 if not os.path.exists(ohbother_go_dir):
                     os.makedirs(ohbother_go_dir)
                 for item in os.listdir(go_dir):
@@ -137,10 +122,11 @@ class BuildGoBindings(Command):
         else:
             print(f"WARNING: Generated directory not found: {generated_dir}")
             print(f"Contents of temp_out: {os.listdir('temp_out') if os.path.exists('temp_out') else 'directory not found'}")
-        
-        # Clean up temporary directories
+
         if os.path.exists("temp_out"):
             shutil.rmtree("temp_out")
+        if ret != 0:
+            raise SystemExit("gopy pkg failed")
 
 class CustomBuild(build):
     def run(self):
