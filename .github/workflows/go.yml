@@ -48,7 +48,7 @@ jobs:
     - name: Install build deps
       run: |
         ${{ env.PY_CMD }} -m pip install --upgrade pip
-        ${{ env.PY_CMD }} -m pip install setuptools wheel PyBindGen
+        ${{ env.PY_CMD }} -m pip install setuptools wheel pybindgen
 
     # Linux: Add LD_LIBRARY_PATH
     - name: Set LD_LIBRARY_PATH for Linux
