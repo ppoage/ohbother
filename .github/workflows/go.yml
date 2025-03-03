@@ -29,6 +29,9 @@ jobs:
       with:
         go-version: '1.24'
     
+    - name: Run go mod tidy
+      run: go mod tidy
+    
     - name: Install gopy
       run: go install github.com/go-python/gopy@latest
     
