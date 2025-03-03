@@ -31,6 +31,7 @@ jobs:
           workflow_conclusion: success
           name_prefix: "wheel-"
           path: dist
+          skip_unpack: true
 
       # Download all library artifacts (optional)
       - name: Download libraries
