@@ -18,7 +18,6 @@ class BuildGoBindings(Command):
         pass
 
     def run(self):
-        # Get project root and ensure output directory exists
         project_root = os.getcwd()
         
         # Ensure ohbother package directory exists
@@ -88,6 +87,10 @@ class BuildGoBindings(Command):
                             fw.write(content.replace("module py_gopacket", "module ohbother", 1))
                         print("Updated go.mod to use module name 'ohbother'")
             
+            # Prepare environment PATH so goimports is found
+            gopath = subprocess.check_output(["go", "env", "GOPATH"], env=env).decode().strip()
+            env["PATH"] = env["PATH"] + ":" + os.path.join(gopath, "bin")
+
             # Change to the temporary directory
             os.chdir(temp_dir)
             
@@ -101,7 +104,7 @@ class BuildGoBindings(Command):
                 "."  # Use current directory as source
             ]
             print(f"Running gopy command from {os.getcwd()}: {' '.join(cmd)}")
-            ret = subprocess.call(cmd, env=env)
+            ret = subprocess.call(cmd, env=env, cwd=temp_dir)
         
         # Change back to project root (should happen automatically after the temp directory is deleted)
         os.chdir(project_root)
