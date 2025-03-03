@@ -145,6 +145,32 @@ class CustomBuild(build):
         super().run()
 
 class CustomBdistWheel(bdist_wheel):
+    def finalize_options(self):
+        # Mark this as a platform-specific wheel (NOT a pure Python wheel)
+        self.root_is_pure = False
+        super().finalize_options()
+        
+    def get_tag(self):
+        # Get the platform-specific tag for the wheel
+        python_tag, abi_tag, plat_tag = super().get_tag()
+        
+        # Debug output
+        print(f"Original wheel tags: python_tag={python_tag}, abi_tag={abi_tag}, plat_tag={plat_tag}")
+        
+        # Override platform tag for Mac if needed
+        if sys.platform == 'darwin':
+            arch = subprocess.check_output(['uname', '-m']).decode('utf-8').strip()
+            if arch == 'arm64':
+                # For Apple Silicon
+                plat_tag = 'macosx_11_0_arm64'
+                print(f"Overriding platform tag for Apple Silicon: {plat_tag}")
+            else:
+                # For Intel Mac
+                plat_tag = 'macosx_10_15_x86_64'
+                print(f"Overriding platform tag for Intel Mac: {plat_tag}")
+                
+        return python_tag, abi_tag, plat_tag
+        
     def run(self):
         self.run_command("build_go")
         
