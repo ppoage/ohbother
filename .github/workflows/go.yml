@@ -39,17 +39,22 @@ jobs:
           echo "PY_CMD=python" >> $GITHUB_ENV
         fi
 
-    - name: Create python3.exe symlink for Windows
+    - name: Ensure python3.exe exists for Windows
       if: runner.os == 'Windows'
       shell: cmd
       run: |
-        echo "Creating python3.exe symlink..."
-        mklink "%pythonLocation%\python3.exe" "%pythonLocation%\python.exe"
+        echo "Checking for python3.exe..."
         if exist "%pythonLocation%\python3.exe" (
-          echo "python3.exe symlink created successfully"
+          echo "python3.exe already exists"
         ) else (
-          echo "Failed to create python3.exe symlink"
-          exit 1
+          echo "Creating python3.exe symlink..."
+          mklink "%pythonLocation%\python3.exe" "%pythonLocation%\python.exe"
+          if exist "%pythonLocation%\python3.exe" (
+            echo "python3.exe symlink created successfully"
+          ) else (
+            echo "Failed to create python3.exe symlink"
+            exit 1
+          )
         )
 
     - name: Install Go tools
