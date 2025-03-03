@@ -43,12 +43,16 @@ class BuildGoBindings(Command):
         
         # Platform detection with special handling for Windows
         if sys.platform.startswith('darwin'):
-            if os.environ.get('GITHUB_ACTIONS') == 'true':
-                env["ARCHFLAGS"] = "-arch x86_64"
-                env["GOARCH"] = "amd64"
-            else:
+            # Detect actual architecture regardless of environment
+            arch = subprocess.check_output(['uname', '-m']).decode('utf-8').strip()
+            if arch == 'arm64':
+                print("Building for Apple Silicon (arm64)")
                 env["ARCHFLAGS"] = "-arch arm64"
                 env["GOARCH"] = "arm64"
+            else:
+                print("Building for Intel Mac (x86_64)")
+                env["ARCHFLAGS"] = "-arch x86_64"
+                env["GOARCH"] = "amd64"
             env["GOOS"] = "darwin"
             env["CC"] = "clang"
         elif sys.platform.startswith('win'):
