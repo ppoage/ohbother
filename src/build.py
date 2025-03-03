@@ -94,8 +94,8 @@ class BuildGoBindings(Command):
         # Use absolute paths on Windows
         if sys.platform.startswith('win'):
             # Convert Windows path to use forward slashes for commandline tools
-            output_path = os.path.abspath(ohbother_output_dir).replace('\\', '/')
-            cmd.extend(["-output", output_path])
+            
+            cmd.extend(["-output", "ohbother"])
             # Also normalize Python path
             cmd.extend(["-vm", python_path.replace('\\', '/')])
             cmd.append("ohbother")
