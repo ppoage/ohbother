@@ -42,23 +42,26 @@ jobs:
     - name: Create python3.exe for Windows
       if: runner.os == 'Windows'
       run: |
-        # Create a copy of python.exe as python3.exe
+        # Create a copy of python.exe as python3.exe using explicit paths
         $pythonDir = "${{ env.pythonLocation }}"
-        $sourcePath = Join-Path -Path $pythonDir -ChildPath "python.exe"
-        $destPath = Join-Path -Path $pythonDir -ChildPath "python3.exe" 
+        $sourcePath = "$pythonDir\python.exe"
+        $destPath = "$pythonDir\python3.exe"
         
-        Write-Output "Copying from $sourcePath to $destPath"
+        Write-Output "Source path: $sourcePath"
+        Write-Output "Destination path: $destPath"
         
-        if (Test-Path -Path $sourcePath) {
-          Copy-Item -Path $sourcePath -Destination $destPath -Force
-          if (Test-Path -Path $destPath) {
-            Write-Output "Created python3.exe successfully"
-          } else {
-            Write-Output "Failed to create python3.exe"
-            exit 1
-          }
-        } else {
-          Write-Output "Source file $sourcePath not found"
+        # Check if paths are actually different
+        if ($sourcePath -eq $destPath) {
+          Write-Output "ERROR: Source and destination paths are identical!"
+          exit 1
+        }
+        
+        # Try manual copy command
+        try {
+          Copy-Item "$sourcePath" "$destPath" -Force
+          Write-Output "Created python3.exe successfully"
+        } catch {
+          Write-Output "Error copying file: $_"
           exit 1
         }
       shell: pwsh
