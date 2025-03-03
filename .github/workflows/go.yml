@@ -66,6 +66,8 @@ jobs:
         GOPY_LIBDIR: ${{ runner.os == 'Windows' && format('{0}\libs', env.pythonLocation) || '' }}
         # For Windows builds, use explicit formatting for Python version
         GOPY_PYLIB: ${{ runner.os == 'Windows' && format('python{0}{1}', matrix.python-version[0], matrix.python-version[2]) || '' }}
+        # Add this environment variable
+        PYTHON_VM_PATH: ${{ env.pythonLocation }}\python.exe
         
     # Build wheel - unified command using PY_CMD
     - name: Build wheel

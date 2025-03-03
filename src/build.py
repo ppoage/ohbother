@@ -76,9 +76,9 @@ class BuildGoBindings(Command):
             env["GOOS"] = "linux"
             env["CC"] = "gcc"
         
-        # Use system Python path instead of hardcoded one
-        python_path = sys.executable
-        print(f"Using Python interpreter: {python_path}")
+        # Use environment var if set (for CI), otherwise use sys.executable (for local dev)
+        python_path = os.environ.get('PYTHON_VM_PATH', sys.executable)
+        print(f"Using Python interpreter: {python_path} (from {'environment' if 'PYTHON_VM_PATH' in os.environ else 'sys.executable'})")
         print(f"Platform: {sys.platform}, GOARCH: {env.get('GOARCH')}, GOOS: {env.get('GOOS')}")
         
         # Use full paths for Windows to avoid directory confusion
@@ -96,8 +96,8 @@ class BuildGoBindings(Command):
             # Full path for output directory
             cmd.extend(["-output", os.path.abspath(ohbother_output_dir)])
             cmd.extend(["-vm", python_path])
-            # Current directory contains Go files
-            cmd.append(".")
+            # Use "ohbother" like on other platforms
+            cmd.append("ohbother")
         else:
             # Unix systems can use relative paths
             cmd.extend(["-output", "ohbother"])
