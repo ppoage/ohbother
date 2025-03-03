@@ -13,8 +13,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.11']
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.10', '3.11']
 
     steps:
     - uses: actions/checkout@v4
@@ -47,26 +47,22 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install setuptools wheel PyBindGen
 
-    # Change directory to src before running build.py
     - name: Build library
       run: |
         cd src
         python build.py build
 
-    # Change directory to src before running build.py
     - name: Build wheel
       run: |
         cd src
         python build.py bdist_wheel
 
-    # Update path to look for dist folder in src/
     - name: Upload wheel
       uses: actions/upload-artifact@v4
       with:
         name: wheel-${{ matrix.os }}-py${{ matrix.python-version }}
         path: src/dist/*.whl
 
-    # Update path to look for ohbother folder in src/
     - name: Upload compiled library
       uses: actions/upload-artifact@v4
       with:

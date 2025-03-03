@@ -7,31 +7,24 @@ from setuptools import setup, find_packages, Command
 from setuptools.command.build import build
 from wheel.bdist_wheel import bdist_wheel
 
-# Define project_root in the global scope - this is correct
-project_root = os.path.dirname(os.getcwd())  # Go up one directory from src/
-print(f"Project root: {project_root}")
+# Define project_root as one directory above src/
+project_root = os.path.dirname(os.getcwd())
 
 class BuildGoBindings(Command):
-    description = "Build Go bindings using gopy"
-    user_options = []
+    description = "Build Go bindings using gopy."
+    user_options = []  # No options for this command
 
     def initialize_options(self):
         pass
-        
+
     def finalize_options(self):
         pass
 
     def run(self):
         print(f"Current working directory: {os.getcwd()}")
-        print(f"Building Go bindings from: {__file__}")
         
-        # Use consistent path calculations with project_root variable
+        # Create ohbother directory in project root
         ohbother_dir = os.path.join(project_root, "ohbother")
-        temp_out_dir = os.path.join(project_root, "temp_out")
-        
-        print(f"Output directory: {ohbother_dir}")
-        print(f"Temp output directory: {temp_out_dir}")
-        
         if not os.path.exists(ohbother_dir):
             os.makedirs(ohbother_dir)
             print(f"Created directory: {ohbother_dir}")
@@ -42,37 +35,48 @@ class BuildGoBindings(Command):
             with open(init_path, "w") as f:
                 f.write("# Auto-generated __init__.py\n")
                 print(f"Created: {init_path}")
-                
-        # Run gopy command with absolute paths
+        
+        # Copy current environment and set platform-specific flags
+        env = os.environ.copy()
+        env["CGO_ENABLED"] = "1"
+        env["GO111MODULE"] = "on"
+        
+        # Platform detection
+        if sys.platform.startswith('darwin'):
+            if os.environ.get('GITHUB_ACTIONS') == 'true':
+                env["ARCHFLAGS"] = "-arch x86_64"
+                env["GOARCH"] = "amd64"
+            else:
+                env["ARCHFLAGS"] = "-arch arm64"
+                env["GOARCH"] = "arm64"
+            env["GOOS"] = "darwin"
+            env["CC"] = "clang"
+        elif sys.platform.startswith('win'):
+            env["GOARCH"] = "amd64"
+            env["GOOS"] = "windows"
+        else:  # Linux and others
+            env["GOARCH"] = "amd64"
+            env["GOOS"] = "linux"
+            env["CC"] = "gcc"
+        
+        # Use system Python path instead of hardcoded one
         python_path = sys.executable
+        print(f"Using Python interpreter: {python_path}")
+        print(f"Platform: {sys.platform}, GOARCH: {env.get('GOARCH')}, GOOS: {env.get('GOOS')}")
+        
+        # Run gopy command - use module name directly
         cmd = [
-            "gopy", "pkg",
-            "-name", "ohbother",
-            "-output", temp_out_dir,
+            "gopy",
+            "pkg",
+            "-output", "ohbother",
             "-vm", python_path,
-            "."
+            "ohbother"  # Use module name directly instead of "."
         ]
-        print(f"Running: {' '.join(cmd)}")
-        # Print environment info for debugging
-        print(f"PATH: {os.environ.get('PATH')}")
-        print(f"Go files in current directory: {[f for f in os.listdir('.') if f.endswith('.go')]}")
         
-        ret = subprocess.call(cmd)
-        print(f"gopy command returned: {ret}")
-        
-        # Copy output files if generated
-        generated_dir = os.path.join(temp_out_dir, "ohbother")
-        if os.path.exists(generated_dir):
-            print(f"Generated files found in: {generated_dir}")
-            for item in os.listdir(generated_dir):
-                src_file = os.path.join(generated_dir, item)
-                dst_file = os.path.join(ohbother_dir, item)
-                if os.path.isfile(src_file):
-                    shutil.copy2(src_file, dst_file)
-                    print(f"Copied: {src_file} to {dst_file}")
-                    
+        print(f"Running gopy command: {' '.join(cmd)}")
+        ret = subprocess.call(cmd, env=env)
         if ret != 0:
-            raise SystemExit("gopy failed")
+            raise SystemExit("gopy pkg failed")
 
 class CustomBuild(build):
     def run(self):
@@ -84,7 +88,13 @@ class CustomBdistWheel(bdist_wheel):
         self.run_command("build_go")
         super().run()
 
-# Rest of your setup function
+# Read README from project root, not src directory
+readme_path = os.path.join(project_root, "README.md")
+long_description = ""
+if os.path.exists(readme_path):
+    with open(readme_path, "r", encoding="utf-8") as fh:
+        long_description = fh.read()
+
 setup(
     name="ohbother",
     version="0.1",
@@ -93,7 +103,7 @@ setup(
         "ohbother": ["*.so", "*.dll", "*.dylib", "*.pyd", "go/*.py", "go/*.so"],
     },
     description="High-performance UDP packet transmitter/receiver built in Go with Python bindings",
-    long_description=open(os.path.join(project_root, "README.md"), "r", encoding="utf-8").read() if os.path.exists(os.path.join(project_root, "README.md")) else "",
+    long_description=long_description,
     long_description_content_type="text/markdown",
     classifiers=[
         "Programming Language :: Python :: 3",

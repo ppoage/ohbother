@@ -3,3 +3,4 @@ python/
 *.venv
 */.venv
 *.DS_STORE
+*.backup
