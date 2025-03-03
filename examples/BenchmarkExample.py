@@ -1,5 +1,27 @@
-from ..src.ohbother.ohbother import ohbother as pooh
-from ohbother import Slice_byte
+import subprocess
+
+result = subprocess.run(["pip", "freeze"], capture_output=True, text=True)
+installed_packages = result.stdout.strip().splitlines()
+print("Installed third-party packages:")
+for pkg in installed_packages:
+    print(pkg)
+
+import importlib.util
+module_name = "ohbother"
+spec = importlib.util.find_spec(module_name)
+if spec is None:
+    print(f"Module {module_name} not found.")
+else:
+    print(f"Module {module_name} found at {spec.origin}")
+
+
+dev_env = False
+if dev_env:
+    from ..src.ohbother.ohbother import ohbother as pooh
+    from ohbother import Slice_byte
+else:
+    import ohbother as pooh
+    from ohbother import Slice_byte
 import random, time
 
 

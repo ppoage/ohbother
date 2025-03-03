@@ -143,6 +143,39 @@ class CustomBuild(build):
 class CustomBdistWheel(bdist_wheel):
     def run(self):
         self.run_command("build_go")
+        
+        # Ensure the ohbother directory from project root is included in the build
+        ohbother_dir = os.path.join(project_root, "ohbother")
+        
+        # Debug: Check what files are available
+        print(f"Files in {ohbother_dir}:")
+        for root, dirs, files in os.walk(ohbother_dir):
+            for file in files:
+                print(f"  - {os.path.join(root, file)}")
+                
+        # Create the package directory in the build area if it doesn't exist
+        build_lib = os.path.join(self.get_finalized_command('build').build_lib)
+        build_ohbother_dir = os.path.join(build_lib, "ohbother")
+        if not os.path.exists(build_ohbother_dir):
+            os.makedirs(build_ohbother_dir)
+            print(f"Created build directory: {build_ohbother_dir}")
+            
+        # Copy all files from the ohbother directory to the build directory
+        print(f"Copying Go-generated files from {ohbother_dir} to {build_ohbother_dir}")
+        for item in os.listdir(ohbother_dir):
+            src = os.path.join(ohbother_dir, item)
+            dst = os.path.join(build_ohbother_dir, item)
+            
+            if os.path.isfile(src):
+                shutil.copy2(src, dst)
+                print(f"Copied: {item}")
+            elif os.path.isdir(src):
+                if os.path.exists(dst):
+                    shutil.rmtree(dst)
+                shutil.copytree(src, dst)
+                print(f"Copied directory: {item}")
+                
+        # Now let the regular wheel building continue
         super().run()
 
 # Read README from project root, not src directory
@@ -157,8 +190,10 @@ setup(
     version="0.1",
     packages=find_packages(),
     package_data={
-        "ohbother": ["*.so", "*.dll", "*.dylib", "*.pyd", "go/*.py", "go/*.so"],
+        "ohbother": ["*", "**/*", "*.so", "*.dll", "*.dylib", "*.pyd", "*.py", 
+                    "_obj/*", "_obj/**/*", "go/*", "go/**/*"],
     },
+    include_package_data=True,
     description="High-performance UDP packet transmitter/receiver built in Go with Python bindings",
     long_description=long_description,
     long_description_content_type="text/markdown",
