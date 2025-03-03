@@ -17,6 +17,9 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    # Add these permissions to allow release creation
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 

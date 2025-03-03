@@ -5,7 +5,13 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Dev Imports
-from ohbother.ohbother import ohbother as pooh
+dev_env = False
+if dev_env:
+    from ..src.ohbother.ohbother import ohbother as pooh
+    from ohbother import Slice_byte
+else:
+    from ohbother.ohbother import ohbother as pooh
+    from ohbother.ohbother.go import Slice_byte
 import random, time
 import threading
 
