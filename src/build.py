@@ -41,7 +41,7 @@ class BuildGoBindings(Command):
         env["CGO_ENABLED"] = "1"
         env["GO111MODULE"] = "on"
         
-        # Platform detection
+        # Platform detection with special handling for Windows
         if sys.platform.startswith('darwin'):
             if os.environ.get('GITHUB_ACTIONS') == 'true':
                 env["ARCHFLAGS"] = "-arch x86_64"
@@ -54,6 +54,23 @@ class BuildGoBindings(Command):
         elif sys.platform.startswith('win'):
             env["GOARCH"] = "amd64"
             env["GOOS"] = "windows"
+            
+            # Get Python version components for library naming
+            py_version = sys.version_info
+            py_lib_name = f"python{py_version.major}{py_version.minor}"
+            
+            # Extract Python library path from the interpreter path
+            python_base = os.path.dirname(sys.executable)
+            python_libs = os.path.join(python_base, 'libs')
+            
+            # Set Windows-specific environment variables for gopy
+            if os.path.exists(python_libs):
+                print(f"Found Python libs directory: {python_libs}")
+                env["GOPY_LIBDIR"] = python_libs
+                env["GOPY_PYLIB"] = py_lib_name
+                print(f"Set GOPY_LIBDIR={python_libs}, GOPY_PYLIB={py_lib_name}")
+            else:
+                print(f"WARNING: Python libs directory not found at {python_libs}")
         else:  # Linux and others
             env["GOARCH"] = "amd64"
             env["GOOS"] = "linux"
@@ -64,14 +81,19 @@ class BuildGoBindings(Command):
         print(f"Using Python interpreter: {python_path}")
         print(f"Platform: {sys.platform}, GOARCH: {env.get('GOARCH')}, GOOS: {env.get('GOOS')}")
         
-        # Run gopy command - use module name directly
+        # Run gopy command - use "." instead of module name on Windows
         cmd = [
             "gopy",
             "pkg",
             "-output", "ohbother",
-            "-vm", python_path,
-            "ohbother"  # Use module name directly instead of "."
+            "-vm", python_path
         ]
+        
+        # On Windows, use "." instead of "ohbother"
+        if sys.platform.startswith('win'):
+            cmd.append(".")
+        else:
+            cmd.append("ohbother")
         
         print(f"Running gopy command: {' '.join(cmd)}")
         ret = subprocess.call(cmd, env=env)
