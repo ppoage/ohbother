@@ -138,6 +138,20 @@ class BuildGoBindings(Command):
         ret = subprocess.call(cmd, env=env)
         if ret != 0:
             raise SystemExit("gopy pkg failed")
+        
+        # Add this debug section to check what gopy actually generated
+        print("\n=== CHECKING GOPY OUTPUT ===")
+        output_dir = os.path.join(project_root, "ohbother")
+        print(f"Checking directory: {output_dir}")
+        if os.path.exists(output_dir):
+            files = os.listdir(output_dir)
+            print(f"Files found: {files}")
+            
+            # Check for binary files specifically
+            binaries = [f for f in files if f.endswith('.so') or f.endswith('.pyd') or f.endswith('.dll') or f.endswith('.dylib')]
+            print(f"Binary files found: {binaries}")
+        else:
+            print(f"ERROR: Output directory {output_dir} does not exist!")
 
 class CustomBuild(build):
     def run(self):
@@ -172,41 +186,44 @@ class CustomBdistWheel(bdist_wheel):
         return python_tag, abi_tag, plat_tag
         
     def run(self):
+        # Run the Go build first
         self.run_command("build_go")
         
-        # Ensure the ohbother directory from project root is included in the build
+        # Get source and destination directories
         ohbother_dir = os.path.join(project_root, "ohbother")
-        
-        # Debug: Check what files are available
-        print(f"Files in {ohbother_dir}:")
-        for root, dirs, files in os.walk(ohbother_dir):
-            for file in files:
-                print(f"  - {os.path.join(root, file)}")
-                
-        # Create the package directory in the build area if it doesn't exist
-        build_lib = os.path.join(self.get_finalized_command('build').build_lib)
+        build_lib = self.get_finalized_command('build').build_lib
         build_ohbother_dir = os.path.join(build_lib, "ohbother")
+        
+        print(f"\n=== PACKAGING FILES FOR WHEEL ===")
+        print(f"Source dir: {ohbother_dir}")
+        print(f"Target dir: {build_ohbother_dir}")
+        
+        # Create destination directory if needed
         if not os.path.exists(build_ohbother_dir):
             os.makedirs(build_ohbother_dir)
             print(f"Created build directory: {build_ohbother_dir}")
+        
+        # Copy files from the source to the build directory
+        if os.path.exists(ohbother_dir) and os.path.isdir(ohbother_dir):
+            print(f"Copying files from {ohbother_dir} to {build_ohbother_dir}")
             
-        # Copy all files from the ohbother directory to the build directory
-        print(f"Copying Go-generated files from {ohbother_dir} to {build_ohbother_dir}")
-        for item in os.listdir(ohbother_dir):
-            src = os.path.join(ohbother_dir, item)
-            dst = os.path.join(build_ohbother_dir, item)
+            # Use distutils copy_tree for more reliable copying
+            from distutils.dir_util import copy_tree
+            copy_tree(ohbother_dir, build_ohbother_dir)
             
-            if os.path.isfile(src):
-                shutil.copy2(src, dst)
-                print(f"Copied: {item}")
-            elif os.path.isdir(src):
-                if os.path.exists(dst):
-                    shutil.rmtree(dst)
-                shutil.copytree(src, dst)
-                print(f"Copied directory: {item}")
+            # Verify the files were copied
+            if os.path.exists(build_ohbother_dir):
+                files = os.listdir(build_ohbother_dir)
+                print(f"Files copied to wheel build dir: {files}")
                 
-        # Now let the regular wheel building continue
-        super().run()
+                # Check for binary files specifically
+                binaries = [f for f in files if f.endswith('.so') or f.endswith('.pyd') or f.endswith('.dll') or f.endswith('.dylib')]
+                print(f"Binary files in wheel: {binaries}")
+        else:
+            print(f"ERROR: Source directory {ohbother_dir} does not exist or is not a directory!")
+        
+        # Run the standard wheel building
+        bdist_wheel.run(self)  # Use parent class directly, not super()
 
 # Read README from project root, not src directory
 readme_path = os.path.join(project_root, "README.md")
@@ -218,7 +235,7 @@ if os.path.exists(readme_path):
 setup(
     name="ohbother",
     version="0.1",
-    packages=find_packages(),
+    packages=["ohbother"],  # Explicitly list the package instead of using find_packages()
     package_data={
         "ohbother": ["*", "**/*", "*.so", "*.dll", "*.dylib", "*.pyd", "*.py", 
                     "_obj/*", "_obj/**/*", "go/*", "go/**/*"],
