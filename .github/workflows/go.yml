@@ -39,6 +39,21 @@ jobs:
           echo "PY_CMD=python" >> $GITHUB_ENV
         fi
 
+    - name: Create python3.exe for Windows
+      if: runner.os == 'Windows'
+      run: |
+        # Create a copy of python.exe as python3.exe
+        $pythonDir = "${{ env.pythonLocation }}"
+        Copy-Item -Path "$pythonDir\python.exe" -Destination "$pythonDir\python3.exe"
+        # Verify the file exists
+        if (Test-Path "$pythonDir\python3.exe") {
+          echo "Created python3.exe successfully"
+        } else {
+          echo "Failed to create python3.exe"
+          exit 1
+        }
+      shell: pwsh
+
     - name: Install Go tools
       run: |
         go install github.com/go-python/gopy@latest
