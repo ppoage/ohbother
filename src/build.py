@@ -81,18 +81,27 @@ class BuildGoBindings(Command):
         print(f"Using Python interpreter: {python_path}")
         print(f"Platform: {sys.platform}, GOARCH: {env.get('GOARCH')}, GOOS: {env.get('GOOS')}")
         
-        # Run gopy command - use "." instead of module name on Windows
+        # Use full paths for Windows to avoid directory confusion
+        ohbother_output_dir = os.path.join(project_root, "ohbother")
+
+        # Run gopy command with platform-specific paths
         cmd = [
             "gopy",
             "pkg",
-            "-output", "ohbother",
-            "-vm", python_path
+            "-name", "ohbother"
         ]
-        
-        # On Windows, use "." instead of "ohbother"
+
+        # Use absolute paths on Windows
         if sys.platform.startswith('win'):
+            # Full path for output directory
+            cmd.extend(["-output", os.path.abspath(ohbother_output_dir)])
+            cmd.extend(["-vm", python_path])
+            # Current directory contains Go files
             cmd.append(".")
         else:
+            # Unix systems can use relative paths
+            cmd.extend(["-output", "ohbother"])
+            cmd.extend(["-vm", python_path])
             cmd.append("ohbother")
         
         print(f"Running gopy command: {' '.join(cmd)}")
