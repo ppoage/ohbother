@@ -1,0 +1,52 @@
+name: Create GitHub Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: true
+      release_title:
+        description: 'Release title'
+        required: true
+        default: 'New Release'
+      release_notes:
+        description: 'Release notes'
+        required: false
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Download all wheel artifacts from the latest build
+      - name: Download all wheels
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: go.yml
+          workflow_conclusion: success
+          name_prefix: "wheel-"
+          path: dist
+
+      # Download all library artifacts (optional)
+      - name: Download libraries
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: go.yml
+          workflow_conclusion: success
+          name_prefix: "lib-"
+          path: libs
+
+      # Create GitHub Release and upload assets
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          name: ${{ github.event.inputs.release_title }}
+          body: ${{ github.event.inputs.release_notes }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/**/*.whl
+            libs/**/*
