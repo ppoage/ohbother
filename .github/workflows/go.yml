@@ -47,38 +47,28 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install setuptools wheel PyBindGen
 
-    - name: Fix build.py for GitHub Actions
-      run: |
-        cat > patch.py << 'EOF'
-        #!/usr/bin/env python3
-        
-        with open('build.py', 'r') as f:
-          content = f.read()
-          
-        # Patch the gopy command to skip using "go build -v ."
-        patched = content.replace('subprocess.call(cmd, env=env, cwd=temp_dir)', 
-                                 'subprocess.call(cmd + ["-no-make"], env=env, cwd=temp_dir)')
-        
-                with open('build.py', 'w') as f:
-          f.write(patched)
-        EOF
-        
-        python patch.py
-
+    # Change directory to src before running build.py
     - name: Build library
-      run: python src/build.py build
+      run: |
+        cd src
+        python build.py build
 
+    # Change directory to src before running build.py
     - name: Build wheel
-      run: python src/build.py bdist_wheel
+      run: |
+        cd src
+        python build.py bdist_wheel
 
+    # Update path to look for dist folder in src/
     - name: Upload wheel
       uses: actions/upload-artifact@v4
       with:
         name: wheel-${{ matrix.os }}-py${{ matrix.python-version }}
-        path: dist/*.whl
+        path: src/dist/*.whl
 
+    # Update path to look for ohbother folder in src/
     - name: Upload compiled library
       uses: actions/upload-artifact@v4
       with:
         name: lib-${{ matrix.os }}-py${{ matrix.python-version }}
-        path: ohbother/**/*
+        path: src/ohbother/**/*
