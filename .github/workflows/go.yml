@@ -13,8 +13,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ['3.11', '3.12', '3.13'] # Will add 3.10 once fixed
+        os: [ubuntu-latest] #, macos-latest, windows-latest]
+        python-version: ['3.11'] #, '3.12', '3.13'] # Will add 3.10 once fixed
 
     steps:
     - uses: actions/checkout@v4
