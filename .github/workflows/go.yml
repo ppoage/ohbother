@@ -19,7 +19,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
@@ -30,40 +30,30 @@ jobs:
         go-version: '1.24'
 
     - name: Run go mod tidy
-      working-directory: ./src
-      run: go mod tidy
-
-    - name: Install goimports
-      run: |
-        go install golang.org/x/tools/cmd/goimports@latest
-        # Ensure GOPATH/bin is in PATH for subsequent steps
-        echo "${{ runner.tool_cache }}/go/1.24.0/x64/bin" >> $GITHUB_PATH
+      run: cd src && go mod tidy
 
     - name: Install gopy
       run: go install github.com/go-python/gopy@latest
 
-    - name: Install build dependencies
+    - name: Install build deps
       run: |
         python -m pip install --upgrade pip
         python -m pip install setuptools wheel PyBindGen
 
-    - name: Create ohbother directory
-      run: mkdir -p ohbother
-
     - name: Build library
       run: python build.py build
 
-    - name: Build wheel package
+    - name: Build wheel
       run: python build.py bdist_wheel
 
     - name: Upload wheel
       uses: actions/upload-artifact@v4
       with:
-        name: wheels-${{ matrix.os }}-py${{ matrix.python-version }}
+        name: wheel-${{ matrix.os }}-py${{ matrix.python-version }}
         path: dist/*.whl
 
     - name: Upload compiled library
       uses: actions/upload-artifact@v4
       with:
-        name: library-${{ matrix.os }}-py${{ matrix.python-version }}
+        name: lib-${{ matrix.os }}-py${{ matrix.python-version }}
         path: ohbother/**/*
