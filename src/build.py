@@ -93,10 +93,11 @@ class BuildGoBindings(Command):
 
         # Use absolute paths on Windows
         if sys.platform.startswith('win'):
-            # Full path for output directory
-            cmd.extend(["-output", os.path.abspath(ohbother_output_dir)])
-            cmd.extend(["-vm", python_path])
-            # Use "ohbother" like on other platforms
+            # Convert Windows path to use forward slashes for commandline tools
+            output_path = os.path.abspath(ohbother_output_dir).replace('\\', '/')
+            cmd.extend(["-output", output_path])
+            # Also normalize Python path
+            cmd.extend(["-vm", python_path.replace('\\', '/')])
             cmd.append("ohbother")
         else:
             # Unix systems can use relative paths
