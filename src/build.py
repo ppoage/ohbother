@@ -76,8 +76,26 @@ class BuildGoBindings(Command):
             env["GOOS"] = "linux"
             env["CC"] = "gcc"
         
+        # Update the python_path handling for Windows:
+
         # Use environment var if set (for CI), otherwise use sys.executable (for local dev)
         python_path = os.environ.get('PYTHON_VM_PATH', sys.executable)
+
+        # For Windows, explicitly use python3.exe instead of python.exe
+        if sys.platform.startswith('win'):
+            # Get directory containing the python executable
+            python_dir = os.path.dirname(python_path)
+            
+            # Create path to python3.exe
+            python3_path = os.path.join(python_dir, 'python3.exe')
+            
+            # Check if python3.exe exists (it should because of our symlink step)
+            if os.path.exists(python3_path):
+                print(f"Found python3.exe: {python3_path}")
+                python_path = python3_path
+            else:
+                print(f"WARNING: python3.exe not found in {python_dir}, using {python_path}")
+
         print(f"Using Python interpreter: {python_path} (from {'environment' if 'PYTHON_VM_PATH' in os.environ else 'sys.executable'})")
         print(f"Platform: {sys.platform}, GOARCH: {env.get('GOARCH')}, GOOS: {env.get('GOOS')}")
         
