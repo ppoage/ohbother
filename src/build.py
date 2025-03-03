@@ -7,54 +7,69 @@ from setuptools import setup, find_packages, Command
 from setuptools.command.build import build
 from wheel.bdist_wheel import bdist_wheel
 
-# Define project_root in the global scope
+# Define project_root in the global scope - this is correct
 project_root = os.path.dirname(os.getcwd())  # Go up one directory from src/
+print(f"Project root: {project_root}")
 
 class BuildGoBindings(Command):
     description = "Build Go bindings using gopy"
     user_options = []
 
     def initialize_options(self):
-        pass  # Required method
+        pass
         
     def finalize_options(self):
-        pass  # Required method
+        pass
 
     def run(self):
-        # Your build logic goes here
-        print("Building Go bindings...")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Building Go bindings from: {__file__}")
         
-        # Set up directory for output
-        ohbother_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ohbother")
+        # Use consistent path calculations with project_root variable
+        ohbother_dir = os.path.join(project_root, "ohbother")
+        temp_out_dir = os.path.join(project_root, "temp_out")
+        
+        print(f"Output directory: {ohbother_dir}")
+        print(f"Temp output directory: {temp_out_dir}")
+        
         if not os.path.exists(ohbother_dir):
             os.makedirs(ohbother_dir)
+            print(f"Created directory: {ohbother_dir}")
         
         # Initialize module
         init_path = os.path.join(ohbother_dir, "__init__.py")
         if not os.path.exists(init_path):
             with open(init_path, "w") as f:
                 f.write("# Auto-generated __init__.py\n")
+                print(f"Created: {init_path}")
                 
-        # Run gopy command
+        # Run gopy command with absolute paths
         python_path = sys.executable
         cmd = [
             "gopy", "pkg",
             "-name", "ohbother",
-            "-output", os.path.join("..", "temp_out"),
+            "-output", temp_out_dir,
             "-vm", python_path,
             "."
         ]
         print(f"Running: {' '.join(cmd)}")
+        # Print environment info for debugging
+        print(f"PATH: {os.environ.get('PATH')}")
+        print(f"Go files in current directory: {[f for f in os.listdir('.') if f.endswith('.go')]}")
+        
         ret = subprocess.call(cmd)
+        print(f"gopy command returned: {ret}")
         
         # Copy output files if generated
-        generated_dir = os.path.join("..", "temp_out", "ohbother")
+        generated_dir = os.path.join(temp_out_dir, "ohbother")
         if os.path.exists(generated_dir):
+            print(f"Generated files found in: {generated_dir}")
             for item in os.listdir(generated_dir):
                 src_file = os.path.join(generated_dir, item)
                 dst_file = os.path.join(ohbother_dir, item)
                 if os.path.isfile(src_file):
                     shutil.copy2(src_file, dst_file)
+                    print(f"Copied: {src_file} to {dst_file}")
                     
         if ret != 0:
             raise SystemExit("gopy failed")
