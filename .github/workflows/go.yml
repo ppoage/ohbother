@@ -44,12 +44,21 @@ jobs:
       run: |
         # Create a copy of python.exe as python3.exe
         $pythonDir = "${{ env.pythonLocation }}"
-        Copy-Item -Path "$pythonDir\python.exe" -Destination "$pythonDir\python3.exe"
-        # Verify the file exists
-        if (Test-Path "$pythonDir\python3.exe") {
-          echo "Created python3.exe successfully"
+        $sourcePath = Join-Path -Path $pythonDir -ChildPath "python.exe"
+        $destPath = Join-Path -Path $pythonDir -ChildPath "python3.exe" 
+        
+        Write-Output "Copying from $sourcePath to $destPath"
+        
+        if (Test-Path -Path $sourcePath) {
+          Copy-Item -Path $sourcePath -Destination $destPath -Force
+          if (Test-Path -Path $destPath) {
+            Write-Output "Created python3.exe successfully"
+          } else {
+            Write-Output "Failed to create python3.exe"
+            exit 1
+          }
         } else {
-          echo "Failed to create python3.exe"
+          Write-Output "Source file $sourcePath not found"
           exit 1
         }
       shell: pwsh
