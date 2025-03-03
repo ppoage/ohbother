@@ -41,30 +41,16 @@ jobs:
 
     - name: Create python3.exe for Windows
       if: runner.os == 'Windows'
+      shell: cmd
       run: |
-        # Create a copy of python.exe as python3.exe using explicit paths
-        $pythonDir = "${{ env.pythonLocation }}"
-        $sourcePath = "$pythonDir\python.exe"
-        $destPath = "$pythonDir\python3.exe"
-        
-        Write-Output "Source path: $sourcePath"
-        Write-Output "Destination path: $destPath"
-        
-        # Check if paths are actually different
-        if ($sourcePath -eq $destPath) {
-          Write-Output "ERROR: Source and destination paths are identical!"
+        echo "Creating python3.exe..."
+        copy "%pythonLocation%\python.exe" "%pythonLocation%\python3.exe"
+        if exist "%pythonLocation%\python3.exe" (
+          echo "python3.exe created successfully"
+        ) else (
+          echo "Failed to create python3.exe"
           exit 1
-        }
-        
-        # Try manual copy command
-        try {
-          Copy-Item "$sourcePath" "$destPath" -Force
-          Write-Output "Created python3.exe successfully"
-        } catch {
-          Write-Output "Error copying file: $_"
-          exit 1
-        }
-      shell: pwsh
+        )
 
     - name: Install Go tools
       run: |
