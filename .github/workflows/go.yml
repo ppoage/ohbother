@@ -28,59 +28,48 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.24'
+        
+    - name: Set Python command based on OS
+      id: set-python-cmd
+      shell: bash
+      run: |
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          echo "PY_CMD=py" >> $GITHUB_ENV
+        else
+          echo "PY_CMD=python" >> $GITHUB_ENV
+        fi
 
     - name: Install Go tools
       run: |
         go install github.com/go-python/gopy@latest
         go install golang.org/x/tools/cmd/goimports@latest
         echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        
-    - name: Debug environment
-      run: |
-        which gopy
-        which goimports
-        echo $PATH
-        ls -la src/
 
     - name: Install build deps
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install setuptools wheel PyBindGen
+        ${{ env.PY_CMD }} -m pip install --upgrade pip
+        ${{ env.PY_CMD }} -m pip install setuptools wheel PyBindGen
 
     # Linux: Add LD_LIBRARY_PATH
     - name: Set LD_LIBRARY_PATH for Linux
       if: runner.os == 'Linux'
       run: echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:." >> $GITHUB_ENV
 
-    # Build library - Platform specific commands
-    - name: Build library (Linux/macOS)
-      if: runner.os != 'Windows'
+    # Build library - unified command using PY_CMD
+    - name: Build library
       run: |
         cd src
-        python build.py build
+        ${{ env.PY_CMD }} build.py build
       env:
         LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}:. # Add current dir to path
         
-    - name: Build library (Windows)
-      if: runner.os == 'Windows'
+    # Build wheel - unified command using PY_CMD
+    - name: Build wheel
       run: |
         cd src
-        py build.py build
-        
-    # Build wheel - Platform specific commands
-    - name: Build wheel (Linux/macOS)
-      if: runner.os != 'Windows'
-      run: |
-        cd src
-        python build.py bdist_wheel
+        ${{ env.PY_CMD }} build.py bdist_wheel
       env:
         LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}:. # Add current dir to path
-        
-    - name: Build wheel (Windows)
-      if: runner.os == 'Windows'
-      run: |
-        cd src
-        py build.py bdist_wheel
 
     # Upload artifacts - same for all platforms
     - name: Upload wheel
