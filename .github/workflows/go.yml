@@ -64,9 +64,18 @@ jobs:
         echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
     - name: Install build deps
+      shell: bash
       run: |
+        # Install for the primary Python environment (${{ env.PY_CMD }})
         ${{ env.PY_CMD }} -m pip install --upgrade pip
         ${{ env.PY_CMD }} -m pip install setuptools wheel pybindgen
+        
+        # For Windows, also install the same packages for python3.exe specifically
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          echo "Installing packages for python3.exe environment"
+          "${{ env.pythonLocation }}/python3.exe" -m pip install --upgrade pip
+          "${{ env.pythonLocation }}/python3.exe" -m pip install setuptools wheel pybindgen
+        fi
 
     # Linux: Add LD_LIBRARY_PATH
     - name: Set LD_LIBRARY_PATH for Linux
