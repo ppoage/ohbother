@@ -89,12 +89,12 @@ jobs:
         ${{ env.PY_CMD }} build.py build
       env:
         LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}:. # Add current dir to path
-        # Fix paths for Windows builds with double quotes to handle spaces
-        GOPY_LIBDIR: ${{ runner.os == 'Windows' && format('"{0}/libs"', env.pythonLocation) || '' }}
+        # Fix paths for Windows builds - REMOVE QUOTES, use consistent slashes
+        GOPY_LIBDIR: ${{ runner.os == 'Windows' && format('{0}/libs', env.pythonLocation) || '' }}
         # Fix Python version number without .dll extension
         GOPY_PYLIB: ${{ runner.os == 'Windows' && (matrix.python-version == '3.10' && 'python310' || matrix.python-version == '3.11' && 'python311') || '' }}
         # Be explicit about the Python VM path for Windows
-        PYTHON_VM_PATH: ${{ runner.os == 'Windows' && format('"{0}/python.exe"', env.pythonLocation) || format('{0}/bin/python', env.pythonLocation) }}
+        PYTHON_VM_PATH: ${{ runner.os == 'Windows' && format('{0}/python3.exe', env.pythonLocation) || format('{0}/bin/python', env.pythonLocation) }}
         
     # Build wheel - unified command using PY_CMD
     - name: Build wheel
@@ -107,6 +107,8 @@ jobs:
         GOPY_LIBDIR: ${{ runner.os == 'Windows' && format('{0}/libs', env.pythonLocation) || '' }}
         # For Windows builds, use explicit formatting for Python version
         GOPY_PYLIB: ${{ runner.os == 'Windows' && (matrix.python-version == '3.10' && 'python310' || matrix.python-version == '3.11' && 'python311') || '' }}
+        # Be explicit about the Python VM path for Windows
+        PYTHON_VM_PATH: ${{ runner.os == 'Windows' && format('{0}/python3.exe', env.pythonLocation) || format('{0}/bin/python', env.pythonLocation) }}
 
     # Upload artifacts - same for all platforms
     - name: Upload wheel
