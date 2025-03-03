@@ -40,6 +40,7 @@ jobs:
           workflow_conclusion: success
           name_prefix: "lib-"
           path: libs
+          skip_unpack: true
 
       # Create GitHub Release and upload assets
       - name: Create Release
