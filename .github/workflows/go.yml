@@ -62,6 +62,9 @@ jobs:
         ${{ env.PY_CMD }} build.py build
       env:
         LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}:. # Add current dir to path
+        # Windows needs these for linking to Python libraries
+        GOPY_LIBDIR: ${{ runner.os == 'Windows' && format('{0}\libs', env.pythonLocation) || '' }}
+        GOPY_PYLIB: ${{ runner.os == 'Windows' && format('python{0}{1}', matrix.python-version[0], matrix.python-version[2]) || '' }}
         
     # Build wheel - unified command using PY_CMD
     - name: Build wheel
@@ -70,6 +73,9 @@ jobs:
         ${{ env.PY_CMD }} build.py bdist_wheel
       env:
         LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}:. # Add current dir to path
+        # Windows needs these for linking to Python libraries
+        GOPY_LIBDIR: ${{ runner.os == 'Windows' && format('{0}\libs', env.pythonLocation) || '' }}
+        GOPY_PYLIB: ${{ runner.os == 'Windows' && format('python{0}{1}', matrix.python-version[0], matrix.python-version[2]) || '' }}
 
     # Upload artifacts - same for all platforms
     - name: Upload wheel
