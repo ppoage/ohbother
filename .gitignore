@@ -1,0 +1,5 @@
+*/python
+python/
+*.venv
+*/.venv
+*.DS_STORE
