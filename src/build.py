@@ -7,6 +7,9 @@ from setuptools import setup, find_packages, Command
 from setuptools.command.build import build
 from wheel.bdist_wheel import bdist_wheel
 
+# Define project_root in the global scope
+project_root = os.path.dirname(os.getcwd())  # Go up one directory from src/
+
 class BuildGoBindings(Command):
     description = "Build Go bindings using gopy."
     user_options = []
@@ -14,20 +17,20 @@ class BuildGoBindings(Command):
     def initialize_options(self):
         pass
 
-    def finalize_options(self):
-        pass
-
     def run(self):
-        project_root = os.getcwd()
-        src_dir = os.path.join(project_root, "src")
-        if not os.path.isdir(src_dir):
-            raise SystemExit("src folder not found.")
-
-        # Change to src folder so go.mod and go files are found
-        os.chdir(src_dir)
-        print(f"Changed working directory to {src_dir}")
-
-        # Ensure ohbother package directory exists at the project root
+        # Use the global project_root
+        global project_root
+        src_dir = os.getcwd()  # We're already in src/
+    def run(self):
+        project_root = os.path.dirname(os.getcwd())  # Go up one directory from src/
+        src_dir = os.getcwd()  # We're already in src/
+        
+        print(f"Project root: {project_root}")
+        print(f"Source directory: {src_dir}")
+        
+        # No need to change to src folder, we're already there
+        
+        # Rest of the paths need to be relative to project_root
         ohbother_dir = os.path.join(project_root, "ohbother")
         if not os.path.exists(ohbother_dir):
             os.makedirs(ohbother_dir)
@@ -95,7 +98,6 @@ class BuildGoBindings(Command):
             ]
             print(f"Running gopy command from {os.getcwd()}: {' '.join(cmd)}")
             ret = subprocess.call(cmd, env=env, cwd=temp_dir)
-            os.chdir(src_dir)  # ensure we're in src even after temp dir is removed
 
         # Change back to project root for output copying
         os.chdir(project_root)
@@ -147,7 +149,7 @@ setup(
         "ohbother": ["*.so", "*.dll", "*.dylib", "*.pyd", "go/*.py", "go/*.so"],
     },
     description="High-performance UDP packet transmitter/receiver built in Go with Python bindings",
-    long_description=open("README.md", "r", encoding="utf-8").read() if os.path.exists("README.md") else "",
+    long_description=open(os.path.join(project_root, "README.md"), "r", encoding="utf-8").read() if os.path.exists(os.path.join(project_root, "README.md")) else "",
     long_description_content_type="text/markdown",
     classifiers=[
         "Programming Language :: Python :: 3",

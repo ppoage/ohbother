@@ -13,13 +13,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest] #, macos-latest, windows-latest]
-        python-version: ['3.11'] #, '3.12', '3.13'] # Will add 3.10 once fixed
+        os: [ubuntu-latest]
+        python-version: ['3.11']
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
@@ -29,22 +29,47 @@ jobs:
       with:
         go-version: '1.24'
 
-    - name: Run go mod tidy
-      run: cd src && go mod tidy
-
-    - name: Install gopy
-      run: go install github.com/go-python/gopy@latest
+    - name: Install Go tools
+      run: |
+        go install github.com/go-python/gopy@latest
+        go install golang.org/x/tools/cmd/goimports@latest
+        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+        
+    - name: Debug environment
+      run: |
+        which gopy
+        which goimports
+        echo $PATH
+        ls -la src/
 
     - name: Install build deps
       run: |
         python -m pip install --upgrade pip
         python -m pip install setuptools wheel PyBindGen
 
+    - name: Fix build.py for GitHub Actions
+      run: |
+        cat > patch.py << 'EOF'
+        #!/usr/bin/env python3
+        
+        with open('build.py', 'r') as f:
+          content = f.read()
+          
+        # Patch the gopy command to skip using "go build -v ."
+        patched = content.replace('subprocess.call(cmd, env=env, cwd=temp_dir)', 
+                                 'subprocess.call(cmd + ["-no-make"], env=env, cwd=temp_dir)')
+        
+                with open('build.py', 'w') as f:
+          f.write(patched)
+        EOF
+        
+        python patch.py
+
     - name: Build library
-      run: python build.py build
+      run: python src/build.py build
 
     - name: Build wheel
-      run: python build.py bdist_wheel
+      run: python src/build.py bdist_wheel
 
     - name: Upload wheel
       uses: actions/upload-artifact@v4
