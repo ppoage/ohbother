@@ -99,6 +99,13 @@ class BuildGoBindings(Command):
         print(f"Using Python interpreter: {python_path} (from {'environment' if 'PYTHON_VM_PATH' in os.environ else 'sys.executable'})")
         print(f"Platform: {sys.platform}, GOARCH: {env.get('GOARCH')}, GOOS: {env.get('GOOS')}")
         
+        # Add this debug code before running the gopy command:
+
+        # Print important environment variables for debugging
+        print(f"PYTHON_VM_PATH = {os.environ.get('PYTHON_VM_PATH', 'not set')}")
+        print(f"GOPY_LIBDIR = {os.environ.get('GOPY_LIBDIR', 'not set')}")
+        print(f"GOPY_PYLIB = {os.environ.get('GOPY_PYLIB', 'not set')}")
+
         # Use full paths for Windows to avoid directory confusion
         ohbother_output_dir = os.path.join(project_root, "ohbother")
 
