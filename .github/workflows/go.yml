@@ -47,16 +47,42 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install setuptools wheel PyBindGen
 
-    - name: Build library
+    # Linux: Add LD_LIBRARY_PATH
+    - name: Set LD_LIBRARY_PATH for Linux
+      if: runner.os == 'Linux'
+      run: echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:." >> $GITHUB_ENV
+
+    # Build library - Platform specific commands
+    - name: Build library (Linux/macOS)
+      if: runner.os != 'Windows'
       run: |
         cd src
         python build.py build
-
-    - name: Build wheel
+      env:
+        LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}:. # Add current dir to path
+        
+    - name: Build library (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cd src
+        py build.py build
+        
+    # Build wheel - Platform specific commands
+    - name: Build wheel (Linux/macOS)
+      if: runner.os != 'Windows'
       run: |
         cd src
         python build.py bdist_wheel
+      env:
+        LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}:. # Add current dir to path
+        
+    - name: Build wheel (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cd src
+        py build.py bdist_wheel
 
+    # Upload artifacts - same for all platforms
     - name: Upload wheel
       uses: actions/upload-artifact@v4
       with:
