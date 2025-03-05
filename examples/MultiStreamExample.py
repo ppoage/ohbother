@@ -14,7 +14,7 @@ if dev_env:
     from ohbother import Slice_byte
 else:
     from ohbother import ohbother as pooh
-    from ohbother.ohbother.go import Slice_byte
+    from ohbother.go import Slice_byte
 import random, time
 import threading
 
@@ -29,14 +29,16 @@ srcPort = 8443
 dstPort = 8443
 iface = "en0"
 bpf = f"udp and dst port {dstPort}"
-packetCount = 5000
-payloadSize = 60
-rateLimit = 1_000
+packetCount = 500000
+payloadSize = 600
+rateLimit = 200000
 SnapLen = 1500
 Promisc = True
-BufferSize = 4 * 1024 * 1024  # 4MB
+BufferSize = 1 * 4 * 1024  # or 4MB
 ImmediateMode = True
 recieveEnable = False
+workerCount = 4
+streamCount = 2
 
 def generate_pattern_payload(array_length: int, size: int, pattern_type="sequence") -> list[bytes]:
     """Generate an array of patterned payloads for testing."""
@@ -101,9 +103,9 @@ def process_results(sender, packet_count):
             packets_processed = result.Index + 1
             
             # Check for errors
-            if result.Error and result.Error != "":
-                errors += 1
-                print(f"Error on packet {result.Index}: {result.Error}")
+            # if result and result.Error != "":
+            #     errors += 1
+            #     print(f"Error on packet {result.Index}: {result.Error}")
         
         # Report progress periodically
         if current_time - last_report_time >= progress_interval:
@@ -156,9 +158,9 @@ def main():
     parser.add_argument("--size", type=int, default=payloadSize, help=f"Payload size in bytes (default: {payloadSize})")
     parser.add_argument("--rate", type=int, default=rateLimit, help=f"Rate limit in packets/sec (default: {rateLimit})")
     parser.add_argument("--pattern", default="sequence", help="Payload pattern (sequence, fixed:X, ascending, zeroes)")
-    parser.add_argument("--workers", type=int, default=8, help="Number of packet preparation workers (default: 8)")
-    parser.add_argument("--streams", type=int, default=4, help="Number of sending streams (default: 4)")
-    parser.add_argument("--buffers", type=int, default=1000, help="Channel buffer size (default: 1000)")
+    parser.add_argument("--workers", type=int, default=workerCount, help="Number of packet preparation workers (default: 8)")
+    parser.add_argument("--streams", type=int, default=streamCount, help="Number of sending streams (default: 4)")
+    parser.add_argument("--buffers", type=int, default=BufferSize, help="Channel buffer size (default: 1000)")
     parser.add_argument("--receive", action="store_true", help="Also start a packet receiver")
     args = parser.parse_args()
     
@@ -168,19 +170,9 @@ def main():
     print(f"Pattern: {args.pattern}, Receive: {args.receive}")
     
     # Create configuration
-    config = pooh.MakeConfig()
-    config.Packet.SrcMAC = srcMAC
-    config.Packet.DstMAC = dstMAC
-    config.Packet.SrcIP = srcIP
-    config.Packet.DstIP = dstIP
-    config.Packet.SrcPort = srcPort
-    config.Packet.DstPort = dstPort
-    
-    config.Pcap.Iface = args.interface
-    config.Pcap.SnapLen = SnapLen
-    config.Pcap.Promisc = Promisc
-    config.Pcap.BufferSize = BufferSize
-    config.Pcap.ImmediateMode = ImmediateMode
+    config = pooh.NewDefaultConfig(iface, srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, bpf, SnapLen, Promisc, BufferSize, ImmediateMode)
+
+
     
     # Enable Debug for verbose output
     config.Debug.Enabled = True
