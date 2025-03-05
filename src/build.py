@@ -263,34 +263,50 @@ class CustomBdistWheel(bdist_wheel):
         import tempfile
         import shutil
         
+        print(f"\n=== POST-PROCESSING WHEEL FILE: {wheel_path} ===")
+        
         # Create a temp directory to extract and rebuild wheel
         with tempfile.TemporaryDirectory() as tmp_dir:
             # Extract wheel
             with zipfile.ZipFile(wheel_path, 'r') as wheel_zip:
                 wheel_zip.extractall(tmp_dir)
+                print(f"Extracted wheel to temporary directory: {tmp_dir}")
             
             # Look for the double-nested ohbother/ohbother directory
             pkg_dir = os.path.join(tmp_dir, 'ohbother')
             nested_dir = os.path.join(pkg_dir, 'ohbother')
             
+            # Print directory structure for debugging
+            print("\nWheel Directory Structure:")
+            for root, dirs, files in os.walk(tmp_dir):
+                print(f"Dir: {os.path.relpath(root, tmp_dir)}")
+                for file in files:
+                    print(f"  - {file}")
+            
             if os.path.exists(nested_dir):
                 print(f"Found nested directory: {nested_dir}")
                 
-                # Fix the imports in ohbother.py
-                ohbother_py = os.path.join(nested_dir, 'ohbother.py')
-                if os.path.exists(ohbother_py):
-                    print(f"Fixing imports in {ohbother_py}")
-                    with open(ohbother_py, 'r') as f:
-                        content = f.read()
-                    
-                    # Replace relative imports with absolute imports
-                    content = content.replace('from . import _ohbother', 'from ohbother import _ohbother')
-                    content = content.replace('from . import go', 'from ohbother import go')
-                    
-                    with open(ohbother_py, 'w') as f:
-                        f.write(content)
+                # Check and fix all Python files in the nested directory
+                for filename in os.listdir(nested_dir):
+                    if filename.endswith('.py'):
+                        py_file = os.path.join(nested_dir, filename)
+                        print(f"Checking imports in {py_file}")
+                        
+                        with open(py_file, 'r') as f:
+                            content = f.read()
+                        
+                        # Replace relative imports with absolute imports
+                        orig_content = content
+                        content = content.replace('from . import _ohbother', 'from ohbother import _ohbother')
+                        content = content.replace('from . import go', 'from ohbother import go')
+                        
+                        if content != orig_content:
+                            print(f"Fixed imports in {filename}")
+                            with open(py_file, 'w') as f:
+                                f.write(content)
                 
                 # Move all files from nested directory to parent
+                print("Moving files from nested directory to parent:")
                 for filename in os.listdir(nested_dir):
                     src = os.path.join(nested_dir, filename)
                     dest = os.path.join(pkg_dir, filename)
@@ -309,8 +325,9 @@ class CustomBdistWheel(bdist_wheel):
                 # Remove empty nested directory
                 shutil.rmtree(nested_dir)
                 
-                # Update __init__.py in parent directory to import from correct location
+                # Create a proper __init__.py in parent directory
                 init_path = os.path.join(pkg_dir, '__init__.py')
+                print(f"Creating/updating __init__.py at {init_path}")
                 with open(init_path, 'w') as f:
                     f.write("# Auto-generated __init__.py\n")
                     f.write("from .ohbother import *  # Import all symbols from the Go bindings\n")
