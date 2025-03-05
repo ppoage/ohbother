@@ -124,13 +124,13 @@ class BuildGoBindings(Command):
         if sys.platform.startswith('win'):
             # Convert Windows path to use forward slashes for commandline tools
             
-            cmd.extend(["-output", "ohbother"])
+            cmd.extend(["-output", "lib"])
             # Also normalize Python path
             cmd.extend(["-vm", python_path.replace('\\', '/')])
             cmd.append("ohbother")
         else:
             # Unix systems can use relative paths
-            cmd.extend(["-output", "ohbother"])
+            cmd.extend(["-output", "lib"])
             cmd.extend(["-vm", python_path])
             cmd.append("ohbother")
         
@@ -141,7 +141,7 @@ class BuildGoBindings(Command):
         
         # Add this debug section to check what gopy actually generated
         print("\n=== CHECKING GOPY OUTPUT ===")
-        output_dir = os.path.join(project_root, "ohbother")
+        output_dir = os.path.join(project_root, "lib")
         print(f"Checking directory: {output_dir}")
         if os.path.exists(output_dir):
             files = os.listdir(output_dir)

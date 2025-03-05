@@ -8,7 +8,7 @@ import threading
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Dev Imports
-dev_env = True
+dev_env = False
 if dev_env:
     from ..src.ohbother.ohbother import ohbother as pooh
     from ohbother import Slice_byte
@@ -31,7 +31,7 @@ iface = "en0"
 bpf = f"udp and dst port {dstPort}"
 packetCount = 5000
 payloadSize = 60
-rateLimit = 1_000_000
+rateLimit = 1_000
 SnapLen = 1500
 Promisc = True
 BufferSize = 4 * 1024 * 1024  # 4MB
