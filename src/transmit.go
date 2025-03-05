@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/gopacket/gopacket"
@@ -441,4 +442,425 @@ func (psr *PacketSendResult) GetError() string {
 		return ""
 	}
 	return psr.Error.Error()
+}
+
+// MultiStreamConfig holds configuration for the multi-stream sender
+type MultiStreamConfig struct {
+	PacketWorkers  int // Number of workers for packet preparation (default 8)
+	StreamCount    int // Number of parallel sending streams (default 4)
+	ChannelBuffers int // Size of channel buffers (default 1000)
+	ReportInterval int // How often to report progress (packets, default 1000)
+}
+
+// MultiStreamSender provides high-performance parallel packet sending while maintaining order
+type MultiStreamSender struct {
+	Cfg           *Config
+	StreamConfig  *MultiStreamConfig
+	RateLimit     int
+	Payloads      [][]byte
+	progressCh    chan *PacketSendResult
+	isComplete    bool
+	workerDone    chan bool
+	schedulerDone chan bool
+	cancelCtx     context.Context
+	cancelFunc    context.CancelFunc
+}
+
+// NewMultiStreamSender creates a high-performance sender with worker pools
+func NewMultiStreamSender(cfg *Config, rateLimit int) *MultiStreamSender {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Default configuration
+	streamConfig := &MultiStreamConfig{
+		PacketWorkers:  8,
+		StreamCount:    4,
+		ChannelBuffers: 1000,
+		ReportInterval: 1000,
+	}
+
+	return &MultiStreamSender{
+		Cfg:           cfg,
+		RateLimit:     rateLimit,
+		StreamConfig:  streamConfig,
+		Payloads:      make([][]byte, 0),
+		progressCh:    make(chan *PacketSendResult, 100),
+		workerDone:    make(chan bool),
+		schedulerDone: make(chan bool),
+		cancelCtx:     ctx,
+		cancelFunc:    cancel,
+	}
+}
+
+// SetStreamConfig configures the multi-stream sender parameters
+func (ms *MultiStreamSender) SetStreamConfig(packetWorkers, streamCount, channelBuffers, reportInterval int) {
+	if packetWorkers > 0 {
+		ms.StreamConfig.PacketWorkers = packetWorkers
+	}
+	if streamCount > 0 {
+		ms.StreamConfig.StreamCount = streamCount
+	}
+	if channelBuffers > 0 {
+		ms.StreamConfig.ChannelBuffers = channelBuffers
+	}
+	if reportInterval > 0 {
+		ms.StreamConfig.ReportInterval = reportInterval
+	}
+}
+
+// AddPayload adds a single payload to the sender
+func (ms *MultiStreamSender) AddPayload(payload []byte) {
+	if payload != nil {
+		// Make a copy for memory safety
+		safeCopy := make([]byte, len(payload))
+		copy(safeCopy, payload)
+		ms.Payloads = append(ms.Payloads, safeCopy)
+	}
+}
+
+// preparedPacket represents a packet ready for transmission
+type preparedPacket struct {
+	originalIndex int    // Original position in sequence
+	packetBytes   []byte // Serialized packet data
+	eth           layers.Ethernet
+	ip            layers.IPv4
+	udp           layers.UDP
+	payload       []byte
+}
+
+// Send initiates the high-performance transmission process
+func (ms *MultiStreamSender) Send() error {
+	if len(ms.Payloads) == 0 {
+		return fmt.Errorf("no payloads to send")
+	}
+
+	totalPackets := len(ms.Payloads)
+	LogDebug("MultiStreamSender.Send() called with %d payloads using %d prep workers and %d streams",
+		totalPackets, ms.StreamConfig.PacketWorkers, ms.StreamConfig.StreamCount)
+
+	// Create channels for the pipeline
+	rawCh := make(chan struct {
+		index   int
+		payload []byte
+	}, ms.StreamConfig.ChannelBuffers)
+	prepCh := make(chan *preparedPacket, ms.StreamConfig.ChannelBuffers)
+	sendCh := make(chan *preparedPacket, ms.StreamConfig.ChannelBuffers)
+
+	// Start packet preparation workers
+	var wg sync.WaitGroup
+	for i := 0; i < ms.StreamConfig.PacketWorkers; i++ {
+		wg.Add(1)
+		go func(workerID int) {
+			defer wg.Done()
+			ms.preparePackets(rawCh, prepCh)
+		}(i)
+	}
+
+	// Start scheduler to maintain ordering
+	go ms.schedulePackets(prepCh, sendCh, totalPackets)
+
+	// Start sender streams
+	handles := make([]*pcap.Handle, ms.StreamConfig.StreamCount)
+	var sendWg sync.WaitGroup
+	for i := 0; i < ms.StreamConfig.StreamCount; i++ {
+		handle, err := pcap.OpenLive(ms.Cfg.Pcap.Iface, ms.Cfg.Pcap.SnapLen, ms.Cfg.Pcap.Promisc, pcap.BlockForever)
+		if err != nil {
+			ms.cancelFunc() // Cancel everything
+			ms.progressCh <- &PacketSendResult{
+				Index:      0,
+				TotalCount: totalPackets,
+				Error:      fmt.Errorf("stream %d: error opening interface: %v", i, err),
+			}
+			close(ms.progressCh)
+			ms.isComplete = true
+			return err
+		}
+		handles[i] = handle
+
+		sendWg.Add(1)
+		go func(streamID int, handle *pcap.Handle) {
+			defer sendWg.Done()
+			ms.sendStream(streamID, handle, sendCh)
+		}(i, handle)
+	}
+
+	// Feed data into the pipeline
+	startTime := time.Now()
+	go func() {
+		for i, payload := range ms.Payloads {
+			select {
+			case <-ms.cancelCtx.Done():
+				return
+			case rawCh <- struct {
+				index   int
+				payload []byte
+			}{i, payload}:
+				// Successfully sent to channel
+			}
+		}
+		close(rawCh) // No more data to process
+	}()
+
+	// Wait for preparation to complete
+	go func() {
+		wg.Wait()
+		close(prepCh) // No more prepared packets
+	}()
+
+	// Wait for scheduler to complete
+	go func() {
+		<-ms.schedulerDone
+		close(sendCh) // No more packets to send
+	}()
+
+	// Wait for all sends to complete
+	go func() {
+		sendWg.Wait()
+
+		// Clean up resources
+		for _, handle := range handles {
+			handle.Close()
+		}
+
+		// Calculate total elapsed time
+		totalElapsed := time.Since(startTime).Seconds()
+
+		// Send a final result with the total elapsed time
+		ms.progressCh <- &PacketSendResult{
+			Index:      totalPackets - 1,
+			TotalCount: totalPackets,
+			Elapsed:    totalElapsed,
+			Error:      nil,
+		}
+
+		// Signal completion
+		close(ms.progressCh)
+		ms.isComplete = true
+	}()
+
+	return nil
+}
+
+// preparePackets deserializes packets in parallel while preserving order information
+func (ms *MultiStreamSender) preparePackets(in <-chan struct {
+	index   int
+	payload []byte
+}, out chan<- *preparedPacket) {
+	for item := range in {
+		// Check for cancellation
+		select {
+		case <-ms.cancelCtx.Done():
+			return
+		default:
+			// Continue processing
+		}
+
+		// Skip packets that are too small
+		minPayloadSize := 18
+		if len(item.payload) < minPayloadSize {
+			ms.progressCh <- &PacketSendResult{
+				Index:      item.index,
+				TotalCount: len(ms.Payloads),
+				Error: fmt.Errorf("payload size %d is below minimum required size of %d bytes",
+					len(item.payload), minPayloadSize),
+			}
+			continue
+		}
+
+		// Prepare layers
+		eth := layers.Ethernet{
+			SrcMAC:       ms.Cfg.Packet.SrcMAC,
+			DstMAC:       ms.Cfg.Packet.DstMAC,
+			EthernetType: layers.EthernetTypeIPv4,
+		}
+
+		ip := layers.IPv4{
+			Version:  4,
+			IHL:      5,
+			TTL:      64,
+			Protocol: layers.IPProtocolUDP,
+			SrcIP:    net.ParseIP(ms.Cfg.Packet.SrcIP),
+			DstIP:    net.ParseIP(ms.Cfg.Packet.DstIP),
+		}
+
+		udp := layers.UDP{
+			SrcPort: layers.UDPPort(ms.Cfg.Packet.SrcPort),
+			DstPort: layers.UDPPort(ms.Cfg.Packet.DstPort),
+		}
+
+		// Compute UDP checksum over the IPv4 pseudo-header
+		if err := udp.SetNetworkLayerForChecksum(&ip); err != nil {
+			ms.progressCh <- &PacketSendResult{
+				Index:      item.index,
+				TotalCount: len(ms.Payloads),
+				Error:      fmt.Errorf("failed to set network layer for checksum: %v", err),
+			}
+			continue
+		}
+
+		// Serialize the packet
+		buffer := gopacket.NewSerializeBuffer()
+		opts := gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}
+		if err := gopacket.SerializeLayers(buffer, opts,
+			&eth,
+			&ip,
+			&udp,
+			gopacket.Payload(item.payload),
+		); err != nil {
+			ms.progressCh <- &PacketSendResult{
+				Index:      item.index,
+				TotalCount: len(ms.Payloads),
+				Error:      fmt.Errorf("failed to serialize packet: %v", err),
+			}
+			continue
+		}
+
+		// Create prepared packet
+		packet := &preparedPacket{
+			originalIndex: item.index,
+			packetBytes:   buffer.Bytes(),
+			eth:           eth,
+			ip:            ip,
+			udp:           udp,
+			payload:       item.payload,
+		}
+
+		// Send to scheduler
+		select {
+		case <-ms.cancelCtx.Done():
+			return
+		case out <- packet:
+			// Successfully sent
+		}
+	}
+}
+
+// schedulePackets ensures packets are sent in the correct order
+func (ms *MultiStreamSender) schedulePackets(in <-chan *preparedPacket, out chan<- *preparedPacket, total int) {
+	defer close(ms.schedulerDone)
+
+	// Use priority queue to ensure ordering
+	pending := make(map[int]*preparedPacket)
+	nextIndex := 0
+
+	for packet := range in {
+		// Check for cancellation
+		select {
+		case <-ms.cancelCtx.Done():
+			return
+		default:
+			// Continue processing
+		}
+
+		// Store the packet
+		pending[packet.originalIndex] = packet
+
+		// Send packets in order when possible
+		for {
+			packet, exists := pending[nextIndex]
+			if !exists {
+				break // Wait for the next packet in sequence
+			}
+
+			select {
+			case <-ms.cancelCtx.Done():
+				return
+			case out <- packet:
+				// Packet sent, remove from pending and advance
+				delete(pending, nextIndex)
+				nextIndex++
+			}
+		}
+
+		// Report progress occasionally
+		if nextIndex > 0 && nextIndex%ms.StreamConfig.ReportInterval == 0 {
+			ms.progressCh <- &PacketSendResult{
+				Index:      nextIndex - 1,
+				TotalCount: total,
+				Error:      nil,
+			}
+		}
+	}
+
+	// Process any remaining packets in order
+	for nextIndex < total {
+		packet, exists := pending[nextIndex]
+		if !exists {
+			// This shouldn't happen if all packets were processed
+			break
+		}
+
+		select {
+		case <-ms.cancelCtx.Done():
+			return
+		case out <- packet:
+			delete(pending, nextIndex)
+			nextIndex++
+		}
+	}
+}
+
+// sendStream handles sending packets from a single stream
+func (ms *MultiStreamSender) sendStream(streamID int, handle *pcap.Handle, in <-chan *preparedPacket) {
+	var limiter *rate.Limiter
+	if ms.RateLimit > 0 {
+		// Each stream gets its proportional share of the total rate
+		streamRate := ms.RateLimit / ms.StreamConfig.StreamCount
+		if streamRate < 1 {
+			streamRate = 1
+		}
+		limiter = rate.NewLimiter(rate.Limit(streamRate), 1)
+	}
+
+	for packet := range in {
+		// Check for cancellation
+		select {
+		case <-ms.cancelCtx.Done():
+			return
+		default:
+			// Continue processing
+		}
+
+		// Apply rate limiting if needed
+		if limiter != nil {
+			if err := limiter.Wait(ms.cancelCtx); err != nil {
+				if err != context.Canceled {
+					ms.progressCh <- &PacketSendResult{
+						Index:      packet.originalIndex,
+						TotalCount: len(ms.Payloads),
+						Error:      fmt.Errorf("stream %d: rate limiter error: %v", streamID, err),
+					}
+				}
+				continue
+			}
+		}
+
+		// Send the packet
+		if err := handle.WritePacketData(packet.packetBytes); err != nil {
+			ms.progressCh <- &PacketSendResult{
+				Index:      packet.originalIndex,
+				TotalCount: len(ms.Payloads),
+				Error:      fmt.Errorf("stream %d: failed to send packet: %v", streamID, err),
+			}
+			continue
+		}
+	}
+}
+
+// GetNextResult returns the result of the next packet send operation
+func (ms *MultiStreamSender) GetNextResult() *PacketSendResult {
+	result, ok := <-ms.progressCh
+	if !ok {
+		return nil // Channel closed
+	}
+	return result
+}
+
+// IsComplete returns true when all packets have been sent
+func (ms *MultiStreamSender) IsComplete() bool {
+	return ms.isComplete
+}
+
+// Cancel stops all sending operations
+func (ms *MultiStreamSender) Cancel() {
+	ms.cancelFunc()
 }
