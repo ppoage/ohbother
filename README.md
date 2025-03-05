@@ -5,7 +5,7 @@ A high-performance UDP packet transmitter/receiver built in Go with Python bindi
 ## Installation
 
 ```bash
-pip install ohbother
+(future work) pip install ohbother
 ```
 
 You can also build from source:
@@ -27,14 +27,15 @@ from ohbother.go import Slice_byte
 import time
 
 # Network configuration
-srcMAC = "1a:c0:9f:b8:84:45"
-dstMAC = "3c:7c:3f:86:19:10"
-srcIP = "192.168.50.105"
-dstIP = "192.168.50.1"
-srcPort = 8443
-dstPort = 8443
-iface = "en0"
-bpf = f"udp and dst port {dstPort}"
+# Network configuration
+iface = "en0"  # or "eth0" on Linux, "Ethernet" on Windows
+srcMAC = "00:00:00:00:00:00"  # Your source MAC (defaults to interface MAC)
+dstMAC = "ff:ff:ff:ff:ff:ff"  # Destination MAC (defaults to broadcast)
+srcIP = "0.0.0.0"  # Source IP (defaults to interface IP)
+dstIP = "255.255.255.255"  # Destination IP (defaults to broadcast)
+srcPort = 12345  # Source UDP port
+dstPort = 12345  # Destination UDP port
+bpf = f"udp and dst port {dstPort}"  # Berkeley Packet Filter
 
 # Create a configuration object
 config = pooh.NewDefaultConfig(
