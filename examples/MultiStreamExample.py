@@ -13,7 +13,7 @@ if dev_env:
     from ..src.ohbother.ohbother import ohbother as pooh
     from ohbother import Slice_byte
 else:
-    from ohbother.ohbother import ohbother as pooh
+    from ohbother import ohbother as pooh
     from ohbother.ohbother.go import Slice_byte
 import random, time
 import threading
