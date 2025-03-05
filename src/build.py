@@ -247,6 +247,81 @@ class CustomBdistWheel(bdist_wheel):
         
         # Run the standard wheel building
         bdist_wheel.run(self)  # Use parent class directly, not super()
+        
+        # Fix the double-nested package structure if needed
+        wheel_dir = self.dist_dir
+        if os.path.exists(wheel_dir):
+            for wheel_file in os.listdir(wheel_dir):
+                if wheel_file.endswith('.whl'):
+                    print(f"Post-processing wheel: {wheel_file}")
+                    wheel_path = os.path.join(wheel_dir, wheel_file)
+                    self._fix_nested_imports(wheel_path)
+                
+    def _fix_nested_imports(self, wheel_path):
+        """Fix double-nested imports in the wheel file."""
+        import zipfile
+        import tempfile
+        import shutil
+        
+        # Create a temp directory to extract and rebuild wheel
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # Extract wheel
+            with zipfile.ZipFile(wheel_path, 'r') as wheel_zip:
+                wheel_zip.extractall(tmp_dir)
+            
+            # Look for the double-nested ohbother/ohbother directory
+            pkg_dir = os.path.join(tmp_dir, 'ohbother')
+            nested_dir = os.path.join(pkg_dir, 'ohbother')
+            
+            if os.path.exists(nested_dir):
+                print(f"Found nested directory: {nested_dir}")
+                
+                # Fix the imports in ohbother.py
+                ohbother_py = os.path.join(nested_dir, 'ohbother.py')
+                if os.path.exists(ohbother_py):
+                    print(f"Fixing imports in {ohbother_py}")
+                    with open(ohbother_py, 'r') as f:
+                        content = f.read()
+                    
+                    # Replace relative imports with absolute imports
+                    content = content.replace('from . import _ohbother', 'from ohbother import _ohbother')
+                    content = content.replace('from . import go', 'from ohbother import go')
+                    
+                    with open(ohbother_py, 'w') as f:
+                        f.write(content)
+                
+                # Move all files from nested directory to parent
+                for filename in os.listdir(nested_dir):
+                    src = os.path.join(nested_dir, filename)
+                    dest = os.path.join(pkg_dir, filename)
+                    print(f"Moving {src} to {dest}")
+                    
+                    # Remove destination if it exists to avoid conflicts
+                    if os.path.exists(dest):
+                        if os.path.isdir(dest):
+                            shutil.rmtree(dest)
+                        else:
+                            os.remove(dest)
+                    
+                    # Move file or directory
+                    shutil.move(src, dest)
+                
+                # Remove empty nested directory
+                shutil.rmtree(nested_dir)
+                
+                # Update __init__.py in parent directory to import from correct location
+                init_path = os.path.join(pkg_dir, '__init__.py')
+                with open(init_path, 'w') as f:
+                    f.write("# Auto-generated __init__.py\n")
+                    f.write("from .ohbother import *  # Import all symbols from the Go bindings\n")
+            
+            # Rebuild the wheel
+            with zipfile.ZipFile(wheel_path, 'w', compression=zipfile.ZIP_DEFLATED) as new_wheel:
+                for root, dirs, files in os.walk(tmp_dir):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, tmp_dir)
+                        new_wheel.write(file_path, arcname)
 
 # Read README from project root, not src directory
 readme_path = os.path.join(project_root, "README.md")
