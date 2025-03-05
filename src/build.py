@@ -7,6 +7,10 @@ from setuptools import setup, find_packages, Command
 from setuptools.command.build import build
 from wheel.bdist_wheel import bdist_wheel
 
+# Define constants for package name and directories
+PACKAGE_NAME = "ohbother"
+OUTPUT_DIR = "lib"  # Changed from "ohbother" to "lib"
+
 # Define project_root as one directory above src/
 project_root = os.path.dirname(os.getcwd())
 
@@ -23,14 +27,14 @@ class BuildGoBindings(Command):
     def run(self):
         print(f"Current working directory: {os.getcwd()}")
         
-        # Create ohbother directory in project root
-        ohbother_dir = os.path.join(project_root, "ohbother")
-        if not os.path.exists(ohbother_dir):
-            os.makedirs(ohbother_dir)
-            print(f"Created directory: {ohbother_dir}")
+        # Create output directory in project root
+        output_path = os.path.join(project_root, OUTPUT_DIR)
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
+            print(f"Created directory: {output_path}")
         
         # Initialize module
-        init_path = os.path.join(ohbother_dir, "__init__.py")
+        init_path = os.path.join(output_path, "__init__.py")
         if not os.path.exists(init_path):
             with open(init_path, "w") as f:
                 f.write("# Auto-generated __init__.py\n")
@@ -79,8 +83,6 @@ class BuildGoBindings(Command):
             env["GOARCH"] = "amd64"
             env["GOOS"] = "linux"
             env["CC"] = "gcc"
-        
-        # Update the python_path handling for Windows:
 
         # Use environment var if set (for CI), otherwise use sys.executable (for local dev)
         python_path = os.environ.get('PYTHON_VM_PATH', sys.executable)
@@ -103,36 +105,29 @@ class BuildGoBindings(Command):
         print(f"Using Python interpreter: {python_path} (from {'environment' if 'PYTHON_VM_PATH' in os.environ else 'sys.executable'})")
         print(f"Platform: {sys.platform}, GOARCH: {env.get('GOARCH')}, GOOS: {env.get('GOOS')}")
         
-        # Add this debug code before running the gopy command:
-
         # Print important environment variables for debugging
         print(f"PYTHON_VM_PATH = {os.environ.get('PYTHON_VM_PATH', 'not set')}")
         print(f"GOPY_LIBDIR = {os.environ.get('GOPY_LIBDIR', 'not set')}")
         print(f"GOPY_PYLIB = {os.environ.get('GOPY_PYLIB', 'not set')}")
 
-        # Use full paths for Windows to avoid directory confusion
-        ohbother_output_dir = os.path.join(project_root, "ohbother")
-
         # Run gopy command with platform-specific paths
         cmd = [
             "gopy",
             "pkg",
-            "-name", "ohbother"
+            "-name", PACKAGE_NAME
         ]
 
         # Use absolute paths on Windows
         if sys.platform.startswith('win'):
-            # Convert Windows path to use forward slashes for commandline tools
-            
-            cmd.extend(["-output", "lib"])
+            cmd.extend(["-output", OUTPUT_DIR])
             # Also normalize Python path
             cmd.extend(["-vm", python_path.replace('\\', '/')])
-            cmd.append("ohbother")
+            cmd.append(PACKAGE_NAME)
         else:
             # Unix systems can use relative paths
-            cmd.extend(["-output", "lib"])
+            cmd.extend(["-output", OUTPUT_DIR])
             cmd.extend(["-vm", python_path])
-            cmd.append("ohbother")
+            cmd.append(PACKAGE_NAME)
         
         print(f"Running gopy command: {' '.join(cmd)}")
         ret = subprocess.call(cmd, env=env)
@@ -141,17 +136,17 @@ class BuildGoBindings(Command):
         
         # Add this debug section to check what gopy actually generated
         print("\n=== CHECKING GOPY OUTPUT ===")
-        output_dir = os.path.join(project_root, "lib")
-        print(f"Checking directory: {output_dir}")
-        if os.path.exists(output_dir):
-            files = os.listdir(output_dir)
+        output_path = os.path.join(project_root, OUTPUT_DIR)
+        print(f"Checking directory: {output_path}")
+        if os.path.exists(output_path):
+            files = os.listdir(output_path)
             print(f"Files found: {files}")
             
             # Check for binary files specifically
             binaries = [f for f in files if f.endswith('.so') or f.endswith('.pyd') or f.endswith('.dll') or f.endswith('.dylib')]
             print(f"Binary files found: {binaries}")
         else:
-            print(f"ERROR: Output directory {output_dir} does not exist!")
+            print(f"ERROR: Output directory {output_path} does not exist!")
 
 class CustomBuild(build):
     def run(self):
@@ -170,6 +165,13 @@ class CustomBdistWheel(bdist_wheel):
         
         # Debug output
         print(f"Original wheel tags: python_tag={python_tag}, abi_tag={abi_tag}, plat_tag={plat_tag}")
+        
+        # Override Python tag and ABI tag to use specific Python version
+        py_version = sys.version_info
+        python_tag = f"cp{py_version.major}{py_version.minor}"  # e.g., cp310 for Python 3.10
+        abi_tag = f"cp{py_version.major}{py_version.minor}"     # Match ABI tag to Python version
+        
+        print(f"Using Python-specific tags: python_tag={python_tag}, abi_tag={abi_tag}")
         
         # Override platform tag for Mac if needed
         if sys.platform == 'darwin':
@@ -190,37 +192,37 @@ class CustomBdistWheel(bdist_wheel):
         self.run_command("build_go")
         
         # Get source and destination directories
-        ohbother_dir = os.path.join(project_root, "ohbother")
+        output_path = os.path.join(project_root, OUTPUT_DIR)
         build_lib = self.get_finalized_command('build').build_lib
-        build_ohbother_dir = os.path.join(build_lib, "ohbother")
+        build_output_path = os.path.join(build_lib, PACKAGE_NAME)
         
         print(f"\n=== PACKAGING FILES FOR WHEEL ===")
-        print(f"Source dir: {ohbother_dir}")
-        print(f"Target dir: {build_ohbother_dir}")
+        print(f"Source dir: {output_path}")
+        print(f"Target dir: {build_output_path}")
         
         # Create destination directory if needed
-        if not os.path.exists(build_ohbother_dir):
-            os.makedirs(build_ohbother_dir)
-            print(f"Created build directory: {build_ohbother_dir}")
+        if not os.path.exists(build_output_path):
+            os.makedirs(build_output_path)
+            print(f"Created build directory: {build_output_path}")
         
         # Copy files from the source to the build directory
-        if os.path.exists(ohbother_dir) and os.path.isdir(ohbother_dir):
-            print(f"Copying files from {ohbother_dir} to {build_ohbother_dir}")
+        if os.path.exists(output_path) and os.path.isdir(output_path):
+            print(f"Copying files from {output_path} to {build_output_path}")
             
             # Use distutils copy_tree for more reliable copying
             from distutils.dir_util import copy_tree
-            copy_tree(ohbother_dir, build_ohbother_dir)
+            copy_tree(output_path, build_output_path)
             
             # Verify the files were copied
-            if os.path.exists(build_ohbother_dir):
-                files = os.listdir(build_ohbother_dir)
+            if os.path.exists(build_output_path):
+                files = os.listdir(build_output_path)
                 print(f"Files copied to wheel build dir: {files}")
                 
                 # Check for binary files specifically
                 binaries = [f for f in files if f.endswith('.so') or f.endswith('.pyd') or f.endswith('.dll') or f.endswith('.dylib')]
                 print(f"Binary files in wheel: {binaries}")
         else:
-            print(f"ERROR: Source directory {ohbother_dir} does not exist or is not a directory!")
+            print(f"ERROR: Source directory {output_path} does not exist or is not a directory!")
         
         # Run the standard wheel building
         bdist_wheel.run(self)  # Use parent class directly, not super()
@@ -233,11 +235,11 @@ if os.path.exists(readme_path):
         long_description = fh.read()
 
 setup(
-    name="ohbother",
+    name=PACKAGE_NAME,
     version="0.1",
-    packages=["ohbother"],  # Explicitly list the package instead of using find_packages()
+    packages=[PACKAGE_NAME],  # Explicitly list the package instead of using find_packages()
     package_data={
-        "ohbother": ["*", "**/*", "*.so", "*.dll", "*.dylib", "*.pyd", "*.py", 
+        PACKAGE_NAME: ["*", "**/*", "*.so", "*.dll", "*.dylib", "*.pyd", "*.py", 
                     "_obj/*", "_obj/**/*", "go/*", "go/**/*"],
     },
     include_package_data=True,
