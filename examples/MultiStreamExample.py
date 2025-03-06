@@ -31,6 +31,7 @@ ImmediateMode = True
 workerCount = 12
 streamCount = 6
 
+
 def _generate_single_payload(i, size, pattern_type):
     """Helper function to generate a single payload for multiprocessing"""
     if pattern_type == "sequence":
@@ -38,7 +39,14 @@ def _generate_single_payload(i, size, pattern_type):
     elif pattern_type.startswith("fixed:"):
         value_str = pattern_type.split(":")[1]
         try:
-            value = int(value_str, 16) if (value_str.startswith("0x") or all(c in "0123456789ABCDEFabcdef" for c in value_str)) else int(value_str)
+            value = (
+                int(value_str, 16)
+                if (
+                    value_str.startswith("0x")
+                    or all(c in "0123456789ABCDEFabcdef" for c in value_str)
+                )
+                else int(value_str)
+            )
         except ValueError:
             value = 0
         raw_bytes = bytes([value & 0xFF] * size)
@@ -48,73 +56,87 @@ def _generate_single_payload(i, size, pattern_type):
         raw_bytes = bytes(size)  # More efficient than bytes([0] * size)
     else:
         raw_bytes = bytes([j % 256 for j in range(size)])
-    
+
     return raw_bytes
 
-def generate_pattern_payload(array_length, size, pattern_type="sequence", num_workers=8):
+
+def generate_pattern_payload(
+    array_length, size, pattern_type="sequence", num_workers=8
+):
     """Generate payloads in parallel using multiprocessing"""
     with multiprocessing.Pool(processes=num_workers) as pool:
         raw_payloads = pool.map(
             partial(_generate_single_payload, size=size, pattern_type=pattern_type),
-            range(array_length)
+            range(array_length),
         )
-    
+
     return [Slice_byte.from_bytes(payload) for payload in raw_payloads]
+
 
 def process_results(sender, packet_count):
     """Process and display results from the sender."""
     start_time = time.time()
     last_report_time = start_time
     progress_interval = 1.0
-    
+
     packets_processed = 0
     errors = 0
     last_packets = 0
-    
+
     while not sender.IsComplete():
         current_time = time.time()
-        
+
         result = sender.GetNextResult()
         if result:
             packets_processed = result.Index + 1
-        
+
         if current_time - last_report_time >= progress_interval:
             elapsed = current_time - start_time
             pps = packets_processed / elapsed if elapsed > 0 else 0
-            interval_pps = (packets_processed - last_packets) / progress_interval if progress_interval > 0 else 0
-            percent = (packets_processed / packet_count) * 100 if packet_count > 0 else 0
-            
-            print(f"Progress: {packets_processed}/{packet_count} ({percent:.1f}%) | Rate: {pps:.0f} pps avg, {interval_pps:.0f} pps current | Errors: {errors}")
-            
+            interval_pps = (
+                (packets_processed - last_packets) / progress_interval
+                if progress_interval > 0
+                else 0
+            )
+            percent = (
+                (packets_processed / packet_count) * 100 if packet_count > 0 else 0
+            )
+
+            print(
+                f"Progress: {packets_processed}/{packet_count} ({percent:.1f}%) | Rate: {pps:.0f} pps avg, {interval_pps:.0f} pps current | Errors: {errors}"
+            )
+
             last_report_time = current_time
             last_packets = packets_processed
-            
+
         time.sleep(0.005)
-    
+
     final_elapsed = time.time() - start_time
     final_pps = packet_count / final_elapsed if final_elapsed > 0 else 0
-    
+
     print("\nTransmission complete!")
     print(f"Total packets: {packet_count}")
     print(f"Total time: {final_elapsed:.2f} seconds")
     print(f"Average rate: {final_pps:.0f} packets per second")
     print(f"Errors: {errors}")
 
+
 def start_receiver(config):
     """Start a receiver in a separate thread."""
     receiver = pooh.NewReceiver(config)
-    
+
     def receive_loop():
         print("Starting receiver...")
         while True:
             packet = receiver.GetNextPacket()
             if not packet:
                 break
-    
+
     thread = threading.Thread(target=receive_loop)
     thread.daemon = True
     thread.start()
     return receiver, thread
+
 
 def run_multistream(
     interface=iface,
@@ -126,53 +148,68 @@ def run_multistream(
     streams=streamCount,
     buffers=BufferSize,
     receive_enable=False,
-    gen_workers=8
+    gen_workers=8,
 ):
     print("MultiStream UDP Packet Sender")
     print(f"Interface: {interface}, Packets: {count}, Size: {size}, Rate: {rate}")
     print(f"Workers: {workers}, Streams: {streams}, Buffers: {buffers}")
-    
-    config = pooh.NewDefaultConfig(interface, srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, 
-                                   bpf, SnapLen, Promisc, buffers, ImmediateMode)
-    
+
+    config = pooh.NewDefaultConfig(
+        interface,
+        srcMAC,
+        dstMAC,
+        srcIP,
+        dstIP,
+        srcPort,
+        dstPort,
+        bpf,
+        SnapLen,
+        Promisc,
+        buffers,
+        ImmediateMode,
+    )
+
     # Optional debugging
     config.Debug.Enabled = True
     config.Debug.Level = 3
-    
+
     # Start receiver if requested
     receiver = None
     if receive_enable:
         config.Pcap.Filter = bpf
         receiver, _ = start_receiver(config)
-    
+
     # Generate payloads (optimized with multiprocessing)
     print(f"Generating {count} payloads of size {size} with pattern '{pattern}'...")
     start_gen = time.time()
     payloads = generate_pattern_payload(count, size, pattern, gen_workers)
     gen_time = time.time() - start_gen
-    print(f"Generated {len(payloads)} payloads in {gen_time:.2f}s ({count/gen_time:.0f} payloads/sec)")
-    
+    print(
+        f"Generated {len(payloads)} payloads in {gen_time:.2f}s ({count/gen_time:.0f} payloads/sec)"
+    )
+
     # Create and configure sender
     sender = pooh.NewMultiStreamSender(config, rate)
     sender.SetStreamConfig(workers, streams, buffers, 10000)
-    
+
     # Add payloads to the sender
     print("Adding payloads to sender...")
     for payload in payloads:
         sender.AddPayload(payload)
-    
+
     # Send packets
     print(f"Starting transmission of {count} packets...")
     sender.Send()
-    
+
     # Process results
     process_results(sender, count)
-    
+
     # Clean up
     if receiver:
         receiver.Close()
-    
+
     return sender
+
 
 if __name__ == "__main__":
     run_multistream()
