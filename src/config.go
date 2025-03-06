@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"time"
+
+	"github.com/gopacket/gopacket/pcap"
 )
 
 // Config holds both the packet header settings and the pcap settings.
@@ -131,10 +133,10 @@ func NewDefaultConfig(iface, srcMAC, dstMAC, srcIP, dstIP string, srcPort, dstPo
 		},
 		Pcap: &PcapConfig{
 			Iface:         iface,
-			SnapLen:       1500,
+			SnapLen:       65536,
 			Promisc:       true,
-			Timeout:       10 * time.Millisecond,
-			BufferSize:    4 * 1024 * 1024, // 4MB
+			Timeout:       pcap.BlockForever,
+			BufferSize:    2 * 1024 * 1024, // 4MB 2_097_152
 			ImmediateMode: true,
 		},
 		Debug: DebugOptions{

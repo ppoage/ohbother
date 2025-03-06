@@ -29,16 +29,16 @@ srcPort = 8443
 dstPort = 8443
 iface = "en0"
 bpf = f"udp and dst port {dstPort}"
-packetCount = 500000
-payloadSize = 600
-rateLimit = 200000
+packetCount = 1000000
+payloadSize = 1458
+rateLimit = 0
 SnapLen = 1500
 Promisc = True
-BufferSize = 1 * 4 * 1024  # or 4MB
+BufferSize = 1 * 1024 * 1024  # or 4MB
 ImmediateMode = True
 recieveEnable = False
-workerCount = 4
-streamCount = 2
+workerCount = 12
+streamCount = 6
 
 def generate_pattern_payload(array_length: int, size: int, pattern_type="sequence") -> list[bytes]:
     """Generate an array of patterned payloads for testing."""
@@ -194,7 +194,7 @@ def main():
     sender = pooh.NewMultiStreamSender(config, args.rate)
     
     # Configure the stream parameters
-    sender.SetStreamConfig(args.workers, args.streams, args.buffers, 1000)
+    sender.SetStreamConfig(args.workers, args.streams, args.buffers, 10000)
     
     # Add payloads to the sender
     print("Adding payloads to sender...")

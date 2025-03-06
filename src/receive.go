@@ -15,7 +15,7 @@ func callReceivePacketsByTime(cfg *Config, duration float64) (<-chan [][]byte, <
 	resultChan := make(chan [][]byte, 1)
 	errChan := make(chan error, 1)
 	go func() {
-		handle, err := pcap.OpenLive(cfg.Pcap.Iface, 65536, true, pcap.BlockForever)
+		handle, err := pcap.OpenLive(cfg.Pcap.Iface, cfg.Pcap.SnapLen, cfg.Pcap.Promisc, cfg.Pcap.Timeout)
 		if err != nil {
 			errChan <- fmt.Errorf("error opening interface: %v", err)
 			return
@@ -58,7 +58,7 @@ func callReceivePacketsByCount(cfg *Config, count int, timeout float64) (<-chan 
 	resultChan := make(chan [][]byte, 1)
 	errChan := make(chan error, 1)
 	go func() {
-		handle, err := pcap.OpenLive(cfg.Pcap.Iface, 65536, true, pcap.BlockForever)
+		handle, err := pcap.OpenLive(cfg.Pcap.Iface, cfg.Pcap.SnapLen, cfg.Pcap.Promisc, cfg.Pcap.Timeout)
 		if err != nil {
 			errChan <- fmt.Errorf("error opening interface: %v", err)
 			return

@@ -1,6 +1,7 @@
 package ohbother
 
 import (
+	"container/heap"
 	"context"
 	"fmt"
 	"net"
@@ -13,6 +14,13 @@ import (
 	"github.com/gopacket/gopacket/pcap"
 	"golang.org/x/time/rate"
 )
+
+// Add this as a package-level variable
+var serializeBufferPool = sync.Pool{
+	New: func() interface{} {
+		return gopacket.NewSerializeBuffer()
+	},
+}
 
 func sendSinglePacket(handle *pcap.Handle, cfg *Config, payload []byte) error {
 	// Use the logger if debugging is enabled
@@ -67,9 +75,12 @@ func sendSinglePacket(handle *pcap.Handle, cfg *Config, payload []byte) error {
 		return fmt.Errorf("failed to set network layer for checksum: %v", err)
 	}
 
-	// Serialize the packet.
-	buffer := gopacket.NewSerializeBuffer()
+	// Get buffer from pool instead of creating new one
+	// buffer comes from pool with its own capacity
+	buffer := serializeBufferPool.Get().(gopacket.SerializeBuffer)
+	buffer.Clear() // Reset the buffer for reuse
 	opts := gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}
+
 	if err := gopacket.SerializeLayers(buffer, opts,
 		&eth,
 		&ip,
@@ -77,6 +88,7 @@ func sendSinglePacket(handle *pcap.Handle, cfg *Config, payload []byte) error {
 		gopacket.Payload(payload),
 	); err != nil {
 		LogError("Packet serialization failed: %v\n", err)
+		serializeBufferPool.Put(buffer) // Return buffer to pool even on error
 		return fmt.Errorf("failed to serialize packet: %v", err)
 	}
 
@@ -90,9 +102,11 @@ func sendSinglePacket(handle *pcap.Handle, cfg *Config, payload []byte) error {
 	// Send the packet.
 	if err := handle.WritePacketData(packetBytes); err != nil {
 		LogError("Packet transmission failed: %v\n", err)
+		serializeBufferPool.Put(buffer) // Return buffer to pool even on error
 		return fmt.Errorf("failed to send packet: %v", err)
 	}
 
+	serializeBufferPool.Put(buffer) // Return buffer to pool
 	LogDebug("Packet successfully sent\n")
 	return nil
 }
@@ -195,6 +209,7 @@ func PayloadNative(pyPayload interface{}) [][]byte {
 	switch pyList := pyPayload.(type) {
 	case []interface{}:
 		LogDebug("Converting []interface{} with %d elements", len(pyList))
+		packets = make([][]byte, 0, len(pyList)) // Pre-allocate capacity
 		for i, item := range pyList {
 			switch bytes := item.(type) {
 			case []byte:
@@ -217,7 +232,7 @@ func PayloadNative(pyPayload interface{}) [][]byte {
 			}
 		}
 	case [][]byte:
-		// Direct Go type
+		// Direct Go type - pre-allocate exact size
 		LogDebug("Already [][]byte, copying directly")
 		packets = make([][]byte, len(pyList))
 		for i, bytes := range pyList {
@@ -446,10 +461,11 @@ func (psr *PacketSendResult) GetError() string {
 
 // MultiStreamConfig holds configuration for the multi-stream sender
 type MultiStreamConfig struct {
-	PacketWorkers  int // Number of workers for packet preparation (default 8)
-	StreamCount    int // Number of parallel sending streams (default 4)
-	ChannelBuffers int // Size of channel buffers (default 1000)
-	ReportInterval int // How often to report progress (packets, default 1000)
+	PacketWorkers    int  // Number of workers for packet preparation (default 8)
+	StreamCount      int  // Number of parallel sending streams (default 4)
+	ChannelBuffers   int  // Size of channel buffers (default 1000)
+	ReportInterval   int  // How often to report progress (packets, default 1000)
+	EnableCPUPinning bool // Whether to pin threads to CPU cores
 }
 
 // MultiStreamSender provides high-performance parallel packet sending while maintaining order
@@ -697,8 +713,10 @@ func (ms *MultiStreamSender) preparePackets(in <-chan struct {
 			continue
 		}
 
+		buffer := serializeBufferPool.Get().(gopacket.SerializeBuffer)
+		buffer.Clear()
+
 		// Serialize the packet
-		buffer := gopacket.NewSerializeBuffer()
 		opts := gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}
 		if err := gopacket.SerializeLayers(buffer, opts,
 			&eth,
@@ -734,73 +752,77 @@ func (ms *MultiStreamSender) preparePackets(in <-chan struct {
 	}
 }
 
-// schedulePackets ensures packets are sent in the correct order
+// Maintain Packet Order
+type PacketHeap []*preparedPacket
+
+func (h PacketHeap) Len() int            { return len(h) }
+func (h PacketHeap) Less(i, j int) bool  { return h[i].originalIndex < h[j].originalIndex }
+func (h PacketHeap) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
+func (h *PacketHeap) Push(x interface{}) { *h = append(*h, x.(*preparedPacket)) }
+func (h *PacketHeap) Pop() interface{} {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	*h = old[0 : n-1]
+	return x
+}
+
+// Modified schedulePackets
 func (ms *MultiStreamSender) schedulePackets(in <-chan *preparedPacket, out chan<- *preparedPacket, total int) {
 	defer close(ms.schedulerDone)
 
-	// Use priority queue to ensure ordering
-	pending := make(map[int]*preparedPacket)
+	h := &PacketHeap{}
+	heap.Init(h)
 	nextIndex := 0
 
 	for packet := range in {
-		// Check for cancellation
-		select {
-		case <-ms.cancelCtx.Done():
-			return
-		default:
-			// Continue processing
-		}
-
-		// Store the packet
-		pending[packet.originalIndex] = packet
+		// Add the packet to the heap
+		heap.Push(h, packet)
 
 		// Send packets in order when possible
-		for {
-			packet, exists := pending[nextIndex]
-			if !exists {
-				break // Wait for the next packet in sequence
-			}
-
+		for h.Len() > 0 && (*h)[0].originalIndex == nextIndex {
+			packet := heap.Pop(h).(*preparedPacket)
 			select {
 			case <-ms.cancelCtx.Done():
 				return
 			case out <- packet:
-				// Packet sent, remove from pending and advance
-				delete(pending, nextIndex)
 				nextIndex++
 			}
 		}
 
-		// Report progress occasionally
+		// Report progress
 		if nextIndex > 0 && nextIndex%ms.StreamConfig.ReportInterval == 0 {
 			ms.progressCh <- &PacketSendResult{
 				Index:      nextIndex - 1,
 				TotalCount: total,
-				Error:      nil,
 			}
 		}
 	}
 
 	// Process any remaining packets in order
-	for nextIndex < total {
-		packet, exists := pending[nextIndex]
-		if !exists {
-			// This shouldn't happen if all packets were processed
-			break
-		}
-
+	for h.Len() > 0 {
+		packet := heap.Pop(h).(*preparedPacket)
 		select {
 		case <-ms.cancelCtx.Done():
 			return
 		case out <- packet:
-			delete(pending, nextIndex)
-			nextIndex++
+			// Sent successfully
 		}
 	}
 }
 
 // sendStream handles sending packets from a single stream
 func (ms *MultiStreamSender) sendStream(streamID int, handle *pcap.Handle, in <-chan *preparedPacket) {
+	// Pin to CPU 1+streamID (skip CPU 0)
+	if ms.StreamConfig.EnableCPUPinning {
+		cpuID := 1 + streamID
+		if err := pinToCPU(cpuID); err != nil {
+			ms.progressCh <- &PacketSendResult{
+				Error: fmt.Errorf("stream %d: failed to pin to CPU %d: %v", streamID, cpuID, err),
+			}
+		}
+	}
+
 	var limiter *rate.Limiter
 	if ms.RateLimit > 0 {
 		// Each stream gets its proportional share of the total rate
