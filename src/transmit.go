@@ -1,13 +1,15 @@
 package ohbother
 
 import (
-	"container/heap"
 	"context"
 	"fmt"
 	"net"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"runtime"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
@@ -15,13 +17,14 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// Add this as a package-level variable
+// Pool of reusable serialize buffers to reduce GC pressure
 var serializeBufferPool = sync.Pool{
 	New: func() interface{} {
 		return gopacket.NewSerializeBuffer()
 	},
 }
 
+// sendSinglePacket transmits a single UDP packet with the given payload
 func sendSinglePacket(handle *pcap.Handle, cfg *Config, payload []byte) error {
 	// Use the logger if debugging is enabled
 	if cfg.Debug.Enabled && cfg.Debug.Level >= 3 {
@@ -75,10 +78,9 @@ func sendSinglePacket(handle *pcap.Handle, cfg *Config, payload []byte) error {
 		return fmt.Errorf("failed to set network layer for checksum: %v", err)
 	}
 
-	// Get buffer from pool instead of creating new one
-	// buffer comes from pool with its own capacity
+	// Get buffer from pool
 	buffer := serializeBufferPool.Get().(gopacket.SerializeBuffer)
-	buffer.Clear() // Reset the buffer for reuse
+	buffer.Clear()
 	opts := gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}
 
 	if err := gopacket.SerializeLayers(buffer, opts,
@@ -88,31 +90,26 @@ func sendSinglePacket(handle *pcap.Handle, cfg *Config, payload []byte) error {
 		gopacket.Payload(payload),
 	); err != nil {
 		LogError("Packet serialization failed: %v\n", err)
-		serializeBufferPool.Put(buffer) // Return buffer to pool even on error
+		serializeBufferPool.Put(buffer)
 		return fmt.Errorf("failed to serialize packet: %v", err)
 	}
 
-	// Debug serialized packet
 	packetBytes := buffer.Bytes()
 	LogDebug("  - Total packet size: %d bytes\n", len(packetBytes))
-
-	// Verify captured link type matches what we're sending
 	LogDebug("  - Handle link type: %v\n", handle.LinkType())
 
-	// Send the packet.
 	if err := handle.WritePacketData(packetBytes); err != nil {
 		LogError("Packet transmission failed: %v\n", err)
-		serializeBufferPool.Put(buffer) // Return buffer to pool even on error
+		serializeBufferPool.Put(buffer)
 		return fmt.Errorf("failed to send packet: %v", err)
 	}
 
-	serializeBufferPool.Put(buffer) // Return buffer to pool
+	serializeBufferPool.Put(buffer)
 	LogDebug("Packet successfully sent\n")
 	return nil
 }
 
-// SendPacket sends a single UDP packet with the provided payload.
-// The payload parameter is now a []byte, so no conversion is necessary.
+// SendPacket transmits a single UDP packet
 func SendPacket(cfg *Config, payload []byte, rateLimit int) error {
 	done := make(chan error, 1)
 	go func() {
@@ -136,23 +133,19 @@ func SendPacket(cfg *Config, payload []byte, rateLimit int) error {
 	return <-done
 }
 
-// Enhance PayloadNative to better detect incoming Python bytes
+// PayloadNative converts various payload formats to [][]byte
 func PayloadNative(pyPayload interface{}) [][]byte {
-	// Log the actual concrete type for debugging
 	LogDebug("PayloadNative called with type %T, concrete type: %v",
 		pyPayload, reflect.TypeOf(pyPayload))
 
-	// Add deeper inspection of what's coming from Python
+	// Handle Python string type
 	if strPayload, ok := pyPayload.(string); ok {
-		// Python might be serializing the list of bytes as a string
 		LogDebug("Received payload as string, length: %d", len(strPayload))
-		// If it's a string representation of bytes, convert to a single payload
 		return [][]byte{[]byte(strPayload)}
 	}
 
-	// Add special case for Python bytearray
+	// Handle Python slices via reflection
 	if reflect.TypeOf(pyPayload).Kind() == reflect.Slice {
-		// Try to extract raw bytes using reflection
 		v := reflect.ValueOf(pyPayload)
 		if v.Len() > 0 {
 			LogDebug("Trying to extract %d items from slice using reflection", v.Len())
@@ -183,7 +176,7 @@ func PayloadNative(pyPayload interface{}) [][]byte {
 		}
 	}
 
-	// Rest of your existing implementation
+	// Handle BytePacket type directly
 	if bytePackets, ok := pyPayload.([]*BytePacket); ok {
 		LogDebug("Converting []*BytePacket directly")
 		packets := make([][]byte, len(bytePackets))
@@ -195,9 +188,6 @@ func PayloadNative(pyPayload interface{}) [][]byte {
 		return packets
 	}
 
-	// Continue with existing implementation...
-
-	// Your existing switch cases
 	// Handle nil case
 	if pyPayload == nil {
 		return [][]byte{}
@@ -205,25 +195,21 @@ func PayloadNative(pyPayload interface{}) [][]byte {
 
 	packets := make([][]byte, 0)
 
-	// Handle Python list type conversion
+	// Handle standard type conversions
 	switch pyList := pyPayload.(type) {
 	case []interface{}:
 		LogDebug("Converting []interface{} with %d elements", len(pyList))
-		packets = make([][]byte, 0, len(pyList)) // Pre-allocate capacity
+		packets = make([][]byte, 0, len(pyList))
 		for i, item := range pyList {
 			switch bytes := item.(type) {
 			case []byte:
-				// Direct byte slice
 				pktCopy := make([]byte, len(bytes))
 				copy(pktCopy, bytes)
 				packets = append(packets, pktCopy)
 			case string:
-				// String to byte conversion (sometimes Python bytes come as strings)
-				pktCopy := []byte(bytes)
-				packets = append(packets, pktCopy)
+				packets = append(packets, []byte(bytes))
 			default:
 				LogWarn("Item %d has unsupported type %T", i, item)
-				// Try to handle BytePacket if it's from the Python side
 				if reflect.TypeOf(item).String() == "*py_gopacket.BytePacket" {
 					if bp, ok := item.(*BytePacket); ok && bp != nil {
 						packets = append(packets, bp.Data)
@@ -232,7 +218,6 @@ func PayloadNative(pyPayload interface{}) [][]byte {
 			}
 		}
 	case [][]byte:
-		// Direct Go type - pre-allocate exact size
 		LogDebug("Already [][]byte, copying directly")
 		packets = make([][]byte, len(pyList))
 		for i, bytes := range pyList {
@@ -246,13 +231,11 @@ func PayloadNative(pyPayload interface{}) [][]byte {
 	return packets
 }
 
-// Update SendPackets to use the improved PayloadNative function
+// SendPackets transmits multiple packets with optional rate limiting
 func SendPackets(cfg *Config, rawPayloads interface{}, rateLimit int) error {
 	LogDebug("SendPackets called with payload type %T", rawPayloads)
 
-	// Convert input to [][]byte regardless of source (Go or Python)
 	payloads := PayloadNative(rawPayloads)
-
 	if len(payloads) == 0 {
 		LogError("No valid payloads found in input")
 		return fmt.Errorf("no valid payloads found in input")
@@ -262,15 +245,13 @@ func SendPackets(cfg *Config, rawPayloads interface{}, rateLimit int) error {
 	return sendPacketsImpl(cfg, payloads, rateLimit)
 }
 
-// SendPacketsNative is a Go-specific function for benchmarking with strongly typed parameters
-// This avoids the interface{} overhead and type assertions needed in the Python-compatible version
+// SendPacketsNative is a Go-specific function for direct typed parameters
 func sendPacketsNative(cfg *Config, payloads [][]byte, rateLimit int) error {
 	LogDebug("SendPacketsNative called with %d payloads", len(payloads))
 	return sendPacketsImpl(cfg, payloads, rateLimit)
 }
 
-// SendByteArrays accepts a direct [][]byte type (which gopy handles correctly from Python)
-// This matches the signature of ResultNative() but for the send direction
+// SendByteArrays accepts a direct [][]byte type for Python integration
 func SendByteArrays(cfg *Config, bytePayloads [][]byte, rateLimit int) error {
 	LogDebug("SendByteArrays called with %d payloads", len(bytePayloads))
 	if len(bytePayloads) == 0 {
@@ -284,13 +265,11 @@ func SendByteArrays(cfg *Config, bytePayloads [][]byte, rateLimit int) error {
 		copy(safePayloads[i], pkt)
 	}
 
-	// Pass the safely copied payloads to implementation
 	return sendPacketsImpl(cfg, safePayloads, rateLimit)
 }
 
 // Internal implementation for sending packets
 func sendPacketsImpl(cfg *Config, payloads [][]byte, rateLimit int) error {
-	// Original SendPackets implementation
 	done := make(chan error, 1)
 	go func() {
 		handle, err := pcap.OpenLive(cfg.Pcap.Iface, cfg.Pcap.SnapLen, cfg.Pcap.Promisc, pcap.BlockForever)
@@ -322,7 +301,7 @@ func sendPacketsImpl(cfg *Config, payloads [][]byte, rateLimit int) error {
 	return <-done
 }
 
-// PacketSequenceSender is a struct that helps bridge Python byte arrays to Go.
+// PacketSequenceSender provides a simple API for packet transmission
 type PacketSequenceSender struct {
 	Cfg        *Config
 	RateLimit  int
@@ -331,30 +310,28 @@ type PacketSequenceSender struct {
 	isComplete bool
 }
 
-// NewPacketSequenceSender creates a sender object that can be populated from Python.
+// NewPacketSequenceSender creates a sender with specified configuration
 func NewPacketSequenceSender(cfg *Config, rateLimit int) *PacketSequenceSender {
 	return &PacketSequenceSender{
 		Cfg:        cfg,
 		RateLimit:  rateLimit,
 		Payloads:   make([][]byte, 0),
-		progressCh: make(chan *PacketSendResult, 100), // Buffered channel
+		progressCh: make(chan *PacketSendResult, 100),
 		isComplete: false,
 	}
 }
 
-// AddPayload adds a single payload to the sender.
-// This version no longer tries to check or truncate the size—it simply copies the data.
+// AddPayload adds a payload to the sender's queue
 func (bas *PacketSequenceSender) AddPayload(payload []byte) {
 	if payload != nil {
 		LogDebug("AddPayload received payload of %d bytes", len(payload))
-		// Simply make a copy for memory safety and append.
 		safeCopy := make([]byte, len(payload))
 		copy(safeCopy, payload)
 		bas.Payloads = append(bas.Payloads, safeCopy)
 	}
 }
 
-// Send transmits all the added payloads.
+// Send initiates transmission of all queued payloads
 func (bas *PacketSequenceSender) Send() error {
 	if len(bas.Payloads) == 0 {
 		return fmt.Errorf("no payloads to send")
@@ -401,7 +378,7 @@ func (bas *PacketSequenceSender) Send() error {
 			// Send the packet
 			err := sendSinglePacket(handle, bas.Cfg, payload)
 
-			// Only report basic progress without precise timing for each packet
+			// Report progress
 			bas.progressCh <- &PacketSendResult{
 				Index:      i,
 				TotalCount: len(bas.Payloads),
@@ -461,14 +438,17 @@ func (psr *PacketSendResult) GetError() string {
 
 // MultiStreamConfig holds configuration for the multi-stream sender
 type MultiStreamConfig struct {
-	PacketWorkers    int  // Number of workers for packet preparation (default 8)
-	StreamCount      int  // Number of parallel sending streams (default 4)
-	ChannelBuffers   int  // Size of channel buffers (default 1000)
-	ReportInterval   int  // How often to report progress (packets, default 1000)
+	PacketWorkers    int  // Number of workers for packet preparation
+	StreamCount      int  // Number of parallel sending streams
+	ChannelBuffers   int  // Size of channel buffers
+	ReportInterval   int  // How often to report progress (packets)
 	EnableCPUPinning bool // Whether to pin threads to CPU cores
+	DisableOrdering  bool // Enable raw throughput mode with no ordering
+	TurnstileBurst   int  // How many packets can be sent in a burst
+	EnableMetrics    bool // Enable lightweight performance metrics
 }
 
-// MultiStreamSender provides high-performance parallel packet sending while maintaining order
+// MultiStreamSender provides high-performance parallel packet sending
 type MultiStreamSender struct {
 	Cfg           *Config
 	StreamConfig  *MultiStreamConfig
@@ -480,6 +460,9 @@ type MultiStreamSender struct {
 	schedulerDone chan bool
 	cancelCtx     context.Context
 	cancelFunc    context.CancelFunc
+	nextToSend    atomic.Uint64  // Atomic counter for turnstile
+	turnstileCh   chan struct{}  // Channel-based turnstile for rate limiting
+	metrics       *senderMetrics // Lightweight metrics
 }
 
 // NewMultiStreamSender creates a high-performance sender with worker pools
@@ -543,25 +526,43 @@ type preparedPacket struct {
 	payload       []byte
 }
 
-// Send initiates the high-performance transmission process
+// Send initiates high-performance parallel packet transmission
 func (ms *MultiStreamSender) Send() error {
-	if len(ms.Payloads) == 0 {
-		return fmt.Errorf("no payloads to send")
-	}
+	// Initialize metrics
+	ms.metrics = &senderMetrics{}
 
-	totalPackets := len(ms.Payloads)
-	LogDebug("MultiStreamSender.Send() called with %d payloads using %d prep workers and %d streams",
-		totalPackets, ms.StreamConfig.PacketWorkers, ms.StreamConfig.StreamCount)
-
-	// Create channels for the pipeline
+	// Set up channels with specified buffer sizes
 	rawCh := make(chan struct {
 		index   int
 		payload []byte
 	}, ms.StreamConfig.ChannelBuffers)
 	prepCh := make(chan *preparedPacket, ms.StreamConfig.ChannelBuffers)
-	sendCh := make(chan *preparedPacket, ms.StreamConfig.ChannelBuffers)
 
-	// Start packet preparation workers
+	// Create turnstile with appropriate burst size
+	burstSize := max(1, ms.StreamConfig.TurnstileBurst)
+	ms.turnstileCh = make(chan struct{}, burstSize)
+
+	// Set up rate limiting goroutine if needed
+	if ms.RateLimit > 0 {
+		go ms.rateLimitTurnstile()
+	} else {
+		// No rate limit - fill turnstile for maximum throughput
+		go func() {
+			for {
+				select {
+				case <-ms.cancelCtx.Done():
+					return
+				case ms.turnstileCh <- struct{}{}:
+					// Keep filling
+				default:
+					// Briefly wait if full
+					time.Sleep(time.Microsecond)
+				}
+			}
+		}()
+	}
+
+	// Start preparation workers
 	var wg sync.WaitGroup
 	for i := 0; i < ms.StreamConfig.PacketWorkers; i++ {
 		wg.Add(1)
@@ -571,35 +572,30 @@ func (ms *MultiStreamSender) Send() error {
 		}(i)
 	}
 
-	// Start scheduler to maintain ordering
-	go ms.schedulePackets(prepCh, sendCh, totalPackets)
-
-	// Start sender streams
+	// Start sender streams with modified approach
 	handles := make([]*pcap.Handle, ms.StreamConfig.StreamCount)
 	var sendWg sync.WaitGroup
+
+	// Open all handles first
 	for i := 0; i < ms.StreamConfig.StreamCount; i++ {
-		handle, err := pcap.OpenLive(ms.Cfg.Pcap.Iface, ms.Cfg.Pcap.SnapLen, ms.Cfg.Pcap.Promisc, pcap.BlockForever)
+		handle, err := pcap.OpenLive(ms.Cfg.Pcap.Iface, ms.Cfg.Pcap.SnapLen,
+			ms.Cfg.Pcap.Promisc, pcap.BlockForever)
 		if err != nil {
-			ms.cancelFunc() // Cancel everything
-			ms.progressCh <- &PacketSendResult{
-				Index:      0,
-				TotalCount: totalPackets,
-				Error:      fmt.Errorf("stream %d: error opening interface: %v", i, err),
-			}
-			close(ms.progressCh)
-			ms.isComplete = true
-			return err
+			// Error handling
+			ms.cancelFunc()
+			return fmt.Errorf("failed to open interface for stream %d: %v", i, err)
 		}
 		handles[i] = handle
 
+		// Start sender goroutine immediately
 		sendWg.Add(1)
 		go func(streamID int, handle *pcap.Handle) {
 			defer sendWg.Done()
-			ms.sendStream(streamID, handle, sendCh)
+			ms.sendPackets(streamID, handle, prepCh)
 		}(i, handle)
 	}
 
-	// Feed data into the pipeline
+	// Start feeding data immediately
 	startTime := time.Now()
 	go func() {
 		for i, payload := range ms.Payloads {
@@ -614,22 +610,16 @@ func (ms *MultiStreamSender) Send() error {
 			}
 		}
 		close(rawCh) // No more data to process
-	}()
 
-	// Wait for preparation to complete
-	go func() {
+		// Wait for all preparations to complete
 		wg.Wait()
-		close(prepCh) // No more prepared packets
+		// Signal end of stream to senders
+		close(prepCh)
 	}()
 
-	// Wait for scheduler to complete
+	// Wait for completion
 	go func() {
-		<-ms.schedulerDone
-		close(sendCh) // No more packets to send
-	}()
-
-	// Wait for all sends to complete
-	go func() {
+		// Wait for all senders to complete
 		sendWg.Wait()
 
 		// Clean up resources
@@ -642,8 +632,8 @@ func (ms *MultiStreamSender) Send() error {
 
 		// Send a final result with the total elapsed time
 		ms.progressCh <- &PacketSendResult{
-			Index:      totalPackets - 1,
-			TotalCount: totalPackets,
+			Index:      len(ms.Payloads) - 1,
+			TotalCount: len(ms.Payloads),
 			Elapsed:    totalElapsed,
 			Error:      nil,
 		}
@@ -656,166 +646,11 @@ func (ms *MultiStreamSender) Send() error {
 	return nil
 }
 
-// preparePackets deserializes packets in parallel while preserving order information
-func (ms *MultiStreamSender) preparePackets(in <-chan struct {
-	index   int
-	payload []byte
-}, out chan<- *preparedPacket) {
-	for item := range in {
-		// Check for cancellation
-		select {
-		case <-ms.cancelCtx.Done():
-			return
-		default:
-			// Continue processing
-		}
-
-		// Skip packets that are too small
-		minPayloadSize := 18
-		if len(item.payload) < minPayloadSize {
-			ms.progressCh <- &PacketSendResult{
-				Index:      item.index,
-				TotalCount: len(ms.Payloads),
-				Error: fmt.Errorf("payload size %d is below minimum required size of %d bytes",
-					len(item.payload), minPayloadSize),
-			}
-			continue
-		}
-
-		// Prepare layers
-		eth := layers.Ethernet{
-			SrcMAC:       ms.Cfg.Packet.SrcMAC,
-			DstMAC:       ms.Cfg.Packet.DstMAC,
-			EthernetType: layers.EthernetTypeIPv4,
-		}
-
-		ip := layers.IPv4{
-			Version:  4,
-			IHL:      5,
-			TTL:      64,
-			Protocol: layers.IPProtocolUDP,
-			SrcIP:    net.ParseIP(ms.Cfg.Packet.SrcIP),
-			DstIP:    net.ParseIP(ms.Cfg.Packet.DstIP),
-		}
-
-		udp := layers.UDP{
-			SrcPort: layers.UDPPort(ms.Cfg.Packet.SrcPort),
-			DstPort: layers.UDPPort(ms.Cfg.Packet.DstPort),
-		}
-
-		// Compute UDP checksum over the IPv4 pseudo-header
-		if err := udp.SetNetworkLayerForChecksum(&ip); err != nil {
-			ms.progressCh <- &PacketSendResult{
-				Index:      item.index,
-				TotalCount: len(ms.Payloads),
-				Error:      fmt.Errorf("failed to set network layer for checksum: %v", err),
-			}
-			continue
-		}
-
-		buffer := serializeBufferPool.Get().(gopacket.SerializeBuffer)
-		buffer.Clear()
-
-		// Serialize the packet
-		opts := gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}
-		if err := gopacket.SerializeLayers(buffer, opts,
-			&eth,
-			&ip,
-			&udp,
-			gopacket.Payload(item.payload),
-		); err != nil {
-			ms.progressCh <- &PacketSendResult{
-				Index:      item.index,
-				TotalCount: len(ms.Payloads),
-				Error:      fmt.Errorf("failed to serialize packet: %v", err),
-			}
-			continue
-		}
-
-		// Create prepared packet
-		packet := &preparedPacket{
-			originalIndex: item.index,
-			packetBytes:   buffer.Bytes(),
-			eth:           eth,
-			ip:            ip,
-			udp:           udp,
-			payload:       item.payload,
-		}
-
-		// Send to scheduler
-		select {
-		case <-ms.cancelCtx.Done():
-			return
-		case out <- packet:
-			// Successfully sent
-		}
-	}
-}
-
-// Maintain Packet Order
-type PacketHeap []*preparedPacket
-
-func (h PacketHeap) Len() int            { return len(h) }
-func (h PacketHeap) Less(i, j int) bool  { return h[i].originalIndex < h[j].originalIndex }
-func (h PacketHeap) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
-func (h *PacketHeap) Push(x interface{}) { *h = append(*h, x.(*preparedPacket)) }
-func (h *PacketHeap) Pop() interface{} {
-	old := *h
-	n := len(old)
-	x := old[n-1]
-	*h = old[0 : n-1]
-	return x
-}
-
-// Modified schedulePackets
-func (ms *MultiStreamSender) schedulePackets(in <-chan *preparedPacket, out chan<- *preparedPacket, total int) {
-	defer close(ms.schedulerDone)
-
-	h := &PacketHeap{}
-	heap.Init(h)
-	nextIndex := 0
-
-	for packet := range in {
-		// Add the packet to the heap
-		heap.Push(h, packet)
-
-		// Send packets in order when possible
-		for h.Len() > 0 && (*h)[0].originalIndex == nextIndex {
-			packet := heap.Pop(h).(*preparedPacket)
-			select {
-			case <-ms.cancelCtx.Done():
-				return
-			case out <- packet:
-				nextIndex++
-			}
-		}
-
-		// Report progress
-		if nextIndex > 0 && nextIndex%ms.StreamConfig.ReportInterval == 0 {
-			ms.progressCh <- &PacketSendResult{
-				Index:      nextIndex - 1,
-				TotalCount: total,
-			}
-		}
-	}
-
-	// Process any remaining packets in order
-	for h.Len() > 0 {
-		packet := heap.Pop(h).(*preparedPacket)
-		select {
-		case <-ms.cancelCtx.Done():
-			return
-		case out <- packet:
-			// Sent successfully
-		}
-	}
-}
-
-// sendStream handles sending packets from a single stream
-func (ms *MultiStreamSender) sendStream(streamID int, handle *pcap.Handle, in <-chan *preparedPacket) {
-	// Pin to CPU 1+streamID (skip CPU 0)
+// sendPackets transmits packets from a specific stream
+func (ms *MultiStreamSender) sendPackets(streamID int, handle *pcap.Handle, in <-chan *preparedPacket) {
+	// Pin to CPU if enabled
 	if ms.StreamConfig.EnableCPUPinning {
-		cpuID := 1 + streamID
+		cpuID := 1 + streamID // Skip CPU 0
 		if err := pinToCPU(cpuID); err != nil {
 			ms.progressCh <- &PacketSendResult{
 				Error: fmt.Errorf("stream %d: failed to pin to CPU %d: %v", streamID, cpuID, err),
@@ -823,37 +658,48 @@ func (ms *MultiStreamSender) sendStream(streamID int, handle *pcap.Handle, in <-
 		}
 	}
 
-	var limiter *rate.Limiter
-	if ms.RateLimit > 0 {
-		// Each stream gets its proportional share of the total rate
-		streamRate := ms.RateLimit / ms.StreamConfig.StreamCount
-		if streamRate < 1 {
-			streamRate = 1
-		}
-		limiter = rate.NewLimiter(rate.Limit(streamRate), 1)
-	}
-
 	for packet := range in {
-		// Check for cancellation
+		// Check cancellation
 		select {
 		case <-ms.cancelCtx.Done():
 			return
 		default:
-			// Continue processing
+			// Continue
 		}
 
-		// Apply rate limiting if needed
-		if limiter != nil {
-			if err := limiter.Wait(ms.cancelCtx); err != nil {
-				if err != context.Canceled {
-					ms.progressCh <- &PacketSendResult{
-						Index:      packet.originalIndex,
-						TotalCount: len(ms.Payloads),
-						Error:      fmt.Errorf("stream %d: rate limiter error: %v", streamID, err),
-					}
+		var startWait time.Time
+		if ms.StreamConfig.EnableMetrics {
+			startWait = time.Now()
+		}
+
+		if !ms.StreamConfig.DisableOrdering {
+			// Ordered mode: Wait for this packet's turn at the turnstile
+			expectedSeq := uint64(packet.originalIndex)
+			for ms.nextToSend.Load() != expectedSeq {
+				// Brief pause to reduce CPU usage during spin wait
+				runtime.Gosched()
+
+				// Check if we've been cancelled during wait
+				select {
+				case <-ms.cancelCtx.Done():
+					return
+				default:
+					// Continue waiting
 				}
-				continue
 			}
+		}
+
+		// Wait for rate limiting token
+		<-ms.turnstileCh
+
+		if ms.StreamConfig.EnableMetrics && !ms.StreamConfig.DisableOrdering {
+			waitNs := time.Since(startWait).Nanoseconds()
+			ms.metrics.waitTime.Add(uint64(waitNs))
+		}
+
+		var startSend time.Time
+		if ms.StreamConfig.EnableMetrics {
+			startSend = time.Now()
 		}
 
 		// Send the packet
@@ -863,26 +709,168 @@ func (ms *MultiStreamSender) sendStream(streamID int, handle *pcap.Handle, in <-
 				TotalCount: len(ms.Payloads),
 				Error:      fmt.Errorf("stream %d: failed to send packet: %v", streamID, err),
 			}
+			ms.metrics.packetsDropped.Add(1)
 			continue
+		}
+
+		if !ms.StreamConfig.DisableOrdering {
+			// Advance the turnstile for the next packet
+			ms.nextToSend.Add(1)
+		}
+
+		if ms.StreamConfig.EnableMetrics {
+			sendNs := time.Since(startSend).Nanoseconds()
+			ms.metrics.sendTime.Add(uint64(sendNs))
+			ms.metrics.packetsProcessed.Add(1)
 		}
 	}
 }
 
-// GetNextResult returns the result of the next packet send operation
-func (ms *MultiStreamSender) GetNextResult() *PacketSendResult {
-	result, ok := <-ms.progressCh
-	if !ok {
-		return nil // Channel closed
+// rateLimitTurnstile controls the rate of packet transmission
+func (ms *MultiStreamSender) rateLimitTurnstile() {
+	// Calculate interval between packets
+	interval := time.Second / time.Duration(ms.RateLimit)
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ms.cancelCtx.Done():
+			return
+		case <-ticker.C:
+			// Add token to turnstile
+			select {
+			case ms.turnstileCh <- struct{}{}:
+				// Token added
+			default:
+				// Channel full, skip this token
+			}
+		}
 	}
-	return result
 }
 
-// IsComplete returns true when all packets have been sent
-func (ms *MultiStreamSender) IsComplete() bool {
-	return ms.isComplete
+// GetMetrics returns performance metrics for the sender
+func (ms *MultiStreamSender) GetMetrics() map[string]uint64 {
+	if !ms.StreamConfig.EnableMetrics || ms.metrics == nil {
+		return nil
+	}
+
+	return map[string]uint64{
+		"packets_processed": ms.metrics.packetsProcessed.Load(),
+		"packets_dropped":   ms.metrics.packetsDropped.Load(),
+		"prepare_time_ns":   ms.metrics.prepareTime.Load(),
+		"wait_time_ns":      ms.metrics.waitTime.Load(),
+		"send_time_ns":      ms.metrics.sendTime.Load(),
+		"avg_prepare_ns":    safeDivide(ms.metrics.prepareTime.Load(), ms.metrics.packetsProcessed.Load()),
+		"avg_wait_ns":       safeDivide(ms.metrics.waitTime.Load(), ms.metrics.packetsProcessed.Load()),
+		"avg_send_ns":       safeDivide(ms.metrics.sendTime.Load(), ms.metrics.packetsProcessed.Load()),
+	}
 }
 
-// Cancel stops all sending operations
-func (ms *MultiStreamSender) Cancel() {
-	ms.cancelFunc()
+// safeDivide performs division with a zero check
+func safeDivide(a, b uint64) uint64 {
+	if b == 0 {
+		return 0
+	}
+	return a / b
+}
+
+// senderMetrics stores performance metrics
+type senderMetrics struct {
+	prepareTime      atomic.Uint64 // Total nanoseconds spent preparing packets
+	waitTime         atomic.Uint64 // Total nanoseconds spent waiting at turnstile
+	sendTime         atomic.Uint64 // Total nanoseconds spent sending packets
+	packetsProcessed atomic.Uint64 // Total packets processed
+	packetsDropped   atomic.Uint64 // Packets dropped due to errors
+}
+
+// preparePackets deserializes packets in parallel
+func (ms *MultiStreamSender) preparePackets(in <-chan struct {
+	index   int
+	payload []byte
+}, out chan<- *preparedPacket) {
+	// Initialize header template
+	eth := layers.Ethernet{
+		SrcMAC:       ms.Cfg.Packet.SrcMAC,
+		DstMAC:       ms.Cfg.Packet.DstMAC,
+		EthernetType: layers.EthernetTypeIPv4,
+	}
+
+	ip := layers.IPv4{
+		Version:  4,
+		IHL:      5,
+		TTL:      64,
+		Protocol: layers.IPProtocolUDP,
+		SrcIP:    net.ParseIP(ms.Cfg.Packet.SrcIP),
+		DstIP:    net.ParseIP(ms.Cfg.Packet.DstIP),
+	}
+
+	udp := layers.UDP{
+		SrcPort: layers.UDPPort(ms.Cfg.Packet.SrcPort),
+		DstPort: layers.UDPPort(ms.Cfg.Packet.DstPort),
+	}
+
+	// Set up UDP checksum - do this once
+	udp.SetNetworkLayerForChecksum(&ip)
+
+	for item := range in {
+		var startPrepare time.Time
+		if ms.StreamConfig.EnableMetrics {
+			startPrepare = time.Now()
+		}
+
+		// Create a new packet from the template
+		packet := &preparedPacket{
+			originalIndex: item.index,
+			eth:           eth,
+			ip:            ip,
+			udp:           udp,
+			payload:       item.payload,
+		}
+
+		// Serialize the packet
+		buffer := serializeBufferPool.Get().(gopacket.SerializeBuffer)
+		buffer.Clear()
+
+		opts := gopacket.SerializeOptions{
+			FixLengths:       true,
+			ComputeChecksums: true,
+		}
+
+		err := gopacket.SerializeLayers(buffer, opts,
+			&packet.eth,
+			&packet.ip,
+			&packet.udp,
+			gopacket.Payload(packet.payload),
+		)
+
+		if err != nil {
+			serializeBufferPool.Put(buffer)
+			ms.progressCh <- &PacketSendResult{
+				Index:      item.index,
+				TotalCount: len(ms.Payloads),
+				Error:      fmt.Errorf("failed to serialize packet: %v", err),
+			}
+			continue
+		}
+
+		// Store serialized data
+		packet.packetBytes = make([]byte, len(buffer.Bytes()))
+		copy(packet.packetBytes, buffer.Bytes())
+
+		serializeBufferPool.Put(buffer)
+
+		if ms.StreamConfig.EnableMetrics {
+			prepNs := time.Since(startPrepare).Nanoseconds()
+			ms.metrics.prepareTime.Add(uint64(prepNs))
+		}
+
+		// Send to output channel
+		select {
+		case <-ms.cancelCtx.Done():
+			return
+		case out <- packet:
+			// Successfully sent to channel
+		}
+	}
 }

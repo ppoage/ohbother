@@ -349,7 +349,7 @@ if os.path.exists(readme_path):
 
 setup(
     name="ohbother",
-    version="0.1",
+    version="0.0.1",
     packages=["ohbother"],  # Explicitly list the package instead of using find_packages()
     package_data={
         "ohbother": ["*", "**/*", "*.so", "*.dll", "*.dylib", "*.pyd", "*.py", 
