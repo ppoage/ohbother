@@ -1,17 +1,14 @@
+from functools import partial
+import multiprocessing
 import sys
 import os
 
 # Add the project root directory to Python's path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Dev Imports
-dev_env = False
-if dev_env:
-    from ..src.ohbother.ohbother import ohbother as pooh
-    from ohbother import Slice_byte
-else:
-    from ohbother.ohbother import ohbother as pooh
-    from ohbother.ohbother.go import Slice_byte
+from ohbother import ohbother as pooh
+from ohbother.go import Slice_byte
+
 import random, time
 import threading
 
@@ -25,9 +22,9 @@ srcPort = 8443
 dstPort = 8443
 iface = "en0"
 bpf = f"udp and dst port {dstPort}"
-packetCount = 5000
+packetCount = 500_000
 payloadSize = 60
-rateLimit = 1_000_000
+rateLimit = 0#1_000_000
 SnapLen =      1500 #1500
 Promisc =       True
 #Timeout =       10 * (0.001)
@@ -36,59 +33,35 @@ ImmediateMode = True
 recieveEnable = False
 
 
-def generate_pattern_payload(array_length: int, size: int, pattern_type="sequence") -> list[bytes]:
-    """Generate an array of patterned payloads for testing.
+def _generate_single_payload(i, size, pattern_type):
+    """Helper function to generate a single payload for multiprocessing"""
+    if pattern_type == "sequence":
+        raw_bytes = bytes([j % 256 for j in range(size)])
+    elif pattern_type.startswith("fixed:"):
+        value_str = pattern_type.split(":")[1]
+        try:
+            value = int(value_str, 16) if (value_str.startswith("0x") or all(c in "0123456789ABCDEFabcdef" for c in value_str)) else int(value_str)
+        except ValueError:
+            value = 0
+        raw_bytes = bytes([value & 0xFF] * size)
+    elif pattern_type == "ascending":
+        raw_bytes = bytes([(j + i) % 256 for j in range(size)])
+    elif pattern_type == "zeroes":
+        raw_bytes = bytes(size)  # More efficient than bytes([0] * size)
+    else:
+        raw_bytes = bytes([j % 256 for j in range(size)])
     
-    Args:
-        array_length (int): Number of byte arrays to generate
-        size (int): Size of each payload in bytes
-        pattern_type (str): Type of pattern to use:
-            - "sequence": Bytes from 0-255 repeating (0,1,2...255,0,1,...)
-            - "fixed:X": All bytes set to X (e.g., "fixed:5" for all 0x05)
-            - "ascending": Each packet has a different starting value
-            - "zeroes": All bytes set to 0
-    Returns:
-        list[bytes]: Array of patterned payloads
-    """
-    payloads = []
+    return raw_bytes
+
+def generate_pattern_payload(array_length, size, pattern_type="sequence", num_workers=8):
+    """Generate payloads in parallel using multiprocessing"""
+    with multiprocessing.Pool(processes=num_workers) as pool:
+        raw_payloads = pool.map(
+            partial(_generate_single_payload, size=size, pattern_type=pattern_type),
+            range(array_length)
+        )
     
-    for i in range(array_length):
-        if pattern_type == "sequence":
-            # Create a repeating sequence 0,1,2...255,0,1,...
-            raw_bytes = bytes([j % 256 for j in range(size)])
-        elif pattern_type.startswith("fixed:"):
-            # Set all bytes to the specified value
-            value_str = pattern_type.split(":")[1]
-            # Handle hexadecimal values
-            if value_str.startswith("0x") or all(c in "0123456789ABCDEFabcdef" for c in value_str) and len(value_str) >= 2:
-                try:
-                    # Try to parse as hex
-                    if value_str.startswith("0x"):
-                        value = int(value_str, 16)
-                    else:
-                        value = int(value_str, 16)
-                except ValueError:
-                    # Fall back to decimal if hex parsing fails
-                    value = int(value_str)
-            else:
-                # Parse as decimal
-                value = int(value_str)
-            # Ensure value is in valid byte range (0-255)
-            value = value & 0xFF
-            raw_bytes = bytes([value] * size)
-        elif pattern_type == "ascending":
-            # Each packet starts with a different value
-            raw_bytes = bytes([(j + i) % 256 for j in range(size)])
-        elif pattern_type == "zeroes":
-            # All bytes set to 0
-            raw_bytes = bytes([0] * size)
-        else:
-            # Default to sequence if invalid pattern type
-            print("Invalid pattern type, defaulting to sequence")
-            raw_bytes = bytes([j % 256 for j in range(size)])
-            
-        payloads.append(sliceByte.from_bytes(raw_bytes))
-    return payloads
+    return [Slice_byte.from_bytes(payload) for payload in raw_payloads]
 
 def main():
     receive_duration = 4.0
@@ -106,7 +79,7 @@ def main():
 
     # Create a sender
     sender = pooh.NewPacketSequenceSender(config, rateLimit)
-    sender.EnableBatchMode(1)  # Process results in batches of 100
+    # sender.EnableBatchMode(1)  # Process results in batches of 100
 
     # Add payloads
     for payload in testPayload:

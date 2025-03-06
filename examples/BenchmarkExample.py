@@ -1,10 +1,5 @@
-dev_env = False
-if dev_env:
-    from ..src.ohbother.ohbother import ohbother as pooh
-    from ohbother import Slice_byte
-else:
-    import ohbother.ohbother.ohbother as pooh
-    from ohbother.ohbother.go import Slice_byte
+from ohbother import ohbother as pooh
+from ohbother.go import Slice_byte
 import random, time
 
 

@@ -874,3 +874,41 @@ func (ms *MultiStreamSender) preparePackets(in <-chan struct {
 		}
 	}
 }
+
+// IsComplete returns true when all packets have been sent
+func (ms *MultiStreamSender) IsComplete() bool {
+	return ms.isComplete
+}
+
+// GetNextResult returns the result of the next packet send operation
+// Returns nil when all packets have been sent
+func (ms *MultiStreamSender) GetNextResult() *PacketSendResult {
+	result, ok := <-ms.progressCh
+	if !ok {
+		return nil // Channel closed
+	}
+	return result
+}
+
+// Wait blocks until all packets have been sent
+func (ms *MultiStreamSender) Wait() {
+	for !ms.IsComplete() {
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// GetSentCount returns the number of packets that were successfully sent
+func (ms *MultiStreamSender) GetSentCount() int {
+	if ms.metrics != nil {
+		return int(ms.metrics.packetsProcessed.Load())
+	}
+	return 0
+}
+
+// GetErrorCount returns the number of packets that encountered errors
+func (ms *MultiStreamSender) GetErrorCount() int {
+	if ms.metrics != nil {
+		return int(ms.metrics.packetsDropped.Load())
+	}
+	return 0
+}

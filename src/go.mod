@@ -1,6 +1,6 @@
 module ohbother
 
-go 1.24
+go 1.24.0
 
 require (
 	github.com/gopacket/gopacket v1.3.1

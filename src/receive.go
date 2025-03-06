@@ -249,3 +249,107 @@ func NewBytePacket(data []byte) *BytePacket {
 func (bp *BytePacket) GetData() []byte {
 	return bp.Data
 }
+
+// ContinuousPacketReceiver provides a streaming interface to receive packets
+type ContinuousPacketReceiver struct {
+	handle    *pcap.Handle
+	cfg       *Config
+	packetCh  chan []byte
+	done      chan struct{}
+	isRunning bool
+}
+
+// NewReceiver creates a new continuous packet receiver
+func NewReceiver(cfg *Config) *ContinuousPacketReceiver {
+	pr := &ContinuousPacketReceiver{
+		cfg:      cfg,
+		packetCh: make(chan []byte, 1000),
+		done:     make(chan struct{}),
+	}
+
+	go pr.receiveLoop()
+	return pr
+}
+
+// receiveLoop continuously receives packets until closed
+func (pr *ContinuousPacketReceiver) receiveLoop() {
+	var err error
+	pr.handle, err = pcap.OpenLive(
+		pr.cfg.Pcap.Iface,
+		pr.cfg.Pcap.SnapLen,
+		pr.cfg.Pcap.Promisc,
+		pr.cfg.Pcap.Timeout)
+
+	if err != nil {
+		LogError("Failed to open interface: %v", err)
+		return
+	}
+	defer pr.handle.Close()
+
+	if pr.cfg.Packet.BPF != "" {
+		if err := pr.handle.SetBPFFilter(pr.cfg.Packet.BPF); err != nil {
+			LogError("Failed to set BPF filter: %v", err)
+			return
+		}
+	}
+
+	packetSource := gopacket.NewPacketSource(pr.handle, pr.handle.LinkType())
+	pr.isRunning = true
+
+	for {
+		select {
+		case <-pr.done:
+			pr.isRunning = false
+			return
+		case packet, ok := <-packetSource.Packets():
+			if !ok {
+				pr.isRunning = false
+				return
+			}
+
+			if packet == nil {
+				continue
+			}
+
+			udpLayer := packet.Layer(layers.LayerTypeUDP)
+			if udpLayer != nil {
+				udp, _ := udpLayer.(*layers.UDP)
+				packetCopy := make([]byte, len(udp.Payload))
+				copy(packetCopy, udp.Payload)
+
+				select {
+				case pr.packetCh <- packetCopy:
+					// Packet queued
+				default:
+					// Channel full, drop packet
+				}
+			}
+		}
+	}
+}
+
+// GetNextPacket returns the next received packet or nil if receiver is closed
+func (pr *ContinuousPacketReceiver) GetNextPacket() []byte {
+	if !pr.isRunning {
+		return nil
+	}
+
+	select {
+	case packet := <-pr.packetCh:
+		return packet
+	case <-pr.done:
+		return nil
+	default:
+		return nil // Non-blocking return if no packets available
+	}
+}
+
+// Close shuts down the receiver
+func (pr *ContinuousPacketReceiver) Close() {
+	if pr.isRunning {
+		close(pr.done)
+		if pr.handle != nil {
+			pr.handle.Close()
+		}
+	}
+}
