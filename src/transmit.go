@@ -469,12 +469,16 @@ type MultiStreamSender struct {
 func NewMultiStreamSender(cfg *Config, rateLimit int) *MultiStreamSender {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Default configuration
+	// Default configuration with all fields initialized
 	streamConfig := &MultiStreamConfig{
-		PacketWorkers:  8,
-		StreamCount:    4,
-		ChannelBuffers: 1000,
-		ReportInterval: 1000,
+		PacketWorkers:    8,
+		StreamCount:      4,
+		ChannelBuffers:   1000,
+		ReportInterval:   1000,
+		EnableCPUPinning: false, // Default to false for wider compatibility
+		DisableOrdering:  false, // Default to ordered transmission
+		TurnstileBurst:   1,     // Default to single packet burst
+		EnableMetrics:    true,  // Default to metrics enabled
 	}
 
 	return &MultiStreamSender{
@@ -504,6 +508,26 @@ func (ms *MultiStreamSender) SetStreamConfig(packetWorkers, streamCount, channel
 	if reportInterval > 0 {
 		ms.StreamConfig.ReportInterval = reportInterval
 	}
+
+	// Log the configuration for debugging
+	LogDebug("MultiStreamSender configured with: workers=%d, streams=%d, buffers=%d, report=%d",
+		ms.StreamConfig.PacketWorkers,
+		ms.StreamConfig.StreamCount,
+		ms.StreamConfig.ChannelBuffers,
+		ms.StreamConfig.ReportInterval)
+}
+
+// SetAdvancedConfig configures the advanced streaming options
+func (ms *MultiStreamSender) SetAdvancedConfig(enableCPUPinning bool, disableOrdering bool,
+	turnstileBurst int, enableMetrics bool) {
+	ms.StreamConfig.EnableCPUPinning = enableCPUPinning
+	ms.StreamConfig.DisableOrdering = disableOrdering
+
+	if turnstileBurst > 0 {
+		ms.StreamConfig.TurnstileBurst = turnstileBurst
+	}
+
+	ms.StreamConfig.EnableMetrics = enableMetrics
 }
 
 // AddPayload adds a single payload to the sender
@@ -911,4 +935,29 @@ func (ms *MultiStreamSender) GetErrorCount() int {
 		return int(ms.metrics.packetsDropped.Load())
 	}
 	return 0
+}
+
+// GetStreamConfig returns the current streaming configuration
+func (ms *MultiStreamSender) GetStreamConfig() *MultiStreamConfig {
+	return ms.StreamConfig
+}
+
+// IsOrderingEnabled returns whether packet ordering is enabled
+func (ms *MultiStreamSender) IsOrderingEnabled() bool {
+	return !ms.StreamConfig.DisableOrdering
+}
+
+// IsCPUPinningEnabled returns whether CPU pinning is enabled
+func (ms *MultiStreamSender) IsCPUPinningEnabled() bool {
+	return ms.StreamConfig.EnableCPUPinning
+}
+
+// GetTurnstileBurst returns the configured burst size
+func (ms *MultiStreamSender) GetTurnstileBurst() int {
+	return ms.StreamConfig.TurnstileBurst
+}
+
+// AreMetricsEnabled returns whether metrics collection is enabled
+func (ms *MultiStreamSender) AreMetricsEnabled() bool {
+	return ms.StreamConfig.EnableMetrics
 }

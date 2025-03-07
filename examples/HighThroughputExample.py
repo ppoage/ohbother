@@ -22,7 +22,7 @@ srcPort = 8443
 dstPort = 8443
 iface = "en0"
 bpf = f"udp and dst port {dstPort}"
-packetCount = 500_000
+packetCount = 5
 payloadSize = 60
 rateLimit = 0  # 1_000_000
 SnapLen = 1500  # 1500
@@ -57,7 +57,8 @@ def _generate_single_payload(i, size, pattern_type):
         raw_bytes = bytes(size)  # More efficient than bytes([0] * size)
     else:
         raw_bytes = bytes([j % 256 for j in range(size)])
-
+    print(raw_bytes)
+    raw_bytes = bytearray(raw_bytes)
     return raw_bytes
 
 

@@ -21,8 +21,8 @@ srcPort = 8443
 dstPort = 8443
 iface = "en0"
 bpf = f"udp and dst port {dstPort}"
-packetCount = 1_000_000
-payloadSize = 1458
+packetCount = 10
+payloadSize = 60 #1458
 rateLimit = 0
 SnapLen = 1500
 Promisc = True
@@ -143,7 +143,7 @@ def run_multistream(
     count=packetCount,
     size=payloadSize,
     rate=rateLimit,
-    pattern="sequence",
+    pattern="ascending",
     workers=workerCount,
     streams=streamCount,
     buffers=BufferSize,
@@ -190,7 +190,20 @@ def run_multistream(
 
     # Create and configure sender
     sender = pooh.NewMultiStreamSender(config, rate)
-    sender.SetStreamConfig(workers, streams, buffers, 10000)
+    sender.SetStreamConfig(
+        packetWorkers=12,     # Number of worker goroutines for packet preparation
+        streamCount=6,        # Number of parallel sending streams
+        channelBuffers=10000, # Size of channel buffers
+        reportInterval=5000   # How often to report progress
+    )
+
+    # Advanced configuration
+    sender.SetAdvancedConfig(
+        enableCPUPinning=True,   # Pin threads to CPU cores for better performance
+        disableOrdering=False,   # Keep packet ordering intact
+        turnstileBurst=10,       # Allow bursts of 10 packets in the rate limiter
+        enableMetrics=True       # Collect performance metrics
+    )
 
     # Add payloads to the sender
     print("Adding payloads to sender...")
@@ -200,6 +213,15 @@ def run_multistream(
     # Send packets
     print(f"Starting transmission of {count} packets...")
     sender.Send()
+
+    # Check configuration
+    if sender.IsOrderingEnabled():
+        print("Packet ordering is enabled")
+
+    # Get metrics after sending
+    if sender.AreMetricsEnabled():
+        metrics = sender.GetMetrics()
+        print(f"Average packet preparation time: {metrics['avg_prepare_ns']} ns")
 
     # Process results
     process_results(sender, count)
