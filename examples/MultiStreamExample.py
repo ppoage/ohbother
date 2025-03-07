@@ -148,7 +148,7 @@ def run_multistream(
     streams=streamCount,
     buffers=BufferSize,
     receive_enable=False,
-    gen_workers=8,
+    gen_workers=workerCount,
 ):
     print("MultiStream UDP Packet Sender")
     print(f"Interface: {interface}, Packets: {count}, Size: {size}, Rate: {rate}")
@@ -199,7 +199,7 @@ def run_multistream(
 
     # Advanced configuration
     sender.SetAdvancedConfig(
-        enableCPUPinning=False,   # Pin threads to CPU cores for better performance
+        enableCPUPinning=True,   # Pin threads to CPU cores for better performance
         disableOrdering=False,   # Keep packet ordering intact
         turnstileBurst=1,       # Allow bursts of 10 packets in the rate limiter
         enableMetrics=True       # Collect performance metrics

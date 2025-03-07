@@ -555,6 +555,9 @@ func (ms *MultiStreamSender) Send() error {
 	// Initialize metrics
 	ms.metrics = &senderMetrics{}
 
+	// Initialize the atomic counter for ordering - ADD THIS LINE
+	ms.nextToSend.Store(0)
+
 	// Set up channels with specified buffer sizes
 	rawCh := make(chan struct {
 		index   int
@@ -696,18 +699,18 @@ func (ms *MultiStreamSender) sendPackets(streamID int, handle *pcap.Handle, in <
 			startWait = time.Now()
 		}
 
+		// Get rate limiting token first
+		<-ms.turnstileCh
+
+		// Then wait for ordering turn
 		if !ms.StreamConfig.DisableOrdering {
-			// Ordered mode: Wait for this packet's turn at the turnstile
 			expectedSeq := uint64(packet.originalIndex)
 			for ms.nextToSend.Load() != expectedSeq {
 				// Brief pause to reduce CPU usage during spin wait
 				runtime.Gosched()
-				time.Sleep(50 * time.Microsecond) // <-- Add this line to prevent 100% CPU usage
+				//time.Sleep(50 * time.Microsecond)
 			}
 		}
-
-		// Wait for rate limiting token
-		<-ms.turnstileCh
 
 		if ms.StreamConfig.EnableMetrics && !ms.StreamConfig.DisableOrdering {
 			waitNs := time.Since(startWait).Nanoseconds()
