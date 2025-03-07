@@ -23,13 +23,13 @@ iface = "en0"
 bpf = f"udp and dst port {dstPort}"
 packetCount = 10
 payloadSize = 60 #1458
-rateLimit = 0
+rateLimit = 1000
 SnapLen = 1500
 Promisc = True
 BufferSize = 1 * 1024 * 1024
 ImmediateMode = True
 workerCount = 12
-streamCount = 6
+streamCount = 1
 
 
 def _generate_single_payload(i, size, pattern_type):
@@ -191,17 +191,17 @@ def run_multistream(
     # Create and configure sender
     sender = pooh.NewMultiStreamSender(config, rate)
     sender.SetStreamConfig(
-        packetWorkers=12,     # Number of worker goroutines for packet preparation
-        streamCount=6,        # Number of parallel sending streams
-        channelBuffers=10000, # Size of channel buffers
+        packetWorkers=workerCount,     # Number of worker goroutines for packet preparation
+        streamCount=streamCount,        # Number of parallel sending streams
+        channelBuffers=BufferSize, # Size of channel buffers
         reportInterval=5000   # How often to report progress
     )
 
     # Advanced configuration
     sender.SetAdvancedConfig(
-        enableCPUPinning=True,   # Pin threads to CPU cores for better performance
+        enableCPUPinning=False,   # Pin threads to CPU cores for better performance
         disableOrdering=False,   # Keep packet ordering intact
-        turnstileBurst=10,       # Allow bursts of 10 packets in the rate limiter
+        turnstileBurst=1,       # Allow bursts of 10 packets in the rate limiter
         enableMetrics=True       # Collect performance metrics
     )
 
@@ -217,6 +217,9 @@ def run_multistream(
     # Check configuration
     if sender.IsOrderingEnabled():
         print("Packet ordering is enabled")
+    
+    if sender.IsCPUPinningEnabled():
+        print("CPU pinning is enabled")
 
     # Get metrics after sending
     if sender.AreMetricsEnabled():

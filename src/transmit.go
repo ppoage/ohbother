@@ -702,14 +702,7 @@ func (ms *MultiStreamSender) sendPackets(streamID int, handle *pcap.Handle, in <
 			for ms.nextToSend.Load() != expectedSeq {
 				// Brief pause to reduce CPU usage during spin wait
 				runtime.Gosched()
-
-				// Check if we've been cancelled during wait
-				select {
-				case <-ms.cancelCtx.Done():
-					return
-				default:
-					// Continue waiting
-				}
+				time.Sleep(50 * time.Microsecond) // <-- Add this line to prevent 100% CPU usage
 			}
 		}
 
