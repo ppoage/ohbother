@@ -64,23 +64,69 @@ def build_standard(env):
     """Run standard production build"""
     print("Running standard build...")
     
-    # Create output directory if it doesn't exist
-    output_dir = Path("ohbother/generated")
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # Create temporary output directory
+    temp_dir = Path("ohbother/core/_generated")
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Temporary output directory: {temp_dir.resolve()}")
     
-    # Run gopy build
-    subprocess.run(
-        [
-            "gopy",
-            "build",
-            "-output=generated",
-            "-no-make=true",
-            ".",
-        ],
-        cwd=Path("ohbother"),
-        env=env,
-        check=True,
-    )
+    # Create final destination directory
+    final_dir = Path("ohbother/generated")
+    final_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Final output directory: {final_dir.resolve()}")
+    
+    # Use Python interpreter path
+    python_path = sys.executable + "3.12"
+    working_dir = Path("ohbother/core").resolve()
+    print(f"Working directory: {working_dir}")
+    print(f"Using Python interpreter: {python_path}")
+    
+    # Run gopy build with verbose flag
+    cmd = [
+        "gopy",
+        "build",
+        "-output=" + str(temp_dir.resolve()),
+        "-no-make=true",
+        "-vm=" + python_path,
+        ".",
+    ]
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=working_dir,
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        print(result.stdout)
+        
+        # Move generated files to final destination
+        print(f"Moving generated files from {temp_dir} to {final_dir}")
+        if temp_dir.exists():
+            # Remove existing files in destination if they exist
+            if final_dir.exists():
+                for item in final_dir.glob('*'):
+                    if item.is_file():
+                        item.unlink()
+                    elif item.is_dir():
+                        shutil.rmtree(item)
+            
+            # Move each item from source to destination
+            for item in temp_dir.glob('*'):
+                dest_path = final_dir / item.name
+                if item.is_file():
+                    shutil.copy2(item, dest_path)
+                else:
+                    shutil.copytree(item, dest_path, dirs_exist_ok=True)
+            
+            # Clean up temporary directory
+            shutil.rmtree(temp_dir)
+        
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed with exit code {e.returncode}")
+        print(f"STDOUT: {e.stdout}")
+        print(f"STDERR: {e.stderr}")
+        raise
     
     print("Standard build completed successfully")
 
@@ -89,29 +135,69 @@ def build_dev(env):
     """Run development build with additional debug info"""
     print("Running development build...")
     
-    # Create output directory if it doesn't exist
-    output_dir = Path("ohbother/generated")
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # Create temporary output directory
+    temp_dir = Path("ohbother/core/_generated")
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Temporary output directory: {temp_dir.resolve()}")
+    
+    # Create final destination directory
+    final_dir = Path("ohbother/generated")
+    final_dir.mkdir(parents=True, exist_ok=True)
+    print(f"Final output directory: {final_dir.resolve()}")
     
     # Use Python interpreter path
-    python_path = sys.executable
+    python_path = sys.executable + "3.12"
+    working_dir = Path("ohbother/core").resolve()
+    print(f"Working directory: {working_dir}")
     print(f"Using Python interpreter: {python_path}")
     
     # Run gopy build with verbose flag
-    subprocess.run(
-        [
-            "gopy",
-            "build",
-            "-output=generated",
-            "-no-make=true",
-            "-vm=" + python_path,
-            "-v",  # Verbose output for development
-            ".",
-        ],
-        cwd=Path("ohbother"),
-        env=env,
-        check=True,
-    )
+    cmd = [
+        "gopy",
+        "build",
+        "-output=" + str(temp_dir.resolve()),
+        "-no-make=true",
+        "-vm=" + python_path,
+        ".",
+    ]
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=working_dir,
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        print(result.stdout)
+        
+        # Move generated files to final destination
+        print(f"Moving generated files from {temp_dir} to {final_dir}")
+        if temp_dir.exists():
+            # Remove existing files in destination if they exist
+            if final_dir.exists():
+                for item in final_dir.glob('*'):
+                    if item.is_file():
+                        item.unlink()
+                    elif item.is_dir():
+                        shutil.rmtree(item)
+            
+            # Move each item from source to destination
+            for item in temp_dir.glob('*'):
+                dest_path = final_dir / item.name
+                if item.is_file():
+                    shutil.copy2(item, dest_path)
+                else:
+                    shutil.copytree(item, dest_path, dirs_exist_ok=True)
+            
+            # Clean up temporary directory
+            shutil.rmtree(temp_dir)
+        
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed with exit code {e.returncode}")
+        print(f"STDOUT: {e.stdout}")
+        print(f"STDERR: {e.stderr}")
+        raise
     
     print("Development build completed successfully")
 
