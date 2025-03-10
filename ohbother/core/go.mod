@@ -1,6 +1,6 @@
 module ohbother
 
-go 1.24.0
+go 1.24.1
 
 require (
 	github.com/go-python/gopy v0.4.10
