@@ -52,17 +52,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full checkout to ensure all files are available
+          fetch-depth: 0  # Ensure complete checkout of all files
 
-      # Enhanced debug step to verify structure throughout the workspace
-      - name: Verify complete workspace structure
+      - name: Debug - List entire repository structure
+        run: |
+          echo "Repository structure:"
+          find . -type f | sort
+        shell: bash
+
+      - name: Verify workspace: root and ohbother/
         run: |
           echo "Current directory: $(pwd)"
-          echo "All files in workspace root:"
+          echo "Files at repository root:"
           find . -maxdepth 1 -type f | sort
-          echo "Python packaging files:"
+          echo "Python packaging files (setup.py, pyproject.toml, setup.cfg):"
           find . -maxdepth 1 -name "setup.py" -o -name "pyproject.toml" -o -name "setup.cfg"
-          echo "Files in ohbother directory:"
+          echo "Files in ohbother/ directory:"
           find ./ohbother -maxdepth 1 -type f | sort
         shell: bash
 
@@ -90,11 +95,8 @@ jobs:
       # Verify artifacts were downloaded properly
       - name: Verify downloaded artifacts
         run: |
-          echo "Generated directory contents:"
-          ls -la ohbother/generated/ || echo "Generated directory not found or empty!"
-          echo "Number of files:"
-          find ohbother/generated/ -type f | wc -l
-          # Check absolute paths that will be used
+          echo "Contents of ohbother/generated:"
+          ls -la ohbother/generated/ || echo "No files found in ohbother/generated!"
           echo "Absolute path of generated dir: $(pwd)/ohbother/generated"
         shell: bash
       
@@ -106,14 +108,16 @@ jobs:
 
       # Install cibuildwheel
       - name: Install cibuildwheel
-        run: python -m pip install cibuildwheel==2.23.0
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install cibuildwheel==2.23.0
 
       # Try running cibuildwheel with working dir explicitly in repository root
       - name: Build wheels
         run: |
-          # Print working directory to confirm where we are
-          echo "Building wheels from directory: $(pwd)"
-          # Run cibuildwheel from the repository root
+          echo "Current working directory: $(pwd)"
+          echo "Listing full repository structure:"
+          find . -type f | sort
           python -m cibuildwheel --output-dir wheelhouse
         env:
           # Only build for the python version we have artifacts for
@@ -123,8 +127,7 @@ jobs:
           # Skip tests for now
           CIBW_TEST_SKIP: "*"
           # Define what gets included in the wheel
-          CIBW_BEFORE_BUILD: |
-            pip install setuptools wheel
+          CIBW_BEFORE_BUILD: "pip install setuptools wheel"
           # Set platform-specific build flags with absolute paths
           CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$(pwd)/ohbother/generated"
           CIBW_ENVIRONMENT_MACOS: "DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:$(pwd)/ohbother/generated"
@@ -133,7 +136,8 @@ jobs:
           CIBW_ARCHS_MACOS: "x86_64 arm64"
 
       # Upload the wheels as artifacts
-      - uses: actions/upload-artifact@v4
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
         with:
           name: wheel-${{ matrix.os }}-py${{ matrix.python-version }}
-          path: ./wheelhouse/*.whl
+          path: wheelhouse/*.whl
