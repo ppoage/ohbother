@@ -5,7 +5,7 @@ on:
     workflows: ["Build Library"]
     types:
       - completed
-    branches: [main]
+    branches: [ main, dev/wip/new_linkages ]
   workflow_dispatch:
     inputs:
       build_workflow_run_id:
@@ -19,7 +19,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [macos-latest, windows-latest] #[ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.10', '3.11', '3.12']
         include:
           # Add specific macOS version with arm64
