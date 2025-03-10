@@ -75,7 +75,7 @@ def build_standard(env):
     print(f"Final output directory: {final_dir.resolve()}")
     
     # Use Python interpreter path
-    python_path = sys.executable
+    python_path = os.environ.get("PYTHON_VM_PATH", sys.executable)
     working_dir = Path("ohbother/core").resolve()
     print(f"Working directory: {working_dir}")
     print(f"Using Python interpreter: {python_path}")
