@@ -2,11 +2,12 @@ name: Build Library
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev/wip/new_linkages ]
   pull_request:
     branches: [ main ]
   release:
     types: [created]
+  workflow_dispatch:  # Adds manual trigger option in GitHub UI
 
 jobs:
   build:
@@ -49,7 +50,7 @@ jobs:
         ) else (
           echo "Creating python3.exe symlink..."
           mklink "%pythonLocation%\python3.exe" "%pythonLocation%\python.exe"
-        if exist "%pythonLocation%\python3.exe" (
+if exist "%pythonLocation%\python3.exe" (
           echo "python3.exe symlink created successfully"
         ) else (
           echo "Failed to create python3.exe symlink"
