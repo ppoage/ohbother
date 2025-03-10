@@ -70,7 +70,7 @@ jobs:
           workflow: build.yml
           run_id: ${{ steps.determine-run-id.outputs.run_id }}
           name: lib-${{ matrix.os }}-py${{ matrix.python-version }}
-          path: ohbother/generated
+          path: ohbother/generated/
           if_no_artifact_found: error
       
       # Set up Python for cibuildwheel
