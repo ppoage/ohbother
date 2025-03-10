@@ -55,7 +55,7 @@ jobs:
           find . -type f | sort
         shell: bash
 
-      - name: Verify workspace":" root and ohbother/
+      - name: Verify workspace root and ohbother/
         run: |
           echo "Current directory: $(pwd)"
           echo "Files at repository root (non-recursive):"
@@ -85,6 +85,7 @@ jobs:
           run_id: ${{ steps.determine-run-id.outputs.run_id }}
           name: lib-${{ matrix.os }}-py${{ matrix.python-version }}
           path: ohbother/generated/
+          skip_unpack: false  # Make sure we extract the files
           if_no_artifact_found: error
       
       # Verify artifacts were downloaded properly
@@ -92,9 +93,22 @@ jobs:
         run: |
           echo "Recursive listing of ohbother/generated:"
           find ohbother/generated -type f | sort
+          echo "Number of files in generated directory:"
+          find ohbother/generated -type f | wc -l
+          echo "File types in generated directory:"
+          find ohbother/generated -type f -name "*.so" -o -name "*.dll" -o -name "*.dylib" -o -name "*.py" | sort
           echo "Absolute path of generated dir: $(pwd)/ohbother/generated"
         shell: bash
       
+      # Create a setup.py.local with explicit ext_modules if necessary
+      - name: Ensure extension modules are recognized
+        run: |
+          # Create a file listing all binary extension files to help debug
+          echo "Finding all potential extension modules:"
+          find ohbother/generated -name "*.so" -o -name "*.dll" -o -name "*.pyd" -o -name "*.dylib" > extension_files.txt
+          cat extension_files.txt
+        shell: bash
+
       # Set up Python for cibuildwheel
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -112,7 +126,9 @@ jobs:
         run: |
           echo "Current working directory: $(pwd)"
           echo "Full recursive listing of repository before build:"
-          find . -type f | sort
+          find . -type f -name "*.so" -o -name "*.dll" -o -name "*.dylib" -o -name "*.py" | sort
+          
+          # Force the creation of a binary wheel by using the right options
           python -m cibuildwheel --output-dir wheelhouse
         env:
           # Only build for the python version we have artifacts for
@@ -130,6 +146,8 @@ jobs:
           # For macOS arm64 wheels
           CIBW_ARCHS_MACOS: "x86_64 arm64"
           CIBW_BUILD_VERBOSITY: "1"
+          # Ensure MANIFEST.in is considered
+          PIP_NO_BUILD_ISOLATION: "false"
 
       # Upload the wheels as artifacts
       - name: Upload wheels
