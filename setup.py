@@ -79,12 +79,6 @@ setuptools.setup(
     # package_data section that includes EVERYTHING in generated and all subdirectories
     package_data={
         "ohbother.generated": ["*", "*/*", "*/*/*"],  # Include everything in the generated directory and subdirectories
-    },
-    # Force binary distribution
-    options={
-        'bdist_wheel': {
-            'py_limited_api': False,
-            'plat_name': sys.platform,
-        }
-    },
+    }
+
 )
