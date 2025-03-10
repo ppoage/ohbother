@@ -1,0 +1,86 @@
+name: Build Wheels
+
+on:
+  workflow_run:
+    workflows: ["Build Library"]
+    types:
+      - completed
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      build_workflow_run_id:
+        description: 'Build workflow run ID to use artifacts from'
+        required: false
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.10', '3.11', '3.12']
+        include:
+          # Add specific macOS version with arm64
+          - os: macos-14
+            python-version: '3.12'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Handle different ways to determine the build workflow run ID
+      - name: Determine build workflow run ID
+        id: determine-run-id
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ github.event.inputs.build_workflow_run_id }}" != "" ]]; then
+            echo "run_id=${{ github.event.inputs.build_workflow_run_id }}" >> $GITHUB_OUTPUT
+          else
+            echo "run_id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      # Download artifacts from the build workflow
+      - name: Download library artifacts
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build.yml
+          run_id: ${{ steps.determine-run-id.outputs.run_id }}
+          name: lib-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: ohbother/generated
+          if_no_artifact_found: error
+      
+      # Set up Python for cibuildwheel
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'  # Use one consistent version for running cibuildwheel
+
+      # Install cibuildwheel
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==2.23.0
+
+      # Build wheels using cibuildwheel
+      - name: Build wheels
+        run: python -m cibuildwheel --output-dir wheelhouse
+        env:
+          # Only build for the python version we have artifacts for
+          CIBW_BUILD: cp${{ matrix.python-version == '3.10' && '310' || matrix.python-version == '3.11' && '311' || '312' }}*
+          # Skip building wheels without matching architecture
+          CIBW_SKIP: "*-musllinux_* *-manylinux_i686 *-win32"
+          # Skip tests for now
+          CIBW_TEST_SKIP: "*"
+          # Define what gets included in the wheel
+          CIBW_BEFORE_BUILD: |
+            pip install setuptools wheel
+          # Set platform-specific build flags
+          CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:ohbother/generated"
+          CIBW_ENVIRONMENT_MACOS: "DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:ohbother/generated"
+          # For macOS arm64 wheels
+          CIBW_ARCHS_MACOS: "x86_64 arm64"
+
+      # Upload the wheels as artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: ./wheelhouse/*.whl
