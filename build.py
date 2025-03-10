@@ -1,4 +1,4 @@
-# build script for ohbother Python bindings.
+# build script for ohbother Python bindings
 
 import os
 import sys
