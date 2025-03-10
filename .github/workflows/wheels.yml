@@ -60,7 +60,7 @@ jobs:
           find . -type f | sort
         shell: bash
 
-      - name: Verify workspace: root and ohbother/
+      - name: Verify workspace":" root and ohbother/
         run: |
           echo "Current directory: $(pwd)"
           echo "Files at repository root:"
