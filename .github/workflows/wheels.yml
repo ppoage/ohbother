@@ -26,7 +26,6 @@ on:
           - 'all'
           - 'windows'
           - 'macos'
-          - 'macos-arm64'
   # Automatic trigger
   workflow_run:
     workflows: ["Build Library"]
@@ -42,12 +41,8 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest] #[ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest, windows-latest]
         python-version: ['3.10', '3.11', '3.12']
-        include:
-          # Add specific macOS version with arm64
-          - os: macos-14
-            python-version: '3.12'
 
     steps:
       - uses: actions/checkout@v4
@@ -56,18 +51,18 @@ jobs:
 
       - name: Debug - List entire repository structure
         run: |
-          echo "Repository structure:"
+          echo "Repository structure (recursive):"
           find . -type f | sort
         shell: bash
 
       - name: Verify workspace":" root and ohbother/
         run: |
           echo "Current directory: $(pwd)"
-          echo "Files at repository root:"
+          echo "Files at repository root (non-recursive):"
           find . -maxdepth 1 -type f | sort
           echo "Python packaging files (setup.py, pyproject.toml, setup.cfg):"
           find . -maxdepth 1 -name "setup.py" -o -name "pyproject.toml" -o -name "setup.cfg"
-          echo "Files in ohbother/ directory:"
+          echo "Files in ohbother/ directory (non-recursive):"
           find ./ohbother -maxdepth 1 -type f | sort
         shell: bash
 
@@ -93,10 +88,10 @@ jobs:
           if_no_artifact_found: error
       
       # Verify artifacts were downloaded properly
-      - name: Verify downloaded artifacts
+      - name: Debug - Recursively list downloaded artifacts
         run: |
-          echo "Contents of ohbother/generated:"
-          ls -la ohbother/generated/ || echo "No files found in ohbother/generated!"
+          echo "Recursive listing of ohbother/generated:"
+          find ohbother/generated -type f | sort
           echo "Absolute path of generated dir: $(pwd)/ohbother/generated"
         shell: bash
       
@@ -116,7 +111,7 @@ jobs:
       - name: Build wheels
         run: |
           echo "Current working directory: $(pwd)"
-          echo "Listing full repository structure:"
+          echo "Full recursive listing of repository before build:"
           find . -type f | sort
           python -m cibuildwheel --output-dir wheelhouse
         env:
