@@ -134,6 +134,7 @@ jobs:
           CIBW_ENVIRONMENT_WINDOWS: "PATH=${PATH};$(pwd)/ohbother/generated"
           # For macOS arm64 wheels
           CIBW_ARCHS_MACOS: "x86_64 arm64"
+          CIBW_BUILD_VERBOSITY: "1"
 
       # Upload the wheels as artifacts
       - name: Upload wheels
