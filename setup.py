@@ -1,7 +1,6 @@
 import os
 import setuptools
 
-# Read version from version.py
 version = "0.0.2"
 
 # Read long description from README
