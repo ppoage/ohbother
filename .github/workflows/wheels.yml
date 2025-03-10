@@ -2,7 +2,7 @@ name: Build Wheels
 
 on:
   workflow_run:
-    workflows: ["Build Library"]
+    workflows: [build.yml]
     types:
       - completed
     branches: [ main, dev/wip/new_linkages ]
