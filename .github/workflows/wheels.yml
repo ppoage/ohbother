@@ -176,7 +176,7 @@ jobs:
           # Set platform-specific build flags with absolute paths
           CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$(pwd)/ohbother/generated"
           CIBW_ENVIRONMENT_MACOS: "DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:$(pwd)/ohbother/generated MACOSX_DEPLOYMENT_TARGET=14.0"
-          CIBW_ENVIRONMENT_WINDOWS: "PATH=%PATH%;%CD%\\ohbother\\generated"
+          CIBW_ENVIRONMENT_WINDOWS: "PATH=${{ github.workspace }}/ohbother/generated;%PATH%"
           # For macOS arm64 wheels
           CIBW_ARCHS_MACOS: "x86_64 arm64"
           CIBW_BUILD_VERBOSITY: "1"
