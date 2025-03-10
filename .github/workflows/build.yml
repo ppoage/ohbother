@@ -50,7 +50,7 @@ jobs:
         ) else (
           echo "Creating python3.exe symlink..."
           mklink "%pythonLocation%\python3.exe" "%pythonLocation%\python.exe"
-if exist "%pythonLocation%\python3.exe" (
+        if exist "%pythonLocation%\python3.exe" (
           echo "python3.exe symlink created successfully"
         ) else (
           echo "Failed to create python3.exe symlink"
