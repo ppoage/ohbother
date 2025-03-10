@@ -99,6 +99,40 @@ jobs:
           find ohbother/generated -type f -name "*.so" -o -name "*.dll" -o -name "*.dylib" -o -name "*.py" | sort
           echo "Absolute path of generated dir: $(pwd)/ohbother/generated"
         shell: bash
+
+      # Enhanced deep inspection of downloaded artifacts
+      - name: Deep inspection of downloaded artifacts
+        run: |
+          # Create directories first if they don't exist
+          mkdir -p ohbother/generated
+          
+          echo "PROPER FOUND - Complete directory structure search:"
+          
+          # Check for all files recursively within ohbother/generated (including subdirectories)
+          echo "PROPER FOUND - All files in ohbother/generated (recursive):"
+          find ohbother/generated -type f | sort | while read file; do
+            echo "PROPER FOUND - FILE: $file"
+          done
+          
+          # Specifically check for binary extensions and Python files
+          echo "PROPER FOUND - Binary extensions and Python files (recursive search):"
+          find ohbother/generated -type f \( -name "*.so" -o -name "*.dll" -o -name "*.pyd" -o -name "*.dylib" -o -name "*.py" \) | sort | while read file; do
+            echo "PROPER FOUND - EXTENSION: $file"
+          done
+          
+          # Make sure we're doing a proper recursive search
+          echo "PROPER FOUND - Number of files found with recursive search:"
+          find ohbother/generated -type f | wc -l
+          
+          # Search all subdirectories explicitly
+          echo "PROPER FOUND - All subdirectories under generated:"
+          find ohbother/generated -type d | sort | while read dir; do
+            echo "PROPER FOUND - DIR: $dir"
+            ls -la "$dir" || echo "Empty directory"
+          done
+          
+          echo "PROPER FOUND - Absolute path: $(pwd)/ohbother/generated"
+        shell: bash
       
       # Create a setup.py.local with explicit ext_modules if necessary
       - name: Ensure extension modules are recognized
