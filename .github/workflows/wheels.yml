@@ -5,7 +5,7 @@ on:
     workflows: ["Build Library"]
     types:
       - completed
-    #branches: [ main, dev/wip/new_linkages ]
+    branches: [ main, dev/wip/new_linkages ]
   workflow_dispatch:
     inputs:
       build_workflow_run_id:
