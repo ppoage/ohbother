@@ -1,0 +1,16 @@
+include ohbother/generated/*.so
+include ohbother/generated/*.dll
+include ohbother/generated/*.dylib
+include ohbother/generated/*.py
+include ohbother/generated/*.h
+include ohbother/generated/*.c
+include ohbother/generated/*.so
+include ohbother/generated/*.go
+include ohbother/generated/*/*.py
+include ohbother/generated/*/*.so
+include ohbother/generated/*/*.dll
+include ohbother/generated/*/*.dylib
+include ohbother/generated/*/*/*.py
+
+global-exclude build.py
+global-include *.so *.py *.pyd

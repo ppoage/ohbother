@@ -1,3 +1,10 @@
+"""
+Example demonstrating multi-stream packet transmission using ohbother.
+
+This example shows how to send packets using multiple parallel streams
+for maximum throughput.
+"""
+
 import sys
 import os
 import time
@@ -8,28 +15,33 @@ from functools import partial
 # Add the project root directory to Python's path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import ohbother package
-from ohbother import ohbother as pooh
-from ohbother.go import Slice_byte
+# Import from our new library interface
+import ohbother
+from ohbother.config import Config, create_default_config, MultiStreamConfig
+from ohbother.transmit import MultiStreamSender
+from ohbother.receive import ContinuousPacketReceiver
+from ohbother.utilities import pass_bytes_to_go
 
 # Network configuration
-srcMAC = "1a:c0:9f:b8:84:45"
-dstMAC = "3c:7c:3f:86:19:10"
-srcIP = "192.168.50.105"
-dstIP = "192.168.50.1"
-srcPort = 8443
-dstPort = 8443
-iface = "en0"
-bpf = f"udp and dst port {dstPort}"
-packetCount = 10
-payloadSize = 60 #1458
-rateLimit = 1000
-SnapLen = 1500
-Promisc = True
-BufferSize = 1 * 1024 * 1024
-ImmediateMode = True
-workerCount = 12
-streamCount = 1
+SRC_MAC = "1a:c0:9f:b8:84:45"
+DST_MAC = "3c:7c:3f:86:19:10"
+SRC_IP = "192.168.50.105"
+DST_IP = "192.168.50.1"
+SRC_PORT = 8443
+DST_PORT = 8443
+INTERFACE = "en0"
+BPF_FILTER = f"udp and dst port {DST_PORT}"
+
+# Test parameters
+PACKET_COUNT = 10
+PAYLOAD_SIZE = 60
+WORKER_COUNT = 12
+STREAM_COUNT = 1
+SNAP_LEN = 1500
+PROMISC = True
+BUFFER_SIZE = 1 * 1024 * 1024
+IMMEDIATE_MODE = True
+RECEIVE_ENABLE = False
 
 
 def _generate_single_payload(i, size, pattern_type):
@@ -60,7 +72,7 @@ def _generate_single_payload(i, size, pattern_type):
     return raw_bytes
 
 
-def generate_pattern_payload(
+def generate_pattern_payloads(
     array_length, size, pattern_type="sequence", num_workers=8
 ):
     """Generate payloads in parallel using multiprocessing"""
@@ -70,7 +82,7 @@ def generate_pattern_payload(
             range(array_length),
         )
 
-    return [Slice_byte.from_bytes(payload) for payload in raw_payloads]
+    return raw_payloads  # Return raw bytes
 
 
 def process_results(sender, packet_count):
@@ -78,23 +90,28 @@ def process_results(sender, packet_count):
     start_time = time.time()
     last_report_time = start_time
     progress_interval = 1.0
-
-    packets_processed = 0
-    errors = 0
-    last_packets = 0
-
-    while not sender.IsComplete():
+    
+    # Get initial metrics
+    metrics = sender.metrics
+    last_packets_sent = metrics["packets_sent"]
+    
+    while True:
         current_time = time.time()
-
-        result = sender.GetNextResult()
-        if result:
-            packets_processed = result.Index + 1
-
+        # Get latest metrics
+        metrics = sender.metrics
+        packets_processed = metrics["packets_sent"]
+        errors = metrics["errors"]
+        
+        # Exit when all packets are processed or on error
+        if packets_processed >= packet_count:
+            break
+            
+        # Report progress periodically
         if current_time - last_report_time >= progress_interval:
             elapsed = current_time - start_time
             pps = packets_processed / elapsed if elapsed > 0 else 0
             interval_pps = (
-                (packets_processed - last_packets) / progress_interval
+                (packets_processed - last_packets_sent) / progress_interval
                 if progress_interval > 0
                 else 0
             )
@@ -103,135 +120,136 @@ def process_results(sender, packet_count):
             )
 
             print(
-                f"Progress: {packets_processed}/{packet_count} ({percent:.1f}%) | Rate: {pps:.0f} pps avg, {interval_pps:.0f} pps current | Errors: {errors}"
+                f"Progress: {packets_processed}/{packet_count} ({percent:.1f}%) | "
+                f"Rate: {pps:.0f} pps avg, {interval_pps:.0f} pps current | "
+                f"Errors: {errors}"
             )
 
             last_report_time = current_time
-            last_packets = packets_processed
+            last_packets_sent = packets_processed
 
-        time.sleep(0.005)
+        time.sleep(0.01)
 
+    # Get final metrics
+    final_metrics = sender.metrics
     final_elapsed = time.time() - start_time
     final_pps = packet_count / final_elapsed if final_elapsed > 0 else 0
 
     print("\nTransmission complete!")
     print(f"Total packets: {packet_count}")
+    print(f"Total bytes: {final_metrics['bytes_sent']} bytes")
     print(f"Total time: {final_elapsed:.2f} seconds")
     print(f"Average rate: {final_pps:.0f} packets per second")
-    print(f"Errors: {errors}")
+    print(f"Throughput: {final_metrics['bytes_sent']*8/final_elapsed/1_000_000:.2f} Mbps")
+    print(f"Errors: {final_metrics['errors']}")
+    if "average_latency_ns" in final_metrics:
+        print(f"Average latency: {final_metrics['average_latency_ns']/1000:.2f} µs")
 
 
 def start_receiver(config):
     """Start a receiver in a separate thread."""
-    receiver = pooh.NewReceiver(config)
+    receiver = ContinuousPacketReceiver(config)
 
     def receive_loop():
         print("Starting receiver...")
-        while True:
-            packet = receiver.GetNextPacket()
-            if not packet:
-                break
+        try:
+            for packet in receiver:
+                # Just count packets, no need to process them in this example
+                pass
+        except Exception as e:
+            print(f"Receiver error: {e}")
 
-    thread = threading.Thread(target=receive_loop)
-    thread.daemon = True
+    thread = threading.Thread(target=receive_loop, daemon=True)
     thread.start()
     return receiver, thread
 
 
 def run_multistream(
-    interface=iface,
-    count=packetCount,
-    size=payloadSize,
-    rate=rateLimit,
+    interface=INTERFACE,
+    count=PACKET_COUNT,
+    size=PAYLOAD_SIZE,
     pattern="ascending",
-    workers=workerCount,
-    streams=streamCount,
-    buffers=BufferSize,
-    receive_enable=False,
-    gen_workers=workerCount,
+    workers=WORKER_COUNT,
+    streams=STREAM_COUNT,
+    buffer_size=BUFFER_SIZE,
+    receive_enable=RECEIVE_ENABLE,
+    gen_workers=WORKER_COUNT,
 ):
+    """Run the multi-stream packet sender example."""
     print("MultiStream UDP Packet Sender")
-    print(f"Interface: {interface}, Packets: {count}, Size: {size}, Rate: {rate}")
-    print(f"Workers: {workers}, Streams: {streams}, Buffers: {buffers}")
+    print(f"Interface: {interface}, Packets: {count}, Size: {size}")
+    print(f"Workers: {workers}, Streams: {streams}, Buffer size: {buffer_size}")
 
-    config = pooh.NewDefaultConfig(
-        interface,
-        srcMAC,
-        dstMAC,
-        srcIP,
-        dstIP,
-        srcPort,
-        dstPort,
-        bpf,
-        SnapLen,
-        Promisc,
-        buffers,
-        ImmediateMode,
+    # Create configuration using our new interface
+    config = create_default_config(
+        interface=interface,
+        src_mac=SRC_MAC,
+        dst_mac=DST_MAC,
+        src_ip=SRC_IP,
+        dst_ip=DST_IP,
+        src_port=SRC_PORT,
+        dst_port=DST_PORT,
+        bpf_filter=BPF_FILTER,
+        snap_len=SNAP_LEN,
+        promisc=PROMISC,
+        buffer_size=buffer_size,
+        immediate_mode=IMMEDIATE_MODE
     )
 
     # Optional debugging
-    config.Debug.Enabled = True
-    config.Debug.Level = 3
+    config.debug.enabled = True
+    config.debug.level = 3
 
     # Start receiver if requested
     receiver = None
     if receive_enable:
-        config.Pcap.Filter = bpf
         receiver, _ = start_receiver(config)
 
     # Generate payloads (optimized with multiprocessing)
     print(f"Generating {count} payloads of size {size} with pattern '{pattern}'...")
     start_gen = time.time()
-    payloads = generate_pattern_payload(count, size, pattern, gen_workers)
+    payloads = generate_pattern_payloads(count, size, pattern, gen_workers)
     gen_time = time.time() - start_gen
     print(
         f"Generated {len(payloads)} payloads in {gen_time:.2f}s ({count/gen_time:.0f} payloads/sec)"
     )
 
-    # Create and configure sender
-    sender = pooh.NewMultiStreamSender(config, rate)
-    sender.SetStreamConfig(
-        packetWorkers=workerCount,     # Number of worker goroutines for packet preparation
-        streamCount=streamCount,        # Number of parallel sending streams
-        channelBuffers=BufferSize, # Size of channel buffers
-        reportInterval=5000   # How often to report progress
+    # Create the multi-stream configuration
+    stream_config = MultiStreamConfig(
+        packet_workers=workers,
+        stream_count=streams,
+        enable_cpu_pinning=True,
+        disable_ordering=False,
+        turnstile_burst=1,
+        enable_metrics=True
     )
-
-    # Advanced configuration
-    sender.SetAdvancedConfig(
-        enableCPUPinning=True,   # Pin threads to CPU cores for better performance
-        disableOrdering=False,   # Keep packet ordering intact
-        turnstileBurst=1,       # Allow bursts of 10 packets in the rate limiter
-        enableMetrics=True       # Collect performance metrics
-    )
-
-    # Add payloads to the sender
-    print("Adding payloads to sender...")
-    for payload in payloads:
-        sender.AddPayload(payload)
-
-    # Send packets
-    print(f"Starting transmission of {count} packets...")
-    sender.Send()
-
-    # Check configuration
-    if sender.IsOrderingEnabled():
-        print("Packet ordering is enabled")
     
-    if sender.IsCPUPinningEnabled():
-        print("CPU pinning is enabled")
-
-    # Get metrics after sending
-    if sender.AreMetricsEnabled():
-        metrics = sender.GetMetrics()
-        print(f"Average packet preparation time: {metrics['avg_prepare_ns']} ns")
-
-    # Process results
-    process_results(sender, count)
-
+    # Create the multi-stream sender
+    sender = MultiStreamSender(config, stream_config)
+    
+    # Start the sender
+    with sender:
+        print(f"Starting transmission of {count} packets...")
+        
+        # Send the packets across all streams
+        for i, payload in enumerate(payloads):
+            stream_id = i % streams
+            sender.send(payload, stream_id)
+            
+        # Process and display results
+        process_results(sender, count)
+        
+        # Display CPU pinning information
+        if stream_config.enable_cpu_pinning:
+            print("CPU pinning is enabled")
+            
+        # Flush remaining packets
+        print("Flushing remaining packets...")
+        sender.flush()
+        
     # Clean up
     if receiver:
-        receiver.Close()
+        receiver.close()
 
     return sender
 
