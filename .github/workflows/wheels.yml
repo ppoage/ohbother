@@ -159,11 +159,21 @@ jobs:
       - name: Build wheels
         run: |
           echo "Current working directory: $(pwd)"
-          echo "Full recursive listing of repository before build:"
-          find . -type f -name "*.so" -o -name "*.dll" -o -name "*.dylib" -o -name "*.py" | sort
           
-          # Force the creation of a binary wheel by using the right options
-          python -m cibuildwheel --output-dir wheelhouse
+          # Set up a project-specific temporary MANIFEST.in
+          echo "include ohbother/generated/*.*" > MANIFEST.in
+          echo "recursive-include ohbother/generated *" >> MANIFEST.in
+          cat MANIFEST.in
+          
+          # On Windows, we need a different approach for environment
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            # Use a batch file to set the PATH before running cibuildwheel
+            echo "set PATH=%CD%\\ohbother\\generated;%PATH% && python -m cibuildwheel --output-dir wheelhouse" > build_wheel.bat
+            cmd /c build_wheel.bat
+          else
+            # On non-Windows platforms, use the normal approach
+            python -m cibuildwheel --output-dir wheelhouse
+          fi
         env:
           # Only build for the python version we have artifacts for
           CIBW_BUILD: cp${{ matrix.python-version == '3.10' && '310' || matrix.python-version == '3.11' && '311' || '312' }}*
@@ -176,12 +186,12 @@ jobs:
           # Set platform-specific build flags with absolute paths
           CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:$(pwd)/ohbother/generated"
           CIBW_ENVIRONMENT_MACOS: "DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:$(pwd)/ohbother/generated MACOSX_DEPLOYMENT_TARGET=14.0"
-          CIBW_ENVIRONMENT_WINDOWS: "PATH=${{ github.workspace }}/ohbother/generated;%PATH%"
           # For macOS arm64 wheels
           CIBW_ARCHS_MACOS: "x86_64 arm64"
           CIBW_BUILD_VERBOSITY: "1"
           # Ensure MANIFEST.in is considered
           PIP_NO_BUILD_ISOLATION: "false"
+        shell: bash
 
       # Upload the wheels as artifacts
       - name: Upload wheels
