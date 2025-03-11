@@ -1,9 +1,12 @@
-"""
-Example demonstrating benchmarking functionality using ohbother.
+# Add this to your Python code
+import faulthandler
+faulthandler.enable()
 
-This example shows how to run performance tests for packet processing,
-including throughput, latency, and scalability measurements.
-"""
+# try:
+#     # Call the function that causes the segfault
+#     result = your_problematic_function()
+# except Exception as e:
+#     print(f"Exception: {e}")
 
 import sys
 import os
@@ -14,7 +17,7 @@ from pathlib import Path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import from our new library interface
-import ohbother
+#import ohbother
 from ohbother.config import Config, create_default_config
 from ohbother.benchmark import BenchmarkOptions, PerfTest
 from ohbother.receive import receive_packets_by_time

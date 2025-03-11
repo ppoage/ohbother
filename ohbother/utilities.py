@@ -21,8 +21,16 @@ from .generated.go import (
     HardwareAddr
 )
 
+from .parallel_utils import parallel_bytes_to_go
+
 
 # ----- Byte Conversion Utilities -----
+try:
+    from .parallel_utils import parallel_bytes_to_go
+    _use_fast_implementation = True
+except ImportError:
+    _use_fast_implementation = False
+    print("Warning: fast_utils module not available, using slower implementation")
 
 def pass_bytes_to_go(data: bytes) -> Slice_byte:
     """
@@ -36,7 +44,12 @@ def pass_bytes_to_go(data: bytes) -> Slice_byte:
     Returns:
         Slice_byte: Go byte slice
     """
-    return Slice_byte.from_bytes(data)
+    if _use_fast_implementation:
+        # Use the fast Cython implementation
+        return parallel_bytes_to_go(data)
+    else:
+        # Fall back to the Python implementation
+        return Slice_byte.from_bytes(bytes(data))
 
 
 def get_bytes_from_go(go_bytes: Slice_byte) -> bytes:

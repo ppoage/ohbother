@@ -390,11 +390,15 @@ func (bas *PacketSequenceSender) Send() error {
 		totalElapsed := time.Since(startTime).Seconds()
 
 		// Send a final result with the total elapsed time
-		bas.progressCh <- &PacketSendResult{
+		select {
+		case bas.progressCh <- &PacketSendResult{
 			Index:      len(bas.Payloads) - 1,
 			TotalCount: len(bas.Payloads),
 			Elapsed:    totalElapsed,
 			Error:      nil,
+		}:
+		default:
+			// If channel is full, skip sending the final result.
 		}
 
 		// Signal completion
@@ -450,19 +454,24 @@ type MultiStreamConfig struct {
 
 // MultiStreamSender provides high-performance parallel packet sending
 type MultiStreamSender struct {
-	Cfg           *Config
-	StreamConfig  *MultiStreamConfig
-	RateLimit     int
-	Payloads      [][]byte
-	progressCh    chan *PacketSendResult
-	isComplete    bool
-	workerDone    chan bool
-	schedulerDone chan bool
-	cancelCtx     context.Context
-	cancelFunc    context.CancelFunc
-	nextToSend    atomic.Uint64  // Atomic counter for turnstile
-	turnstileCh   chan struct{}  // Channel-based turnstile for rate limiting
-	metrics       *senderMetrics // Lightweight metrics
+	Cfg            *Config
+	StreamConfig   *MultiStreamConfig
+	RateLimit      int
+	Payloads       [][]byte
+	progressCh     chan *PacketSendResult
+	progressBuffer []*PacketSendResult // Buffer to store recent results
+	maxBufferSize  int                 // Maximum buffer size
+	isComplete     atomic.Bool         // Atomic flag: send complete
+	workerDone     chan bool
+	schedulerDone  chan bool
+	cancelCtx      context.Context
+	cancelFunc     context.CancelFunc
+	nextToSend     atomic.Uint64  // Atomic counter for turnstile
+	turnstileCh    chan struct{}  // Channel-based turnstile for rate limiting
+	metrics        *senderMetrics // Lightweight metrics
+	channelClosed  atomic.Bool    // Atomic flag: progressCh closed
+	mutex          sync.Mutex
+	started        atomic.Bool // New flag: transmission started?
 }
 
 // NewMultiStreamSender creates a high-performance sender with worker pools
@@ -482,15 +491,17 @@ func NewMultiStreamSender(cfg *Config, rateLimit int) *MultiStreamSender {
 	}
 
 	return &MultiStreamSender{
-		Cfg:           cfg,
-		RateLimit:     rateLimit,
-		StreamConfig:  streamConfig,
-		Payloads:      make([][]byte, 0),
-		progressCh:    make(chan *PacketSendResult, 100),
-		workerDone:    make(chan bool),
-		schedulerDone: make(chan bool),
-		cancelCtx:     ctx,
-		cancelFunc:    cancel,
+		Cfg:            cfg,
+		RateLimit:      rateLimit,
+		StreamConfig:   streamConfig,
+		Payloads:       make([][]byte, 0),
+		progressCh:     make(chan *PacketSendResult, 1000),
+		progressBuffer: make([]*PacketSendResult, 0, 1000),
+		maxBufferSize:  1000,
+		workerDone:     make(chan bool),
+		schedulerDone:  make(chan bool),
+		cancelCtx:      ctx,
+		cancelFunc:     cancel,
 	}
 }
 
@@ -552,6 +563,12 @@ type preparedPacket struct {
 
 // Send initiates high-performance parallel packet transmission
 func (ms *MultiStreamSender) Send() error {
+	// Prevent multiple invocations.
+	if ms.started.Load() {
+		return nil
+	}
+	ms.started.Store(true)
+
 	// Initialize metrics
 	ms.metrics = &senderMetrics{}
 
@@ -657,17 +674,29 @@ func (ms *MultiStreamSender) Send() error {
 		// Calculate total elapsed time
 		totalElapsed := time.Since(startTime).Seconds()
 
-		// Send a final result with the total elapsed time
-		ms.progressCh <- &PacketSendResult{
-			Index:      len(ms.Payloads) - 1,
-			TotalCount: len(ms.Payloads),
-			Elapsed:    totalElapsed,
-			Error:      nil,
-		}
+		// LOCK to protect channel operations
+		ms.mutex.Lock()
+		defer ms.mutex.Unlock()
 
-		// Signal completion
-		close(ms.progressCh)
-		ms.isComplete = true
+		// Only proceed if channel isn't already closed
+		if !ms.channelClosed.Load() {
+			// Send a final result with the total elapsed time
+			select {
+			case ms.progressCh <- &PacketSendResult{
+				Index:      len(ms.Payloads) - 1,
+				TotalCount: len(ms.Payloads),
+				Elapsed:    totalElapsed,
+				Error:      nil,
+			}:
+			default:
+				// If channel is full, skip sending the final result.
+			}
+
+			// Close the channel and mark as closed
+			close(ms.progressCh)
+			ms.channelClosed.Store(true)
+			ms.isComplete.Store(true)
+		}
 	}()
 
 	return nil
@@ -724,10 +753,14 @@ func (ms *MultiStreamSender) sendPackets(streamID int, handle *pcap.Handle, in <
 
 		// Send the packet
 		if err := handle.WritePacketData(packet.packetBytes); err != nil {
-			ms.progressCh <- &PacketSendResult{
+			select {
+			case ms.progressCh <- &PacketSendResult{
 				Index:      packet.originalIndex,
 				TotalCount: len(ms.Payloads),
 				Error:      fmt.Errorf("stream %d: failed to send packet: %v", streamID, err),
+			}:
+			default:
+				// If full, drop the error to avoid blocking.
 			}
 			ms.metrics.packetsDropped.Add(1)
 			continue
@@ -866,10 +899,14 @@ func (ms *MultiStreamSender) preparePackets(in <-chan struct {
 
 		if err != nil {
 			serializeBufferPool.Put(buffer)
-			ms.progressCh <- &PacketSendResult{
+			select {
+			case ms.progressCh <- &PacketSendResult{
 				Index:      item.index,
 				TotalCount: len(ms.Payloads),
 				Error:      fmt.Errorf("failed to serialize packet: %v", err),
+			}:
+			default:
+				// Drop error if progressCh is full.
 			}
 			continue
 		}
@@ -897,22 +934,65 @@ func (ms *MultiStreamSender) preparePackets(in <-chan struct {
 
 // IsComplete returns true when all packets have been sent
 func (ms *MultiStreamSender) IsComplete() bool {
-	return ms.isComplete
+	return ms.isComplete.Load()
 }
 
-// GetNextResult returns the result of the next packet send operation
-// Returns nil when all packets have been sent
+// GetNextResult returns the next result with smart buffering
 func (ms *MultiStreamSender) GetNextResult() *PacketSendResult {
-	result, ok := <-ms.progressCh
-	if !ok {
-		return nil // Channel closed
+	ms.mutex.Lock()
+	defer ms.mutex.Unlock()
+
+	// If we have buffered results, return one
+	if len(ms.progressBuffer) > 0 {
+		result := ms.progressBuffer[0]
+		ms.progressBuffer = ms.progressBuffer[1:]
+		return result
 	}
-	return result
+
+	// Check if no more results are expected
+	if ms.isComplete.Load() && ms.channelClosed.Load() {
+		return nil
+	}
+
+	// Try to get multiple results at once to prevent blocking
+	// This helps decouple Go and Python speeds
+	resultCount := 0
+	for resultCount < 100 { // Get up to 100 at a time
+		select {
+		case result, ok := <-ms.progressCh:
+			if !ok {
+				ms.channelClosed.Store(true)
+				if len(ms.progressBuffer) > 0 {
+					result := ms.progressBuffer[0]
+					ms.progressBuffer = ms.progressBuffer[1:]
+					return result
+				}
+				return nil
+			}
+
+			// Store result in buffer
+			ms.progressBuffer = append(ms.progressBuffer, result)
+			resultCount++
+
+		default:
+			// No more results available right now
+			break
+		}
+	}
+
+	// If we got any results, return the first one
+	if len(ms.progressBuffer) > 0 {
+		result := ms.progressBuffer[0]
+		ms.progressBuffer = ms.progressBuffer[1:]
+		return result
+	}
+
+	return nil
 }
 
 // Wait blocks until all packets have been sent
 func (ms *MultiStreamSender) Wait() {
-	for !ms.IsComplete() {
+	for !ms.isComplete.Load() {
 		time.Sleep(10 * time.Millisecond)
 	}
 }
@@ -956,4 +1036,80 @@ func (ms *MultiStreamSender) GetTurnstileBurst() int {
 // AreMetricsEnabled returns whether metrics collection is enabled
 func (ms *MultiStreamSender) AreMetricsEnabled() bool {
 	return ms.StreamConfig.EnableMetrics
+}
+
+// FastConvertPayloads converts multiple byte arrays in parallel
+func (ms *MultiStreamSender) FastConvertPayloads(payloads [][]byte) [][]byte {
+	// Get the Python list size
+	size := len(payloads)
+	if size <= 0 {
+		return nil
+	}
+
+	// Determine worker count for maximum CPU usage
+	numWorkers := runtime.NumCPU() * 4
+	if size < numWorkers {
+		numWorkers = size
+	}
+
+	// Create result array
+	results := make([][]byte, size)
+
+	// Use a wait group to synchronize workers
+	var wg sync.WaitGroup
+
+	// Process in batches using goroutines - calculate chunk sizes more efficiently
+	batchSize := (size + numWorkers - 1) / numWorkers
+
+	// Pre-allocate batch boundaries for better work distribution
+	batches := make([]struct{ start, end int }, numWorkers)
+	pos := 0
+	for i := 0; i < numWorkers; i++ {
+		batches[i].start = pos
+		batchItems := batchSize
+		if i < size%numWorkers {
+			batchItems++ // Distribute remainder evenly
+		}
+		pos += batchItems
+		batches[i].end = pos
+		if pos >= size {
+			break
+		}
+	}
+
+	for w := 0; w < numWorkers; w++ {
+		batch := batches[w]
+		if batch.start >= size {
+			continue
+		}
+
+		wg.Add(1)
+
+		go func(startIdx, endIdx int) {
+			defer wg.Done()
+
+			// Each worker processes its own chunk with better locality
+			localResults := make([][]byte, endIdx-startIdx)
+
+			for i := startIdx; i < endIdx; i++ {
+				payload := payloads[i]
+				if payload != nil {
+					// Deep copy for memory safety
+					data := make([]byte, len(payload))
+					copy(data, payload)
+					localResults[i-startIdx] = data
+				}
+			}
+
+			// Efficiently copy results back with one lock operation
+			for i := startIdx; i < endIdx; i++ {
+				results[i] = localResults[i-startIdx]
+			}
+		}(batch.start, batch.end)
+	}
+
+	// Wait for all goroutines to complete
+	wg.Wait()
+
+	return results
 }

@@ -1,19 +1,50 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0", "wheel", "setuptools", "Cython>=0.29.0"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
+[tool.poetry]
 name = "ohbother"
 version = "0.0.2"
 description = "High-performance packet processing library"
-authors = [
-    {name = "ppoage"}
-]
+authors = ["ppoage"]
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.10"
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+
+# Include everything under ohbother
+[[tool.poetry.include]]
+path = "ohbother/**/*"
+
+# Include compiled extension modules (so, dylib, dll, pyd, etc.)
+#[[tool.poetry.include]]
+# The pattern below will match fast_utils built extension regardless of its file extension.
+#path = "ohbother/fast_utils.*"
+#format = ["wheel"]
+
+# Additional explicit includes for generated files
+[[tool.poetry.include]]
+path = "ohbother/generated/*.so"
+format = ["wheel"]
+
+[[tool.poetry.include]]
+path = "ohbother/generated/*.dylib"
+format = ["wheel"]
+
+[[tool.poetry.include]]
+path = "ohbother/generated/*.dll"
+format = ["wheel"]
+
+[[tool.poetry.include]]
+path = "ohbother/generated/*.pyd"
+format = ["wheel"]
+
+#[tool.poetry.build]
+#script = "build_cython.py"

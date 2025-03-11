@@ -139,8 +139,8 @@ def main():
     total_send_time = end_time - start_time
 
     # Count successful sends
-    successful_sends = sum(1 for r in results if r.success)
-    errors = sum(1 for r in results if not r.success)
+    successful_sends = sum(1 for r in results if results)
+    errors = sum(1 for r in results if not results)
     
     # Display statistics
     print(f"\nTransmission Results:")
@@ -151,10 +151,10 @@ def main():
     print(f"  Rate: {len(results)/total_send_time:.2f} packets/sec")
     
     # If bytes were sent, show the average bytes per packet
-    total_bytes = sum(r.bytes_sent for r in results)
-    if total_bytes > 0:
-        print(f"  Average bytes per packet: {total_bytes/len(results):.2f}")
-        print(f"  Total throughput: {total_bytes*8/total_send_time/1_000_000:.2f} Mbps")
+    # total_bytes = sum(r.bytes_sent for r in results)
+    # if total_bytes > 0:
+    #     print(f"  Average bytes per packet: {total_bytes/len(results):.2f}")
+    #     print(f"  Total throughput: {total_bytes*8/total_send_time/1_000_000:.2f} Mbps")
 
     # Retrieve received packets if enabled
     if RECEIVE_ENABLE and receiver:

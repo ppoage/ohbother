@@ -15,14 +15,9 @@ from .config import Config, MultiStreamConfig
 from .transmit import MultiStreamSender, send_packets, PacketSendResult
 from .receive import receive_packets_by_count, receive_packets_by_time, PacketStats
 from .generated.ohbother import (
-    BenchmarkSender as GoBenchmarkSender,
-    BenchmarkReceiver as GoBenchmarkReceiver,
-    BenchmarkResult,
-    RunBenchmark as go_run_benchmark,
-    NewBenchmarkSender,
-    NewBenchmarkReceiver
+    BenchmarkSend as go_benchmark_send,
+    BenchmarkReceiveAsync as go_benchmark_receive_async
 )
-
 
 @dataclass
 class BenchmarkOptions:
@@ -51,6 +46,9 @@ class BenchmarkOptions:
     
     payload_pattern: bytes = b'\x00'
     """Pattern to use for packet payloads."""
+    
+    rate_limit: int = 0
+    """Rate limit in nanoseconds between packets (0 = unlimited)."""
 
 
 @dataclass
@@ -96,12 +94,13 @@ class BenchmarkResult:
     latency_p99_ms: float = 0.0
     """99th percentile latency in milliseconds."""
     
+    rate: float = 0.0
+    """Rate in packets per second (returned by Go)"""
+    
     @property
     def packets_per_second(self) -> float:
         """Calculate packets sent per second."""
-        if self.duration <= 0:
-            return 0
-        return self.packets_sent / self.duration
+        return self.rate
     
     @property
     def receive_rate(self) -> float:
@@ -158,6 +157,8 @@ def run_benchmark(
     """
     Run a benchmark using the given configuration.
     
+    Uses the native Go benchmark functions for optimal performance.
+    
     Args:
         config: Packet processing configuration
         options: Benchmark configuration options
@@ -171,110 +172,84 @@ def run_benchmark(
     if options is None:
         options = BenchmarkOptions()
     
-    # Create the benchmark objects
-    stream_config = MultiStreamConfig(packet_workers=options.parallel_streams)
-    
-    # Generate a payload
-    payload = options.payload_pattern * (options.packet_size // len(options.payload_pattern))
-    payload = payload[:options.packet_size]  # Ensure exact size
-    
     # Initialize results
     result = BenchmarkResult()
-    latencies = []
     
-    # Setup sender and receiver
-    sender = MultiStreamSender(config, stream_config)
-    sender.start()
+    # Set up the receiver if we need to measure received packets
+    receiver = None
+    if config.pcap.interface.startswith("lo"):  # Loopback mode
+        try:
+            # Start async receiver if we're using loopback
+            if options.duration > 0:
+                receiver_duration = options.duration + 2.0  # Add buffer time
+                receiver = go_benchmark_receive_async(config._get_go_object(), receiver_duration)
+            else:
+                # For packet count mode, estimate duration
+                est_duration = (options.packet_count / 5000) * 5.0  # Estimate 5000 packets/sec
+                receiver_duration = max(5.0, est_duration * 2.0)  # Min 5 seconds with 2x buffer
+                receiver = go_benchmark_receive_async(config._get_go_object(), receiver_duration)
+        except Exception as e:
+            print(f"Warning: Could not set up receiver: {e}")
     
-    # Determine benchmark duration and packet count
-    if options.duration > 0:
-        end_time = time.time() + options.duration
-        target_packets = None
-    else:
-        end_time = None
-        target_packets = options.packet_count
+    # Allow time for receiver to start capturing
+    if receiver:
+        time.sleep(0.2)
     
-    # Warmup phase
-    if options.warmup_packets > 0:
-        warmup_payloads = [payload] * options.warmup_packets
-        sender.send_batch(warmup_payloads)
-        time.sleep(0.1)  # Brief pause after warmup
+    # Report initial progress
+    if progress_callback:
+        progress_callback(0.0, result)
     
     # Start timing
     start_time = time.time()
-    last_progress_time = start_time
     
     try:
-        # Main benchmark loop
-        packet_count = 0
-        while True:
-            # Check if we're done
-            if end_time and time.time() >= end_time:
-                break
-            if target_packets and packet_count >= target_packets:
-                break
-            
-            # Send a packet
-            send_time = time.time()
-            success = sender.send(payload, packet_count % options.parallel_streams)
-            
-            if success:
-                packet_count += 1
-                result.packets_sent += 1
-                result.bytes_sent += len(payload)
+        # Call Go benchmark function - this blocks until completion
+        if options.duration > 0:
+            # Convert duration to packet count
+            # Estimate based on 10,000 packets/sec rate
+            packet_count = int(options.duration * 10000)
+        else:
+            packet_count = options.packet_count
+        
+        # Call the Go benchmark function which returns packets/sec rate
+        rate = go_benchmark_send(
+            config._get_go_object(),
+            packet_count,
+            options.packet_size, 
+            options.rate_limit
+        )
+        
+        # Update results
+        end_time = time.time()
+        result.duration = end_time - start_time
+        result.packets_sent = packet_count
+        result.bytes_sent = packet_count * options.packet_size
+        result.rate = rate  # Store the rate returned by Go
+        
+        # Set 100% progress at the end
+        if progress_callback:
+            progress_callback(100.0, result)
+        
+        # Get receiver results if available
+        if receiver:
+            try:
+                # Wait for cooldown to ensure all packets are captured
+                time.sleep(options.cooldown_seconds)
                 
-                # Track latency if this is a loopback test
-                if config.pcap.interface.startswith("lo"):
-                    latency_ms = (time.time() - send_time) * 1000
-                    latencies.append(latency_ms)
-            else:
-                result.send_errors += 1
-            
-            # Report progress periodically
-            current_time = time.time()
-            if (progress_callback and 
-                    current_time - last_progress_time >= options.report_interval):
-                last_progress_time = current_time
-                progress = 0.0
-                
-                if target_packets:
-                    progress = min(100.0, 100.0 * packet_count / target_packets)
-                elif end_time:
-                    elapsed = current_time - start_time
-                    total = end_time - start_time
-                    progress = min(100.0, 100.0 * elapsed / total)
-                
-                # Update result duration
-                result.duration = current_time - start_time
-                progress_callback(progress, result)
+                # Get received packets
+                received_packets = receiver.ResultNative()
+                result.packets_received = len(received_packets)
+                result.bytes_received = sum(len(p) for p in received_packets)
+            except Exception as e:
+                print(f"Error collecting receiver results: {e}")
     
-    except KeyboardInterrupt:
-        pass
-    finally:
-        # Finalize results
-        result.duration = time.time() - start_time
-        
-        # Calculate latency statistics if available
-        if latencies:
-            result.latency_min_ms = min(latencies)
-            result.latency_max_ms = max(latencies)
-            result.latency_avg_ms = statistics.mean(latencies)
-            
-            # Sort for percentiles
-            latencies.sort()
-            result.latency_p50_ms = latencies[len(latencies) // 2]
-            result.latency_p95_ms = latencies[int(len(latencies) * 0.95)]
-            result.latency_p99_ms = latencies[int(len(latencies) * 0.99)]
-        
-        # Flush and stop the sender
-        sender.flush()
-        sender.stop()
-        
-        # Wait for cooldown
-        if options.cooldown_seconds > 0:
-            time.sleep(options.cooldown_seconds)
-        
-        return result
+    except Exception as e:
+        print(f"Benchmark error: {e}")
+    
+    # Wait for cooldown
+    time.sleep(options.cooldown_seconds)
+    
+    return result
 
 
 class PerfTest:

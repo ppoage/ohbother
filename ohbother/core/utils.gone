@@ -1,0 +1,481 @@
+package ohbother
+
+/*
+#cgo pkg-config: python3
+#define Py_LIMITED_API
+#include <Python.h>
+#include <stdlib.h>
+
+// C helper to release Python GIL during intensive operations
+// This is critical for true parallelism with Python
+static PyThreadState* releaseGIL() {
+    PyThreadState* tstate = PyEval_SaveThread();
+    return tstate;
+}
+
+static void reacquireGIL(PyThreadState* tstate) {
+    PyEval_RestoreThread(tstate);
+}
+
+// Handle reference counting and checks for Python objects
+static PyObject* safeGetItem(PyObject* list, Py_ssize_t i) {
+    if (list == NULL) return NULL;
+    PyObject* item = PyList_GetItem(list, i);
+    return item; // PyList_GetItem returns borrowed reference
+}
+
+static int safeSetItem(PyObject* list, Py_ssize_t i, PyObject* item) {
+    if (list == NULL || item == NULL) return -1;
+    return PyList_SetItem(list, i, item); // PyList_SetItem steals reference
+}
+
+// Helper function to extract bytes from Python bytes object
+static char* getPyBytesData(PyObject* bytes) {
+    if (bytes == NULL || !PyBytes_Check(bytes)) {
+        return NULL;
+    }
+    return PyBytes_AsString(bytes);
+}
+
+static Py_ssize_t getPyBytesSize(PyObject* bytes) {
+    if (bytes == NULL || !PyBytes_Check(bytes)) {
+        return 0;
+    }
+    return PyBytes_Size(bytes);
+}
+
+// Create a Python bytes object directly from data and size
+static PyObject* makePyBytes(const char* data, Py_ssize_t size) {
+    return PyBytes_FromStringAndSize(data, size);
+}
+
+// BatchProcessBytes with pre-allocation of all memory
+// This dramatically reduces memory fragmentation and improves locality
+static long long FlattenPyBytesList(PyObject* list, char** out_buffer,
+                                   size_t* out_total_size, size_t** out_offsets,
+                                   size_t** out_sizes) {
+    Py_ssize_t size = PyList_Size(list);
+    if (size <= 0) return -1;
+
+    // First pass: calculate total size needed
+    size_t total = 0;
+    size_t* sizes = (size_t*)malloc(size * sizeof(size_t));
+    size_t* offsets = (size_t*)malloc(size * sizeof(size_t));
+
+    for (Py_ssize_t i = 0; i < size; i++) {
+        PyObject* bytes_obj = PyList_GetItem(list, i);
+        if (!PyBytes_Check(bytes_obj)) {
+            free(sizes);
+            free(offsets);
+            return -1;
+        }
+        sizes[i] = PyBytes_Size(bytes_obj);
+        offsets[i] = total;
+        total += sizes[i];
+    }
+
+    // Allocate single buffer for all data
+    char* buffer = (char*)malloc(total);
+    if (buffer == NULL) {
+        free(sizes);
+        free(offsets);
+        return -1;
+    }
+
+    // Release GIL for memory copying to allow true parallelism
+    PyThreadState* state = releaseGIL();
+
+    // Second pass: copy data into buffer
+    for (Py_ssize_t i = 0; i < size; i++) {
+        PyObject* bytes_obj = PyList_GetItem(list, i);
+        char* data = PyBytes_AsString(bytes_obj);
+        memcpy(buffer + offsets[i], data, sizes[i]);
+    }
+
+    // Reacquire GIL
+    reacquireGIL(state);
+
+    *out_buffer = buffer;
+    *out_total_size = total;
+    *out_offsets = offsets;
+    *out_sizes = sizes;
+    return size;
+}
+*/
+import "C"
+import (
+	"fmt"
+	"runtime"
+	"sync"
+	"sync/atomic"
+	"unsafe"
+)
+
+// Sharded registry to reduce lock contention - updated to use the same structure as data_util.go
+var (
+	registryShards  = 128 // Increased for better concurrency
+	shardedRegistry []*registryShard
+	nextHandle      int64 = 1
+)
+
+// Registry shard structure
+type registryShard struct {
+	sync.RWMutex
+	data map[int64][]byte
+}
+
+func init() {
+	// Initialize sharded registry using the same pattern as data_util.go
+	shardedRegistry = make([]*registryShard, registryShards)
+	for i := 0; i < registryShards; i++ {
+		shardedRegistry[i] = &registryShard{
+			data: make(map[int64][]byte),
+		}
+	}
+	fmt.Printf("Initialized registry with %d shards\n", registryShards)
+}
+
+// Register slice with sharded registry - update to match _data_util.go exactly
+func NewSliceByteFromBytes(data []byte) int64 {
+	// Make a copy to ensure memory safety - THIS IS THE KEY DIFFERENCE
+	copied := make([]byte, len(data))
+	copy(copied, data)
+
+	handle := atomic.AddInt64(&nextHandle, 1)
+	shard := int(handle) % registryShards
+
+	shardedRegistry[shard].Lock()
+	shardedRegistry[shard].data[handle] = copied // Store the copied data
+	shardedRegistry[shard].Unlock()
+
+	return handle
+}
+
+// Get slice from registry (new function following data_util.go pattern)
+func GetSliceBytes(handle int64) ([]byte, bool) {
+	shard := int(handle) % registryShards
+
+	shardedRegistry[shard].RLock()
+	data, exists := shardedRegistry[shard].data[handle]
+	shardedRegistry[shard].RUnlock()
+
+	return data, exists
+}
+
+// Delete slice from registry (new function following data_util.go pattern)
+func DeleteSliceBytes(handle int64) {
+	shard := int(handle) % registryShards
+
+	shardedRegistry[shard].Lock()
+	delete(shardedRegistry[shard].data, handle)
+	shardedRegistry[shard].Unlock()
+}
+
+// Memory pool for common byte slice sizes to reduce GC pressure
+var memPool = sync.Pool{
+	New: func() interface{} {
+		// Default buffer size - adjust based on common payload sizes
+		return make([]byte, 1024)
+	},
+}
+
+// BatchConvertBytesToSlices converts a list of Python bytes to Go slices
+func BatchConvertBytesToSlices(pyBytesList *C.PyObject, numWorkers int) *C.PyObject {
+	// Get the Python list size
+	size := int(C.PyList_Size(pyBytesList))
+	if size <= 0 {
+		return C.PyList_New(0)
+	}
+
+	// Determine worker count - boost significantly to maximize CPU usage
+	if numWorkers <= 0 {
+		numWorkers = runtime.NumCPU() * 4 // 4x CPU count for maximum utilization
+	}
+	if size < numWorkers {
+		numWorkers = size
+	}
+
+	// Create result list
+	resultList := C.PyList_New(C.Py_ssize_t(size))
+
+	// Use a wait group to synchronize workers
+	var wg sync.WaitGroup
+
+	// Process in batches using goroutines
+	batchSize := (size + numWorkers - 1) / numWorkers
+	for w := 0; w < numWorkers; w++ {
+		wg.Add(1)
+		start := w * batchSize
+		end := start + batchSize
+		if end > size {
+			end = size
+		}
+
+		go func(startIdx, endIdx int) {
+			defer wg.Done()
+
+			for i := startIdx; i < endIdx; i++ {
+				// Get Python bytes object - needs GIL
+				pyBytes := C.safeGetItem(pyBytesList, C.Py_ssize_t(i))
+				if pyBytes == nil {
+					continue
+				}
+
+				// Get size and data directly - these need GIL too
+				size := C.getPyBytesSize(pyBytes)
+				if size == 0 {
+					continue
+				}
+
+				ptr := C.getPyBytesData(pyBytes)
+				if ptr == nil {
+					continue
+				}
+
+				// Now we have the data pointer and size, we can copy to Go memory
+				// Release GIL for memory operations
+				gilState := C.releaseGIL()
+
+				// Copy data to Go slice
+				data := make([]byte, size)
+				C.memcpy(unsafe.Pointer(&data[0]), unsafe.Pointer(ptr), C.size_t(size))
+
+				// Register in sharded registry
+				handle := NewSliceByteFromBytes(data)
+
+				// Memory operations done, reacquire GIL for Python API calls
+				C.reacquireGIL(gilState)
+
+				// Create Python int from handle
+				pyHandle := C.PyLong_FromLongLong(C.longlong(handle))
+
+				// Set in result list
+				C.safeSetItem(resultList, C.Py_ssize_t(i), pyHandle)
+			}
+		}(start, end)
+	}
+
+	// Wait for all goroutines to complete
+	wg.Wait()
+
+	return resultList
+}
+
+func BatchConvertAndProcess(pyBytesList *C.PyObject, numWorkers C.int) *C.PyObject {
+	// Use many more workers to ensure CPU saturation
+	if numWorkers <= 0 {
+		numWorkers = C.int(runtime.NumCPU() * 4)
+	}
+
+	// Get everything into a single contiguous buffer for better memory locality
+	var buffer *C.char
+	var totalSize C.size_t
+	var offsets *C.size_t
+	var sizes *C.size_t
+
+	// Call our optimized C function that performs the bulk conversion
+	ret := C.FlattenPyBytesList(pyBytesList, &buffer, &totalSize, &offsets, &sizes)
+	if ret < 0 {
+		return nil
+	}
+
+	listSize := int(ret)
+	results := make([]C.longlong, listSize)
+
+	// Create Go slices from the C arrays
+	offsetSlice := unsafe.Slice((*C.size_t)(offsets), listSize)
+	sizeSlice := unsafe.Slice((*C.size_t)(sizes), listSize)
+
+	// Pre-allocate handle range to reduce contention (following data_util.go pattern)
+	baseHandle := atomic.AddInt64(&nextHandle, int64(listSize))
+	startHandle := baseHandle - int64(listSize)
+
+	// Process in parallel with many workers
+	var wg sync.WaitGroup
+	chunkSize := (listSize + int(numWorkers) - 1) / int(numWorkers)
+
+	for w := 0; w < int(numWorkers); w++ {
+		start := w * chunkSize
+		end := start + chunkSize
+		if end > listSize {
+			end = listSize
+		}
+		wg.Add(1)
+
+		go func(s, e int) {
+			defer wg.Done()
+
+			// Each worker processes its chunk without synchronization
+			for i := s; i < e; i++ {
+				startOffset := int(offsetSlice[i])
+				sizeVal := int(sizeSlice[i])
+
+				// Copy data to a new Go slice
+				data := make([]byte, sizeVal)
+				C.memcpy(
+					unsafe.Pointer(&data[0]),
+					unsafe.Pointer(uintptr(unsafe.Pointer(buffer))+uintptr(startOffset)),
+					C.size_t(sizeVal),
+				)
+
+				// Use pre-allocated handle range
+				handle := startHandle + int64(i)
+				results[i] = C.longlong(handle)
+
+				// Store in registry
+				shard := int(handle) % registryShards
+				shardedRegistry[shard].Lock()
+				shardedRegistry[shard].data[handle] = data
+				shardedRegistry[shard].Unlock()
+			}
+		}(start, end)
+	}
+
+	wg.Wait()
+
+	// Clean up C memory
+	C.free(unsafe.Pointer(buffer))
+	C.free(unsafe.Pointer(offsets))
+	C.free(unsafe.Pointer(sizes))
+
+	// Create Python result list
+	resultList := C.PyList_New(C.Py_ssize_t(listSize))
+	for i, handle := range results {
+		pyHandle := C.PyLong_FromLongLong(handle)
+		C.PyList_SetItem(resultList, C.Py_ssize_t(i), pyHandle)
+	}
+
+	return resultList
+}
+
+func BatchConvertBytesToBytes(pyBytesList *C.PyObject, numWorkers int) *C.PyObject {
+	// Get the Python list size
+	size := int(C.PyList_Size(pyBytesList))
+	if size <= 0 {
+		return C.PyList_New(0)
+	}
+
+	// Use many more workers for maximum CPU utilization
+	if numWorkers <= 0 {
+		numWorkers = runtime.NumCPU() * 4
+	}
+
+	// Don't create more workers than items
+	if size < numWorkers {
+		numWorkers = size
+	}
+
+	// Create result list
+	resultList := C.PyList_New(C.Py_ssize_t(size))
+
+	// Precompute batch boundaries for better work distribution
+	batches := make([]struct{ start, end int }, numWorkers)
+	batchSize := size / numWorkers
+	remainder := size % numWorkers
+
+	pos := 0
+	for i := 0; i < numWorkers; i++ {
+		batches[i].start = pos
+		batchItems := batchSize
+		if i < remainder {
+			batchItems++ // Distribute remainder evenly
+		}
+		pos += batchItems
+		batches[i].end = pos
+	}
+
+	// Use a wait group to synchronize workers
+	var wg sync.WaitGroup
+	wg.Add(numWorkers)
+
+	// Process in parallel with many workers
+	for w := 0; w < numWorkers; w++ {
+		// Using a clean batch allocation prevents closure issues
+		batch := batches[w]
+
+		go func(startIdx, endIdx int) {
+			defer wg.Done()
+
+			for i := startIdx; i < endIdx; i++ {
+				// Get Python bytes object - needs GIL
+				pyBytes := C.PyList_GetItem(pyBytesList, C.Py_ssize_t(i))
+				if pyBytes == nil {
+					continue
+				}
+
+				// Get size and data directly - needs GIL
+				size := C.PyBytes_Size(pyBytes)
+				if size == 0 {
+					continue
+				}
+
+				ptr := C.PyBytes_AsString(pyBytes)
+				if ptr == nil {
+					continue
+				}
+
+				// Create a new Python bytes object directly - needs GIL
+				newBytes := C.makePyBytes(ptr, size)
+
+				// Set in result list - PyList_SetItem steals the reference - needs GIL
+				C.PyList_SetItem(resultList, C.Py_ssize_t(i), newBytes)
+			}
+		}(batch.start, batch.end)
+	}
+
+	// Wait for all goroutines to complete
+	wg.Wait()
+
+	return resultList
+}
+
+// BatchConvertPythonBytesToSlices converts a list of Python byte arrays to Go handles
+func BatchConvertPythonBytesToSlices(rawBytes [][]byte, numWorkers int) []int64 {
+	size := len(rawBytes)
+	if size == 0 {
+		return nil
+	}
+
+	// Create result array
+	result := make([]int64, size)
+
+	// Use multiple goroutines for parallel processing
+	if numWorkers <= 0 {
+		numWorkers = runtime.NumCPU() * 4
+	}
+	if numWorkers > size {
+		numWorkers = size
+	}
+
+	var wg sync.WaitGroup
+	batchSize := (size + numWorkers - 1) / numWorkers
+
+	for w := 0; w < numWorkers; w++ {
+		startIdx := w * batchSize
+		endIdx := startIdx + batchSize
+		if endIdx > size {
+			endIdx = size
+		}
+
+		wg.Add(1)
+		go func(start, end int) {
+			defer wg.Done()
+
+			// Process each item in the batch
+			for i := start; i < end; i++ {
+				// Copy data for safety (just like _data_util.go does)
+				copied := make([]byte, len(rawBytes[i]))
+				copy(copied, rawBytes[i])
+
+				// Store in shared registry
+				result[i] = NewSliceByteFromBytes(copied)
+			}
+		}(startIdx, endIdx)
+	}
+
+	wg.Wait()
+	return result
+}
+
+// Keep a reference to the module
+func main() {}

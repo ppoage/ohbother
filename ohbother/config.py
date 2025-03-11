@@ -12,12 +12,11 @@ from .generated.ohbother import (
     PcapConfig as GoPcapConfig,
     PacketConfig as GoPacketConfig,
     DebugOptions as GoDebugOptions,
-    MultiStreamConfig as GoMultiStreamConfig,
-    HardwareAddr, 
+    MultiStreamConfig as GoMultiStreamConfig, 
     Logger,
     NewDefaultConfig
 )
-from .generated.go import GoClass
+from .generated.go import GoClass, HardwareAddr
 
 
 class PcapConfig:
@@ -328,10 +327,13 @@ class MultiStreamConfig:
         self, 
         packet_workers: int = 4,
         stream_count: int = 1,
+        channel_buffer_size: int = 1000,
+        report_interval: int = 1000,
         enable_cpu_pinning: bool = False,
         disable_ordering: bool = False,
         turnstile_burst: int = 16,
-        enable_metrics: bool = False
+        enable_metrics: bool = False,
+        rate_limit: int = 0  # Added rate_limit parameter
     ):
         """
         Initialize multi-stream configuration.
@@ -339,18 +341,24 @@ class MultiStreamConfig:
         Args:
             packet_workers: Number of worker threads for packet processing
             stream_count: Number of parallel streams
+            channel_buffer_size: Size of internal channel buffers
+            report_interval: How often to report progress (packets)
             enable_cpu_pinning: Whether to pin workers to specific CPU cores
             disable_ordering: Whether to disable packet ordering
             turnstile_burst: Burst size for turnstile processing
             enable_metrics: Whether to collect performance metrics
+            rate_limit: Rate limit in packets per second (0 = unlimited)
         """
         self._config = GoMultiStreamConfig()
         self.packet_workers = packet_workers
         self.stream_count = stream_count
+        self.channel_buffer_size = channel_buffer_size 
+        self.report_interval = report_interval       
         self.enable_cpu_pinning = enable_cpu_pinning
         self.disable_ordering = disable_ordering
         self.turnstile_burst = turnstile_burst
         self.enable_metrics = enable_metrics
+        self.rate_limit = rate_limit
     
     @property
     def packet_workers(self) -> int:
@@ -373,6 +381,28 @@ class MultiStreamConfig:
         if not isinstance(value, int) or value <= 0:
             raise ValueError("stream_count must be a positive integer")
         self._config.StreamCount = value
+    
+    @property
+    def channel_buffer_size(self) -> int:
+        """Size of internal channel buffers."""
+        return self._config.ChannelBuffers
+    
+    @channel_buffer_size.setter
+    def channel_buffer_size(self, value: int) -> None:
+        if not isinstance(value, int) or value <= 0:
+            raise ValueError("channel_buffer_size must be a positive integer")
+        self._config.ChannelBuffers = value
+    
+    @property
+    def report_interval(self) -> int:
+        """How often to report progress (packets)."""
+        return self._config.ReportInterval
+    
+    @report_interval.setter
+    def report_interval(self, value: int) -> None:
+        if not isinstance(value, int) or value < 0:
+            raise ValueError("report_interval must be a non-negative integer")
+        self._config.ReportInterval = value
     
     @property
     def enable_cpu_pinning(self) -> bool:
@@ -411,6 +441,17 @@ class MultiStreamConfig:
     @enable_metrics.setter
     def enable_metrics(self, value: bool) -> None:
         self._config.EnableMetrics = value
+    
+    @property
+    def rate_limit(self) -> int:
+        """Rate limit in packets per second (0 = unlimited)."""
+        return self._config.RateLimit
+    
+    @rate_limit.setter
+    def rate_limit(self, value: int) -> None:
+        if not isinstance(value, int) or value < 0:
+            raise ValueError("rate_limit must be a non-negative integer")
+        self._config.RateLimit = value
         
     def _get_go_object(self) -> GoMultiStreamConfig:
         """Get the underlying Go object."""
@@ -566,5 +607,48 @@ def create_default_config(
     # Create the main config
     config = Config(pcap_config, packet_config, debug_options)
     config._config = go_config
+    
+    return config
+
+
+def create_default_multi_stream_config(
+    packet_workers: int = 4,
+    stream_count: int = 2,
+    rate_limit: int = 0,
+    channel_buffer_size: int = 1000,
+    report_interval: int = 1000,
+    enable_metrics: bool = True,
+    disable_ordering: bool = False,
+    enable_cpu_pinning: bool = False,
+    turnstile_burst: int = 16
+) -> MultiStreamConfig:
+    """
+    Create a default multi-stream configuration with sensible defaults.
+    
+    Args:
+        packet_workers: Number of worker threads (default: 4)
+        stream_count: Number of parallel streams (default: 2)
+        rate_limit: Rate limit in packets per second (0 = unlimited)
+        channel_buffer_size: Size of internal channel buffers (default: 1000)
+        report_interval: How often to report progress in packets (default: 1000)
+        enable_metrics: Whether to collect metrics (default: True)
+        disable_ordering: Whether to disable packet ordering (default: False)
+        enable_cpu_pinning: Whether to pin workers to CPU cores (default: False)
+        turnstile_burst: Burst size for turnstile processing (default: 16)
+        
+    Returns:
+        MultiStreamConfig: A configured MultiStreamConfig object
+    """
+    config = MultiStreamConfig(
+        packet_workers=packet_workers,
+        stream_count=stream_count,
+        channel_buffer_size=channel_buffer_size,
+        report_interval=report_interval,
+        enable_cpu_pinning=enable_cpu_pinning,
+        disable_ordering=disable_ordering,
+        turnstile_burst=turnstile_burst,
+        enable_metrics=enable_metrics,
+        rate_limit=rate_limit
+    )
     
     return config

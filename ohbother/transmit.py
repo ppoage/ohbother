@@ -8,46 +8,56 @@ individual packets, batches, or continuous streams.
 from typing import List, Optional, Union, Dict, Any, Tuple, Callable
 import time
 from dataclasses import dataclass
+import os
+import sys
+import multiprocessing
 
 from .generated.ohbother import (
-    Transmitter,
     SendPacket as go_send_packet,
     SendPackets as go_send_packets,
-    PacketBatch,
     MultiStreamSender as GoMultiStreamSender,
     PacketSequenceSender as GoPacketSequenceSender,
-    SendResult,
-    NewTransmitter,
     NewMultiStreamSender,
-    NewPacketSequenceSender
+    NewPacketSequenceSender,
+    PacketSendResult as GoPacketSendResult  # Add this import
 )
+
+from .generated.go import (
+    Slice_byte, 
+    nil,
+    HardwareAddr
+)
+
+
 from .config import Config, MultiStreamConfig
+from .utilities import pass_bytes_to_go
 
 
 @dataclass
 class PacketSendResult:
     """Result of a packet send operation"""
     
-    success: bool
-    """Whether the packet was sent successfully"""
+    index: int
+    """Index of the packet in the original batch"""
     
-    bytes_sent: int
-    """Number of bytes sent"""
+    total_count: int
+    """Total number of packets in the batch"""
     
-    timestamp: float
-    """Timestamp when the packet was sent (seconds since epoch)"""
+    elapsed: float
+    """Time elapsed since sending started (seconds)"""
     
-    error_message: str = ""
-    """Error message if the send failed"""
+    error: Optional[str] = None
+    """Error message if sending failed"""
     
     @classmethod
-    def from_go_result(cls, result: SendResult) -> "PacketSendResult":
-        """Convert from Go SendResult to Python PacketSendResult"""
+    def from_go_result(cls, result: GoPacketSendResult) -> "PacketSendResult":
+        """Convert from Go PacketSendResult to Python PacketSendResult"""
+        error_str = result.GetError() if result.GetError() else None
         return cls(
-            success=result.Success,
-            bytes_sent=result.BytesSent,
-            timestamp=result.Timestamp,
-            error_message=result.ErrorMessage
+            index=result.Index,
+            total_count=result.TotalCount,
+            elapsed=result.Elapsed,
+            error=error_str
         )
 
 
@@ -90,32 +100,14 @@ def send_packets(
 ) -> List[PacketSendResult]:
     """
     Send multiple packets.
-    
-    Args:
-        config: Packet configuration
-        payloads: List of raw packet payload bytes
-        timeout_ms: Send timeout in milliseconds
-    
-    Returns:
-        List[PacketSendResult]: Results for each packet send operation
-    
-    Raises:
-        ValueError: If payloads list is empty
-        RuntimeError: If packet sending fails
     """
     if not payloads:
         raise ValueError("Payloads list cannot be empty")
     
-    # Create a Go PacketBatch from the Python list
-    batch = PacketBatch()
-    for payload in payloads:
-        if payload:  # Skip empty payloads
-            batch.append(payload)
-    
-    # Send the batch
+    # Just pass the Python list directly
     results = go_send_packets(
         config._get_go_object(),
-        batch,
+        payloads,  # Python list
         timeout_ms
     )
     
@@ -123,264 +115,338 @@ def send_packets(
     return [PacketSendResult.from_go_result(result) for result in results]
 
 
-class Transmitter:
-    """Handles packet transmission with configurable parameters."""
-    
-    def __init__(self, config: Config):
-        """
-        Initialize transmitter with configuration.
-        
-        Args:
-            config: Packet transmission configuration
-        """
-        self._config = config
-        self._transmitter = NewTransmitter(config._get_go_object())
-    
-    def send(self, payload: bytes, timeout_ms: int = 100) -> PacketSendResult:
-        """
-        Send a single packet.
-        
-        Args:
-            payload: Raw packet payload bytes
-            timeout_ms: Send timeout in milliseconds
-            
-        Returns:
-            PacketSendResult: Result of the send operation
-        """
-        result = self._transmitter.Send(payload, timeout_ms)
-        return PacketSendResult.from_go_result(result)
-    
-    def send_batch(self, payloads: List[bytes], timeout_ms: int = 100) -> List[PacketSendResult]:
-        """
-        Send a batch of packets.
-        
-        Args:
-            payloads: List of raw packet payload bytes
-            timeout_ms: Send timeout in milliseconds
-            
-        Returns:
-            List[PacketSendResult]: Results for each packet send operation
-        """
-        # Create a Go PacketBatch
-        batch = PacketBatch()
-        for payload in payloads:
-            if payload:  # Skip empty payloads
-                batch.append(payload)
-                
-        results = self._transmitter.SendBatch(batch, timeout_ms)
-        return [PacketSendResult.from_go_result(result) for result in results]
-    
-    def close(self) -> None:
-        """Close transmitter and release resources."""
-        self._transmitter.Close()
-
-
 class MultiStreamSender:
-    """
-    Handles sending packets across multiple parallel streams.
-    
-    This class optimizes packet transmission by using multiple sender threads
-    and can be configured for different performance characteristics.
-    """
+    """Handles sending packets across multiple parallel streams."""
     
     def __init__(
         self, 
         config: Config,
         stream_config: Optional[MultiStreamConfig] = None
     ):
-        """
-        Initialize multi-stream sender.
-        
-        Args:
-            config: Base packet configuration
-            stream_config: Multi-stream specific configuration
-        """
+        """Initialize multi-stream sender."""
         self._config = config
         self._stream_config = stream_config or MultiStreamConfig()
         
-        # Create the Go MultiStreamSender
+        # Create Go MultiStreamSender with correct rate limit
         self._sender = NewMultiStreamSender(
             config._get_go_object(),
-            self._stream_config._get_go_object()
+            self._stream_config.rate_limit if hasattr(self._stream_config, 'rate_limit') else 0
+        )
+        
+        # Apply stream configuration with correct property names
+        self._sender.SetStreamConfig(
+            self._stream_config.packet_workers,
+            self._stream_config.stream_count,
+            self._stream_config.channel_buffer_size,
+            self._stream_config.report_interval
+        )
+        
+        # Apply advanced configuration with correct property names
+        self._sender.SetAdvancedConfig(
+            self._stream_config.enable_cpu_pinning,
+            self._stream_config.disable_ordering,
+            self._stream_config.turnstile_burst,
+            True  # Always enable metrics
         )
     
-    def start(self) -> None:
-        """
-        Start the sender workers.
-        
-        This must be called before sending any packets.
-        """
-        self._sender.Start()
+    def __enter__(self):
+        """Context manager entry."""
+        return self
     
-    def send(self, payload: bytes, stream_id: int = 0) -> bool:
-        """
-        Send a packet on a specific stream.
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit."""
+        self.flush()
+    
+    def convert_payloads(self, payloads: List[bytes]) -> List[Slice_byte]:
+        """Convert payloads to Go byte slices efficiently using multiprocessing"""
+        if not payloads:
+            return []
+        
+        print(f"Converting {len(payloads):,} payloads efficiently...", file=sys.stderr, flush=True)
+        
+        # Use multiprocessing like in _data.py
+        num_workers = max(1, os.cpu_count() - 1)  # Leave one CPU for OS
+        
+        # Convert function that runs in each worker
+        def convert_chunk(data_chunk):
+            start_time = time.perf_counter()
+            result = [pass_bytes_to_go(p) for p in data_chunk]
+            duration = time.perf_counter() - start_time
+            print(f"Converted {len(data_chunk):,} payloads in {duration:.3f}s ({len(data_chunk)/duration:,.0f}/s)",
+                  file=sys.stderr, flush=True)
+            return result
+        
+        # Split data into chunks - optimal chunk size for conversion
+        chunk_size = min(1_000_000, (len(payloads) + num_workers - 1) // num_workers)  # Max 1M items per chunk
+        chunks = []
+        
+        for i in range(0, len(payloads), chunk_size):
+            chunks.append(payloads[i:min(i+chunk_size, len(payloads))])
+        
+        # Process in parallel
+        start_time = time.perf_counter()
+        with multiprocessing.Pool(processes=num_workers) as pool:
+            results = pool.map(convert_chunk, chunks)
+        
+        # Combine results
+        converted = []
+        for chunk in results:
+            converted.extend(chunk)
+        
+        total_duration = time.perf_counter() - start_time
+        print(f"Total conversion: {len(payloads):,} payloads in {total_duration:.3f}s "
+              f"({len(payloads)/total_duration:,.0f}/s)", file=sys.stderr, flush=True)
+        
+        return converted
+    
+    def fast_convert_payloads(self, payloads: List[bytes]) -> List[Slice_byte]:
+        """Convert payloads in parallel using optimized Go implementation"""
+        if not payloads:
+            return []
+        
+        # Import only when needed to avoid circular imports
+        from .parallel_utils import parallel_bytes_to_go
+        
+        # Determine optimal worker count
+        num_workers = os.cpu_count() * 2  # Use 2x CPU count for better throughput
+        
+        print(f"Fast converting {len(payloads):,} payloads with {num_workers} workers...", 
+              file=sys.stderr, flush=True)
+        
+        start_time = time.perf_counter()
+        result = parallel_bytes_to_go(payloads, num_workers=num_workers)
+        duration = time.perf_counter() - start_time
+        
+        print(f"Fast conversion complete: {len(payloads):,} payloads in {duration:.3f}s "
+              f"({len(payloads)/duration:,.0f}/s)", file=sys.stderr, flush=True)
+        
+        return result
+
+    def add_batch_payloads(self, payloads: List[bytes], convert: bool = True) -> int:
+        """Add multiple payloads in one batch with optional conversion"""
+        if not payloads:
+            return 0
+        
+        start_time = time.perf_counter()
+        
+        # Convert if needed
+        if convert:
+            converted = self.fast_convert_payloads(payloads)
+        else:
+            # Assume already converted
+            converted = payloads
+        
+        # Add in batches to avoid potential GIL issues
+        batch_size = 100_000  # Add 100k at a time
+        added_count = 0
+        
+        for i in range(0, len(converted), batch_size):
+            batch = converted[i:i+batch_size]
+            for payload in batch:
+                self._sender.AddPayload(payload)
+            added_count += len(batch)
+        
+        duration = time.perf_counter() - start_time
+        print(f"Added {added_count:,} payloads in {duration:.3f}s "
+              f"({added_count/duration:,.0f}/s)", file=sys.stderr, flush=True)
+        
+        return added_count
+
+    def add_payloads(self, payloads):
+        """Add multiple payloads to the sender.
         
         Args:
-            payload: Raw packet payload bytes
-            stream_id: Stream identifier (must be less than stream_count)
-            
-        Returns:
-            bool: True if packet was queued successfully
-            
-        Raises:
-            ValueError: If stream_id is invalid
-            RuntimeError: If sender is not started
-        """
-        if stream_id < 0 or stream_id >= self._stream_config.stream_count:
-            raise ValueError(f"Stream ID must be between 0 and {self._stream_config.stream_count-1}")
-            
-        return self._sender.Send(payload, stream_id)
-    
-    def send_batch(self, payloads: List[bytes], stream_id: int = 0) -> int:
-        """
-        Send a batch of packets on a specific stream.
+            payloads: List of Slice_byte objects to add
         
-        Args:
-            payloads: List of raw packet payload bytes
-            stream_id: Stream identifier (must be less than stream_count)
-            
         Returns:
-            int: Number of packets successfully queued
-            
-        Raises:
-            ValueError: If stream_id is invalid
-            RuntimeError: If sender is not started
+            Number of payloads added
         """
-        if stream_id < 0 or stream_id >= self._stream_config.stream_count:
-            raise ValueError(f"Stream ID must be between 0 and {self._stream_config.stream_count-1}")
-            
-        # Create a Go PacketBatch
-        batch = PacketBatch()
-        for payload in payloads:
-            if payload:  # Skip empty payloads
-                batch.append(payload)
-                
-        return self._sender.SendBatch(batch, stream_id)
+        if not payloads:
+            return 0
+        
+        # Check the type of the first item to determine handling
+        if hasattr(payloads[0], 'handle'):
+            # These are Slice_byte objects - add them directly
+            for p in payloads:
+                self._sender.AddPayload(p)
+        else:
+            # These might be raw bytes - convert first
+            for p in payloads:
+                if isinstance(p, bytes):
+                    # Convert bytes to Slice_byte
+                    slice_obj = Slice_byte.from_bytes(p)
+                    self._sender.AddPayload(slice_obj)
+                else:
+                    # Unknown type - try direct add as last resort
+                    self._sender.AddPayload(p)
+        
+        return len(payloads)
+
+    def send(self):
+        """Send all added payloads."""
+        error = self._sender.Send()
+        if error:
+            raise RuntimeError(f"Error sending payloads: {error}")
     
     def flush(self, timeout_ms: int = 1000) -> bool:
-        """
-        Flush all pending packets and wait for completion.
-        
-        Args:
-            timeout_ms: Maximum time to wait for flush to complete
+        """Flush all pending packets and wait for completion."""
+        # Send() initiates the transmission
             
-        Returns:
-            bool: True if all packets were sent successfully
-        """
-        return self._sender.Flush(timeout_ms)
-    
-    def stop(self) -> None:
-        """
-        Stop the sender workers and release resources.
-        
-        This should be called when done with the sender.
-        """
-        self._sender.Stop()
+        # Wait for completion
+        self._sender.Wait()
+        return True
     
     @property
     def metrics(self) -> Dict[str, Any]:
         """Get performance metrics for this sender."""
         go_metrics = self._sender.GetMetrics()
         
+        if not go_metrics:
+            return {
+                "packets_sent": 0,
+                "bytes_sent": 0,
+                "errors": 0,
+                "average_latency_ns": 0,
+                "active_workers": 0
+            }
+            
+        # Map Go metrics to Python metrics using safe_get.
+        total_packets = safe_get(go_metrics, "packets_processed", 0)
+        # Use packet_size from the config if available.
+        packet_size = getattr(self._stream_config, "packet_size", 0)
+        bytes_sent = total_packets * packet_size
+        
         return {
-            "packets_sent": go_metrics.PacketsSent,
-            "bytes_sent": go_metrics.BytesSent,
-            "errors": go_metrics.Errors,
-            "average_latency_ns": go_metrics.AvgLatencyNs,
-            "active_workers": go_metrics.ActiveWorkers
+            "packets_sent": total_packets,
+            "bytes_sent": bytes_sent,
+            "errors": safe_get(go_metrics, "packets_dropped", 0),
+            "average_latency_ns": safe_get(go_metrics, "avg_send_ns", 0),
+            "prepare_time_ns": safe_get(go_metrics, "prepare_time_ns", 0),
+            "wait_time_ns": safe_get(go_metrics, "wait_time_ns", 0),
+            "send_time_ns": safe_get(go_metrics, "send_time_ns", 0),
+            "avg_prepare_ns": safe_get(go_metrics, "avg_prepare_ns", 0),
+            "avg_wait_ns": safe_get(go_metrics, "avg_wait_ns", 0),
+            "active_workers": self._stream_config.packet_workers
         }
     
-    def __enter__(self) -> "MultiStreamSender":
-        """Context manager entry."""
-        self.start()
-        return self
+    @property
+    def is_complete(self) -> bool:
+        """Check if all packets have been sent."""
+        return self._sender.IsComplete()
     
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Context manager exit."""
-        self.flush()
-        self.stop()
+    @property
+    def sent_count(self) -> int:
+        """Get the number of packets sent so far."""
+        return self._sender.GetSentCount()
+    
+    @property 
+    def error_count(self) -> int:
+        """Get the number of packets that encountered errors."""
+        return self._sender.GetErrorCount()
+    
+    @property
+    def is_ordering_enabled(self) -> bool:
+        """Check if packet ordering is enabled."""
+        return self._sender.IsOrderingEnabled()
+    
+    @property
+    def is_cpu_pinning_enabled(self) -> bool:
+        """Check if CPU pinning is enabled."""
+        return self._sender.IsCPUPinningEnabled()
+    
+    @property
+    def turnstile_burst(self) -> int:
+        """Get the configured burst size."""
+        return self._sender.GetTurnstileBurst()
+    
+    @property
+    def are_metrics_enabled(self) -> bool:
+        """Check if metrics collection is enabled."""
+        return self._sender.AreMetricsEnabled()
 
 
 class PacketSequenceSender:
     """
     Sends packets in an ordered sequence.
-    
-    This class ensures packets are sent in the correct order with configurable
-    timing between each packet.
     """
     
     def __init__(
         self,
         config: Config,
         interval_ns: int = 0,
-        jitter_ns: int = 0
+        jitter_ns: int = 0  # Kept for API compatibility
     ):
-        """
-        Initialize packet sequence sender.
-        
-        Args:
-            config: Packet configuration
-            interval_ns: Nanoseconds between packet transmissions (0 = as fast as possible)
-            jitter_ns: Random jitter to add to intervals (0 = constant interval)
-        """
+        """Initialize packet sequence sender."""
         self._config = config
         self._sender = NewPacketSequenceSender(
             config._get_go_object(),
-            interval_ns,
-            jitter_ns
+            interval_ns
         )
+        self._jitter_ns = jitter_ns
+        self._packet_count = 0
     
     def add_packet(self, payload: bytes, sequence_id: int = 0) -> bool:
-        """
-        Add a packet to the sequence.
-        
-        Args:
-            payload: Raw packet payload bytes
-            sequence_id: Position in sequence (0 = next available)
-            
-        Returns:
-            bool: True if packet was added successfully
-        """
-        return self._sender.AddPacket(payload, sequence_id)
+        """Add a packet to the sequence."""
+        if not payload:
+            return False
+        # Convert Python bytes to Go-compatible format
+        payload_go = pass_bytes_to_go(payload)
+        self._sender.AddPayload(payload_go)
+        self._packet_count += 1
+        return True
     
     def add_packets(self, payloads: List[bytes], start_sequence_id: int = 0) -> int:
-        """
-        Add multiple packets to the sequence.
-        
-        Args:
-            payloads: List of raw packet payload bytes
-            start_sequence_id: Starting sequence ID (0 = next available)
-            
-        Returns:
-            int: Number of packets added successfully
-        """
-        # Create a Go PacketBatch
-        batch = PacketBatch()
+        """Add multiple packets to the sequence."""
+        # No direct AddPackets in Go, so implement with individual calls
+        count = 0
         for payload in payloads:
-            if payload:  # Skip empty payloads
-                batch.append(payload)
-                
-        return self._sender.AddPackets(batch, start_sequence_id)
+            payload_go = pass_bytes_to_go(payload)
+            if payload and self.add_packet(payload_go):
+                count += 1
+        return count
     
     def send(self, timeout_ms: int = 1000) -> List[PacketSendResult]:
-        """
-        Send all packets in the sequence.
+        """Send all packets in the sequence."""
+        # Go Send() doesn't take timeout, collects results differently
+        self._sender.Send()
         
-        Args:
-            timeout_ms: Maximum time to wait for completion
+        # Collect results by repeatedly calling GetNextResult
+        results = []
+        while not self._sender.IsComplete():
+            result = self._sender.GetNextResult()
+            if result:
+                results.append(PacketSendResult.from_go_result(result))
+        
+        # One more call to get any final results
+        final_result = self._sender.GetNextResult()
+        if final_result:
+            results.append(PacketSendResult.from_go_result(final_result))
             
-        Returns:
-            List[PacketSendResult]: Results for each packet send operation
-        """
-        results = self._sender.Send(timeout_ms)
-        return [PacketSendResult.from_go_result(result) for result in results]
+        return results
     
     def clear(self) -> None:
         """Clear all packets from the sequence."""
-        self._sender.Clear()
+        # No direct Clear() method in Go
+        self._sender = NewPacketSequenceSender(
+            self._config._get_go_object(),
+            self._sender.RateLimit
+        )
+        self._packet_count = 0
     
     @property
     def count(self) -> int:
         """Number of packets in the sequence."""
-        return self._sender.GetCount()
+        # No direct GetCount() in Go
+        return self._packet_count
+
+
+def safe_get(go_map, key: str, default: int = 0) -> int:
+    """
+    Retrieve the value for `key` from a Go map that does not implement .get(),
+    Returning default if not found.
+    """
+    try:
+        # Try to index directly – if the key does not exist this may raise an error.
+        return go_map[key]
+    except Exception:
+        return default

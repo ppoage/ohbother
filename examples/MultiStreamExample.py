@@ -17,7 +17,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import from our new library interface
 import ohbother
-from ohbother.config import Config, create_default_config, MultiStreamConfig
+from ohbother.config import Config, create_default_config, create_default_multi_stream_config
 from ohbother.transmit import MultiStreamSender
 from ohbother.receive import ContinuousPacketReceiver
 from ohbother.utilities import pass_bytes_to_go
@@ -33,19 +33,35 @@ INTERFACE = "en0"
 BPF_FILTER = f"udp and dst port {DST_PORT}"
 
 # Test parameters
-PACKET_COUNT = 10
+PACKET_COUNT = 35_000_000 #500_000
+#PACKET_COUNT = 500_000
+RATE_LIMIT = 100000
 PAYLOAD_SIZE = 60
 WORKER_COUNT = 12
-STREAM_COUNT = 1
+STREAM_COUNT = 4
 SNAP_LEN = 1500
 PROMISC = True
 BUFFER_SIZE = 1 * 1024 * 1024
 IMMEDIATE_MODE = True
 RECEIVE_ENABLE = False
 
+# ADD: benchmark decorator at the top of the file
+def benchmark(func):
+    """Decorator to benchmark a function"""
+    def wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = func(*args, **kwargs)
+        duration = time.perf_counter() - start_time
+        print(f"{func.__name__} took {duration:.3f} seconds")
+        return result
+    return wrapper
 
+# MODIFY: _generate_single_payload function to include timing
 def _generate_single_payload(i, size, pattern_type):
     """Helper function to generate a single payload for multiprocessing"""
+    start_time = time.perf_counter()
+    
+    # Original code remains the same
     if pattern_type == "sequence":
         raw_bytes = bytes([j % 256 for j in range(size)])
     elif pattern_type.startswith("fixed:"):
@@ -69,21 +85,39 @@ def _generate_single_payload(i, size, pattern_type):
     else:
         raw_bytes = bytes([j % 256 for j in range(size)])
 
+    duration = time.perf_counter() - start_time
     return raw_bytes
 
-
-def generate_pattern_payloads(
-    array_length, size, pattern_type="sequence", num_workers=8
-):
+# MODIFY: generate_pattern_payloads function to include detailed timing
+@benchmark
+def generate_pattern_payloads(array_length, size, pattern_type="sequence", num_workers=8):
     """Generate payloads in parallel using multiprocessing"""
+    t0_setup = time.perf_counter()
+    
+    # Calculate chunk size for better load balancing
+    chunk_size = (array_length + num_workers - 1) // num_workers
+    
+    print(f"Generating {array_length:,} payloads of size {size} using {num_workers} processes")
+    setup_time = time.perf_counter() - t0_setup
+    
+    # Process in parallel
+    t0_pool = time.perf_counter()
     with multiprocessing.Pool(processes=num_workers) as pool:
         raw_payloads = pool.map(
             partial(_generate_single_payload, size=size, pattern_type=pattern_type),
             range(array_length),
         )
+    
+    pool_time = time.perf_counter() - t0_pool
+    
+    # Calculate detailed metrics
+    total_time = time.perf_counter() - t0_setup
+    print(f"Generated {len(raw_payloads):,} payloads in {total_time:.3f}s")
+    print(f"Generation rate: {len(raw_payloads)/total_time:,.0f} items/second")
+    print(f"  - Setup: {setup_time:.3f}s ({setup_time/total_time*100:.1f}%)")
+    print(f"  - Pool execution: {pool_time:.3f}s ({pool_time/total_time*100:.1f}%)")
 
-    return raw_payloads  # Return raw bytes
-
+    return raw_payloads
 
 def process_results(sender, packet_count):
     """Process and display results from the sender."""
@@ -163,7 +197,8 @@ def start_receiver(config):
     thread.start()
     return receiver, thread
 
-
+# MODIFY: run_multistream function to use timing breakdowns
+@benchmark
 def run_multistream(
     interface=INTERFACE,
     count=PACKET_COUNT,
@@ -198,7 +233,7 @@ def run_multistream(
 
     # Optional debugging
     config.debug.enabled = True
-    config.debug.level = 3
+    config.debug.level = 4
 
     # Start receiver if requested
     receiver = None
@@ -207,21 +242,17 @@ def run_multistream(
 
     # Generate payloads (optimized with multiprocessing)
     print(f"Generating {count} payloads of size {size} with pattern '{pattern}'...")
-    start_gen = time.time()
     payloads = generate_pattern_payloads(count, size, pattern, gen_workers)
-    gen_time = time.time() - start_gen
-    print(
-        f"Generated {len(payloads)} payloads in {gen_time:.2f}s ({count/gen_time:.0f} payloads/sec)"
-    )
 
     # Create the multi-stream configuration
-    stream_config = MultiStreamConfig(
+    stream_config = create_default_multi_stream_config(
         packet_workers=workers,
         stream_count=streams,
-        enable_cpu_pinning=True,
-        disable_ordering=False,
+        rate_limit=RATE_LIMIT,
+        disable_ordering=True,
         turnstile_burst=1,
-        enable_metrics=True
+        enable_metrics=False,
+        enable_cpu_pinning=False
     )
     
     # Create the multi-stream sender
@@ -231,11 +262,25 @@ def run_multistream(
     with sender:
         print(f"Starting transmission of {count} packets...")
         
-        # Send the packets across all streams
-        for i, payload in enumerate(payloads):
-            stream_id = i % streams
-            sender.send(payload, stream_id)
-            
+        # Send the packets across all streams - with detailed timing
+        t0_convert = time.perf_counter()
+        print("Converting payloads to Go format...")
+        _payloads = sender.fast_convert_payloads(payloads)
+        convert_time = time.perf_counter() - t0_convert
+        convert_rate = len(_payloads) / convert_time if convert_time > 0 else 0
+        print(f"Conversion complete: {len(_payloads):,} payloads in {convert_time:.3f}s ({convert_rate:.0f}/s)")
+        
+        t0_add = time.perf_counter()
+        print("Adding payloads to sender...")
+        sender.add_payloads(_payloads)
+        add_time = time.perf_counter() - t0_add
+        add_rate = len(_payloads) / add_time if add_time > 0 else 0
+        print(f"Payloads added: {len(_payloads):,} payloads in {add_time:.3f}s ({add_rate:.0f}/s)")
+        
+        t0_send = time.perf_counter()
+        print("Starting packet transmission...")
+        sender.send()
+        
         # Process and display results
         process_results(sender, count)
         
@@ -247,9 +292,19 @@ def run_multistream(
         print("Flushing remaining packets...")
         sender.flush()
         
+        send_time = time.perf_counter() - t0_send
+        
     # Clean up
     if receiver:
         receiver.close()
+
+    # Performance summary
+    total_time = convert_time + add_time + send_time
+    print("\n=== Performance Summary ===")
+    print(f"Conversion: {convert_time:.3f}s ({convert_time/total_time*100:.1f}%)")
+    print(f"Addition: {add_time:.3f}s ({add_time/total_time*100:.1f}%)")
+    print(f"Sending: {send_time:.3f}s ({send_time/total_time*100:.1f}%)")
+    print(f"Total throughput: {count/total_time:.0f} packets/second")
 
     return sender
 
