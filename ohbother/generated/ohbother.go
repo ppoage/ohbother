@@ -1754,107 +1754,39 @@ func ohbother_Logger_Warn(_handle CGoHandle, format *C.char, args CGoHandle, goR
 
 // ---- Structs ---
 
-// --- wrapping struct: ohbother.MultiStreamConfig ---
+// --- wrapping struct: ohbother.ContinuousPacketReceiver ---
 //
-//export ohbother_MultiStreamConfig_CTor
-func ohbother_MultiStreamConfig_CTor() CGoHandle {
-	return CGoHandle(handleFromPtr_ohbother_MultiStreamConfig(&ohbother.MultiStreamConfig{}))
+//export ohbother_ContinuousPacketReceiver_CTor
+func ohbother_ContinuousPacketReceiver_CTor() CGoHandle {
+	return CGoHandle(handleFromPtr_ohbother_ContinuousPacketReceiver(&ohbother.ContinuousPacketReceiver{}))
 }
 
-//export ohbother_MultiStreamConfig_PacketWorkers_Get
-func ohbother_MultiStreamConfig_PacketWorkers_Get(handle CGoHandle) C.longlong {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	return C.longlong(op.PacketWorkers)
+//export ohbother_ContinuousPacketReceiver_GetNextPacket
+func ohbother_ContinuousPacketReceiver_GetNextPacket(_handle CGoHandle) CGoHandle {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.ContinuousPacketReceiver")
+	if __err != nil {
+		return handleFromPtr_Slice_byte(nil)
+	}
+	cret := gopyh.Embed(vifc, reflect.TypeOf(ohbother.ContinuousPacketReceiver{})).(*ohbother.ContinuousPacketReceiver).GetNextPacket()
+
+	return handleFromPtr_Slice_byte(&cret)
 }
 
-//export ohbother_MultiStreamConfig_PacketWorkers_Set
-func ohbother_MultiStreamConfig_PacketWorkers_Set(handle CGoHandle, val C.longlong) {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	op.PacketWorkers = int(val)
-}
-
-//export ohbother_MultiStreamConfig_StreamCount_Get
-func ohbother_MultiStreamConfig_StreamCount_Get(handle CGoHandle) C.longlong {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	return C.longlong(op.StreamCount)
-}
-
-//export ohbother_MultiStreamConfig_StreamCount_Set
-func ohbother_MultiStreamConfig_StreamCount_Set(handle CGoHandle, val C.longlong) {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	op.StreamCount = int(val)
-}
-
-//export ohbother_MultiStreamConfig_ChannelBuffers_Get
-func ohbother_MultiStreamConfig_ChannelBuffers_Get(handle CGoHandle) C.longlong {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	return C.longlong(op.ChannelBuffers)
-}
-
-//export ohbother_MultiStreamConfig_ChannelBuffers_Set
-func ohbother_MultiStreamConfig_ChannelBuffers_Set(handle CGoHandle, val C.longlong) {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	op.ChannelBuffers = int(val)
-}
-
-//export ohbother_MultiStreamConfig_ReportInterval_Get
-func ohbother_MultiStreamConfig_ReportInterval_Get(handle CGoHandle) C.longlong {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	return C.longlong(op.ReportInterval)
-}
-
-//export ohbother_MultiStreamConfig_ReportInterval_Set
-func ohbother_MultiStreamConfig_ReportInterval_Set(handle CGoHandle, val C.longlong) {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	op.ReportInterval = int(val)
-}
-
-//export ohbother_MultiStreamConfig_EnableCPUPinning_Get
-func ohbother_MultiStreamConfig_EnableCPUPinning_Get(handle CGoHandle) C.char {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	return boolGoToPy(op.EnableCPUPinning)
-}
-
-//export ohbother_MultiStreamConfig_EnableCPUPinning_Set
-func ohbother_MultiStreamConfig_EnableCPUPinning_Set(handle CGoHandle, val C.char) {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	op.EnableCPUPinning = boolPyToGo(val)
-}
-
-//export ohbother_MultiStreamConfig_DisableOrdering_Get
-func ohbother_MultiStreamConfig_DisableOrdering_Get(handle CGoHandle) C.char {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	return boolGoToPy(op.DisableOrdering)
-}
-
-//export ohbother_MultiStreamConfig_DisableOrdering_Set
-func ohbother_MultiStreamConfig_DisableOrdering_Set(handle CGoHandle, val C.char) {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	op.DisableOrdering = boolPyToGo(val)
-}
-
-//export ohbother_MultiStreamConfig_TurnstileBurst_Get
-func ohbother_MultiStreamConfig_TurnstileBurst_Get(handle CGoHandle) C.longlong {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	return C.longlong(op.TurnstileBurst)
-}
-
-//export ohbother_MultiStreamConfig_TurnstileBurst_Set
-func ohbother_MultiStreamConfig_TurnstileBurst_Set(handle CGoHandle, val C.longlong) {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	op.TurnstileBurst = int(val)
-}
-
-//export ohbother_MultiStreamConfig_EnableMetrics_Get
-func ohbother_MultiStreamConfig_EnableMetrics_Get(handle CGoHandle) C.char {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	return boolGoToPy(op.EnableMetrics)
-}
-
-//export ohbother_MultiStreamConfig_EnableMetrics_Set
-func ohbother_MultiStreamConfig_EnableMetrics_Set(handle CGoHandle, val C.char) {
-	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
-	op.EnableMetrics = boolPyToGo(val)
+//export ohbother_ContinuousPacketReceiver_Close
+func ohbother_ContinuousPacketReceiver_Close(_handle CGoHandle, goRun C.char) {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.ContinuousPacketReceiver")
+	if __err != nil {
+		return
+	}
+	if boolPyToGo(goRun) {
+		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.ContinuousPacketReceiver{})).(*ohbother.ContinuousPacketReceiver).Close()
+	} else {
+		gopyh.Embed(vifc, reflect.TypeOf(ohbother.ContinuousPacketReceiver{})).(*ohbother.ContinuousPacketReceiver).Close()
+	}
 }
 
 // --- wrapping struct: ohbother.MultiStreamSender ---
@@ -2156,147 +2088,83 @@ func ohbother_PacketReceiver_ResultNative(_handle CGoHandle) CGoHandle {
 	return handleFromPtr_Slice_Slice_byte(&cret)
 }
 
-// --- wrapping struct: ohbother.PacketSendResult ---
+// --- wrapping struct: ohbother.PcapConfig ---
 //
-//export ohbother_PacketSendResult_CTor
-func ohbother_PacketSendResult_CTor() CGoHandle {
-	return CGoHandle(handleFromPtr_ohbother_PacketSendResult(&ohbother.PacketSendResult{}))
+//export ohbother_PcapConfig_CTor
+func ohbother_PcapConfig_CTor() CGoHandle {
+	return CGoHandle(handleFromPtr_ohbother_PcapConfig(&ohbother.PcapConfig{}))
 }
 
-//export ohbother_PacketSendResult_Index_Get
-func ohbother_PacketSendResult_Index_Get(handle CGoHandle) C.longlong {
-	op := ptrFromHandle_ohbother_PacketSendResult(handle)
-	return C.longlong(op.Index)
+//export ohbother_PcapConfig_Iface_Get
+func ohbother_PcapConfig_Iface_Get(handle CGoHandle) *C.char {
+	op := ptrFromHandle_ohbother_PcapConfig(handle)
+	return C.CString(op.Iface)
 }
 
-//export ohbother_PacketSendResult_Index_Set
-func ohbother_PacketSendResult_Index_Set(handle CGoHandle, val C.longlong) {
-	op := ptrFromHandle_ohbother_PacketSendResult(handle)
-	op.Index = int(val)
+//export ohbother_PcapConfig_Iface_Set
+func ohbother_PcapConfig_Iface_Set(handle CGoHandle, val *C.char) {
+	op := ptrFromHandle_ohbother_PcapConfig(handle)
+	op.Iface = C.GoString(val)
 }
 
-//export ohbother_PacketSendResult_TotalCount_Get
-func ohbother_PacketSendResult_TotalCount_Get(handle CGoHandle) C.longlong {
-	op := ptrFromHandle_ohbother_PacketSendResult(handle)
-	return C.longlong(op.TotalCount)
+//export ohbother_PcapConfig_SnapLen_Get
+func ohbother_PcapConfig_SnapLen_Get(handle CGoHandle) C.long {
+	op := ptrFromHandle_ohbother_PcapConfig(handle)
+	return C.long(op.SnapLen)
 }
 
-//export ohbother_PacketSendResult_TotalCount_Set
-func ohbother_PacketSendResult_TotalCount_Set(handle CGoHandle, val C.longlong) {
-	op := ptrFromHandle_ohbother_PacketSendResult(handle)
-	op.TotalCount = int(val)
+//export ohbother_PcapConfig_SnapLen_Set
+func ohbother_PcapConfig_SnapLen_Set(handle CGoHandle, val C.long) {
+	op := ptrFromHandle_ohbother_PcapConfig(handle)
+	op.SnapLen = int32(val)
 }
 
-//export ohbother_PacketSendResult_Elapsed_Get
-func ohbother_PacketSendResult_Elapsed_Get(handle CGoHandle) C.double {
-	op := ptrFromHandle_ohbother_PacketSendResult(handle)
-	return C.double(op.Elapsed)
+//export ohbother_PcapConfig_Promisc_Get
+func ohbother_PcapConfig_Promisc_Get(handle CGoHandle) C.char {
+	op := ptrFromHandle_ohbother_PcapConfig(handle)
+	return boolGoToPy(op.Promisc)
 }
 
-//export ohbother_PacketSendResult_Elapsed_Set
-func ohbother_PacketSendResult_Elapsed_Set(handle CGoHandle, val C.double) {
-	op := ptrFromHandle_ohbother_PacketSendResult(handle)
-	op.Elapsed = float64(val)
+//export ohbother_PcapConfig_Promisc_Set
+func ohbother_PcapConfig_Promisc_Set(handle CGoHandle, val C.char) {
+	op := ptrFromHandle_ohbother_PcapConfig(handle)
+	op.Promisc = boolPyToGo(val)
 }
 
-//export ohbother_PacketSendResult_GetError
-func ohbother_PacketSendResult_GetError(_handle CGoHandle) *C.char {
-	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.PacketSendResult")
-	if __err != nil {
-		return C.CString("")
-	}
-	return C.CString(gopyh.Embed(vifc, reflect.TypeOf(ohbother.PacketSendResult{})).(*ohbother.PacketSendResult).GetError())
-
+//export ohbother_PcapConfig_Timeout_Get
+func ohbother_PcapConfig_Timeout_Get(handle CGoHandle) C.longlong {
+	op := ptrFromHandle_ohbother_PcapConfig(handle)
+	return C.longlong(int64(op.Timeout))
 }
 
-// --- wrapping struct: ohbother.Config ---
-//
-//export ohbother_Config_CTor
-func ohbother_Config_CTor() CGoHandle {
-	return CGoHandle(handleFromPtr_ohbother_Config(&ohbother.Config{}))
+//export ohbother_PcapConfig_Timeout_Set
+func ohbother_PcapConfig_Timeout_Set(handle CGoHandle, val C.longlong) {
+	op := ptrFromHandle_ohbother_PcapConfig(handle)
+	op.Timeout = time.Duration(int64(val))
 }
 
-//export ohbother_Config_Pcap_Get
-func ohbother_Config_Pcap_Get(handle CGoHandle) CGoHandle {
-	op := ptrFromHandle_ohbother_Config(handle)
-	return handleFromPtr_Ptr_ohbother_PcapConfig(op.Pcap)
+//export ohbother_PcapConfig_BufferSize_Get
+func ohbother_PcapConfig_BufferSize_Get(handle CGoHandle) C.longlong {
+	op := ptrFromHandle_ohbother_PcapConfig(handle)
+	return C.longlong(op.BufferSize)
 }
 
-//export ohbother_Config_Pcap_Set
-func ohbother_Config_Pcap_Set(handle CGoHandle, val CGoHandle) {
-	op := ptrFromHandle_ohbother_Config(handle)
-	op.Pcap = ptrFromHandle_Ptr_ohbother_PcapConfig(val)
+//export ohbother_PcapConfig_BufferSize_Set
+func ohbother_PcapConfig_BufferSize_Set(handle CGoHandle, val C.longlong) {
+	op := ptrFromHandle_ohbother_PcapConfig(handle)
+	op.BufferSize = int(val)
 }
 
-//export ohbother_Config_Packet_Get
-func ohbother_Config_Packet_Get(handle CGoHandle) CGoHandle {
-	op := ptrFromHandle_ohbother_Config(handle)
-	return handleFromPtr_Ptr_ohbother_PacketConfig(op.Packet)
+//export ohbother_PcapConfig_ImmediateMode_Get
+func ohbother_PcapConfig_ImmediateMode_Get(handle CGoHandle) C.char {
+	op := ptrFromHandle_ohbother_PcapConfig(handle)
+	return boolGoToPy(op.ImmediateMode)
 }
 
-//export ohbother_Config_Packet_Set
-func ohbother_Config_Packet_Set(handle CGoHandle, val CGoHandle) {
-	op := ptrFromHandle_ohbother_Config(handle)
-	op.Packet = ptrFromHandle_Ptr_ohbother_PacketConfig(val)
-}
-
-//export ohbother_Config_Debug_Get
-func ohbother_Config_Debug_Get(handle CGoHandle) CGoHandle {
-	op := ptrFromHandle_ohbother_Config(handle)
-	return handleFromPtr_ohbother_DebugOptions(&op.Debug)
-}
-
-//export ohbother_Config_Debug_Set
-func ohbother_Config_Debug_Set(handle CGoHandle, val CGoHandle) {
-	op := ptrFromHandle_ohbother_Config(handle)
-	op.Debug = *ptrFromHandle_ohbother_DebugOptions(val)
-}
-
-//export ohbother_Config_EnableDebug
-func ohbother_Config_EnableDebug(_handle CGoHandle, level C.longlong, goRun C.char) {
-	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.Config")
-	if __err != nil {
-		return
-	}
-	if boolPyToGo(goRun) {
-		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.Config{})).(*ohbother.Config).EnableDebug(int(level))
-	} else {
-		gopyh.Embed(vifc, reflect.TypeOf(ohbother.Config{})).(*ohbother.Config).EnableDebug(int(level))
-	}
-}
-
-//export ohbother_Config_DisableDebug
-func ohbother_Config_DisableDebug(_handle CGoHandle, goRun C.char) {
-	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.Config")
-	if __err != nil {
-		return
-	}
-	if boolPyToGo(goRun) {
-		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.Config{})).(*ohbother.Config).DisableDebug()
-	} else {
-		gopyh.Embed(vifc, reflect.TypeOf(ohbother.Config{})).(*ohbother.Config).DisableDebug()
-	}
-}
-
-//export ohbother_Config_SetLogger
-func ohbother_Config_SetLogger(_handle CGoHandle, logger CGoHandle, goRun C.char) {
-	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.Config")
-	if __err != nil {
-		return
-	}
-	if boolPyToGo(goRun) {
-		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.Config{})).(*ohbother.Config).SetLogger(ptrFromHandle_ohbother_Logger(logger))
-	} else {
-		gopyh.Embed(vifc, reflect.TypeOf(ohbother.Config{})).(*ohbother.Config).SetLogger(ptrFromHandle_ohbother_Logger(logger))
-	}
+//export ohbother_PcapConfig_ImmediateMode_Set
+func ohbother_PcapConfig_ImmediateMode_Set(handle CGoHandle, val C.char) {
+	op := ptrFromHandle_ohbother_PcapConfig(handle)
+	op.ImmediateMode = boolPyToGo(val)
 }
 
 // --- wrapping struct: ohbother.DebugOptions ---
@@ -2340,6 +2208,176 @@ func ohbother_DebugOptions_Logger_Get(handle CGoHandle) CGoHandle {
 func ohbother_DebugOptions_Logger_Set(handle CGoHandle, val CGoHandle) {
 	op := ptrFromHandle_ohbother_DebugOptions(handle)
 	op.Logger = ptrFromHandle_ohbother_Logger(val)
+}
+
+// --- wrapping struct: ohbother.DefaultLogger ---
+//
+//export ohbother_DefaultLogger_CTor
+func ohbother_DefaultLogger_CTor() CGoHandle {
+	return CGoHandle(handleFromPtr_ohbother_DefaultLogger(&ohbother.DefaultLogger{}))
+}
+
+//export ohbother_DefaultLogger_Debug
+func ohbother_DefaultLogger_Debug(_handle CGoHandle, format *C.char, args CGoHandle, goRun C.char) {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.DefaultLogger")
+	if __err != nil {
+		return
+	}
+	if boolPyToGo(goRun) {
+		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Debug(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	} else {
+		gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Debug(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	}
+}
+
+//export ohbother_DefaultLogger_Info
+func ohbother_DefaultLogger_Info(_handle CGoHandle, format *C.char, args CGoHandle, goRun C.char) {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.DefaultLogger")
+	if __err != nil {
+		return
+	}
+	if boolPyToGo(goRun) {
+		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Info(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	} else {
+		gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Info(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	}
+}
+
+//export ohbother_DefaultLogger_Warn
+func ohbother_DefaultLogger_Warn(_handle CGoHandle, format *C.char, args CGoHandle, goRun C.char) {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.DefaultLogger")
+	if __err != nil {
+		return
+	}
+	if boolPyToGo(goRun) {
+		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Warn(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	} else {
+		gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Warn(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	}
+}
+
+//export ohbother_DefaultLogger_Error
+func ohbother_DefaultLogger_Error(_handle CGoHandle, format *C.char, args CGoHandle, goRun C.char) {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.DefaultLogger")
+	if __err != nil {
+		return
+	}
+	if boolPyToGo(goRun) {
+		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Error(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	} else {
+		gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Error(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	}
+}
+
+// --- wrapping struct: ohbother.MultiStreamConfig ---
+//
+//export ohbother_MultiStreamConfig_CTor
+func ohbother_MultiStreamConfig_CTor() CGoHandle {
+	return CGoHandle(handleFromPtr_ohbother_MultiStreamConfig(&ohbother.MultiStreamConfig{}))
+}
+
+//export ohbother_MultiStreamConfig_PacketWorkers_Get
+func ohbother_MultiStreamConfig_PacketWorkers_Get(handle CGoHandle) C.longlong {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	return C.longlong(op.PacketWorkers)
+}
+
+//export ohbother_MultiStreamConfig_PacketWorkers_Set
+func ohbother_MultiStreamConfig_PacketWorkers_Set(handle CGoHandle, val C.longlong) {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	op.PacketWorkers = int(val)
+}
+
+//export ohbother_MultiStreamConfig_StreamCount_Get
+func ohbother_MultiStreamConfig_StreamCount_Get(handle CGoHandle) C.longlong {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	return C.longlong(op.StreamCount)
+}
+
+//export ohbother_MultiStreamConfig_StreamCount_Set
+func ohbother_MultiStreamConfig_StreamCount_Set(handle CGoHandle, val C.longlong) {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	op.StreamCount = int(val)
+}
+
+//export ohbother_MultiStreamConfig_ChannelBuffers_Get
+func ohbother_MultiStreamConfig_ChannelBuffers_Get(handle CGoHandle) C.longlong {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	return C.longlong(op.ChannelBuffers)
+}
+
+//export ohbother_MultiStreamConfig_ChannelBuffers_Set
+func ohbother_MultiStreamConfig_ChannelBuffers_Set(handle CGoHandle, val C.longlong) {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	op.ChannelBuffers = int(val)
+}
+
+//export ohbother_MultiStreamConfig_ReportInterval_Get
+func ohbother_MultiStreamConfig_ReportInterval_Get(handle CGoHandle) C.longlong {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	return C.longlong(op.ReportInterval)
+}
+
+//export ohbother_MultiStreamConfig_ReportInterval_Set
+func ohbother_MultiStreamConfig_ReportInterval_Set(handle CGoHandle, val C.longlong) {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	op.ReportInterval = int(val)
+}
+
+//export ohbother_MultiStreamConfig_EnableCPUPinning_Get
+func ohbother_MultiStreamConfig_EnableCPUPinning_Get(handle CGoHandle) C.char {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	return boolGoToPy(op.EnableCPUPinning)
+}
+
+//export ohbother_MultiStreamConfig_EnableCPUPinning_Set
+func ohbother_MultiStreamConfig_EnableCPUPinning_Set(handle CGoHandle, val C.char) {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	op.EnableCPUPinning = boolPyToGo(val)
+}
+
+//export ohbother_MultiStreamConfig_DisableOrdering_Get
+func ohbother_MultiStreamConfig_DisableOrdering_Get(handle CGoHandle) C.char {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	return boolGoToPy(op.DisableOrdering)
+}
+
+//export ohbother_MultiStreamConfig_DisableOrdering_Set
+func ohbother_MultiStreamConfig_DisableOrdering_Set(handle CGoHandle, val C.char) {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	op.DisableOrdering = boolPyToGo(val)
+}
+
+//export ohbother_MultiStreamConfig_TurnstileBurst_Get
+func ohbother_MultiStreamConfig_TurnstileBurst_Get(handle CGoHandle) C.longlong {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	return C.longlong(op.TurnstileBurst)
+}
+
+//export ohbother_MultiStreamConfig_TurnstileBurst_Set
+func ohbother_MultiStreamConfig_TurnstileBurst_Set(handle CGoHandle, val C.longlong) {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	op.TurnstileBurst = int(val)
+}
+
+//export ohbother_MultiStreamConfig_EnableMetrics_Get
+func ohbother_MultiStreamConfig_EnableMetrics_Get(handle CGoHandle) C.char {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	return boolGoToPy(op.EnableMetrics)
+}
+
+//export ohbother_MultiStreamConfig_EnableMetrics_Set
+func ohbother_MultiStreamConfig_EnableMetrics_Set(handle CGoHandle, val C.char) {
+	op := ptrFromHandle_ohbother_MultiStreamConfig(handle)
+	op.EnableMetrics = boolPyToGo(val)
 }
 
 // --- wrapping struct: ohbother.PacketConfig ---
@@ -2431,6 +2469,61 @@ func ohbother_PacketConfig_BPF_Get(handle CGoHandle) *C.char {
 func ohbother_PacketConfig_BPF_Set(handle CGoHandle, val *C.char) {
 	op := ptrFromHandle_ohbother_PacketConfig(handle)
 	op.BPF = C.GoString(val)
+}
+
+// --- wrapping struct: ohbother.PacketSendResult ---
+//
+//export ohbother_PacketSendResult_CTor
+func ohbother_PacketSendResult_CTor() CGoHandle {
+	return CGoHandle(handleFromPtr_ohbother_PacketSendResult(&ohbother.PacketSendResult{}))
+}
+
+//export ohbother_PacketSendResult_Index_Get
+func ohbother_PacketSendResult_Index_Get(handle CGoHandle) C.longlong {
+	op := ptrFromHandle_ohbother_PacketSendResult(handle)
+	return C.longlong(op.Index)
+}
+
+//export ohbother_PacketSendResult_Index_Set
+func ohbother_PacketSendResult_Index_Set(handle CGoHandle, val C.longlong) {
+	op := ptrFromHandle_ohbother_PacketSendResult(handle)
+	op.Index = int(val)
+}
+
+//export ohbother_PacketSendResult_TotalCount_Get
+func ohbother_PacketSendResult_TotalCount_Get(handle CGoHandle) C.longlong {
+	op := ptrFromHandle_ohbother_PacketSendResult(handle)
+	return C.longlong(op.TotalCount)
+}
+
+//export ohbother_PacketSendResult_TotalCount_Set
+func ohbother_PacketSendResult_TotalCount_Set(handle CGoHandle, val C.longlong) {
+	op := ptrFromHandle_ohbother_PacketSendResult(handle)
+	op.TotalCount = int(val)
+}
+
+//export ohbother_PacketSendResult_Elapsed_Get
+func ohbother_PacketSendResult_Elapsed_Get(handle CGoHandle) C.double {
+	op := ptrFromHandle_ohbother_PacketSendResult(handle)
+	return C.double(op.Elapsed)
+}
+
+//export ohbother_PacketSendResult_Elapsed_Set
+func ohbother_PacketSendResult_Elapsed_Set(handle CGoHandle, val C.double) {
+	op := ptrFromHandle_ohbother_PacketSendResult(handle)
+	op.Elapsed = float64(val)
+}
+
+//export ohbother_PacketSendResult_GetError
+func ohbother_PacketSendResult_GetError(_handle CGoHandle) *C.char {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.PacketSendResult")
+	if __err != nil {
+		return C.CString("")
+	}
+	return C.CString(gopyh.Embed(vifc, reflect.TypeOf(ohbother.PacketSendResult{})).(*ohbother.PacketSendResult).GetError())
+
 }
 
 // --- wrapping struct: ohbother.PacketSequenceSender ---
@@ -2533,85 +2626,6 @@ func ohbother_PacketSequenceSender_IsComplete(_handle CGoHandle) C.char {
 
 }
 
-// --- wrapping struct: ohbother.PcapConfig ---
-//
-//export ohbother_PcapConfig_CTor
-func ohbother_PcapConfig_CTor() CGoHandle {
-	return CGoHandle(handleFromPtr_ohbother_PcapConfig(&ohbother.PcapConfig{}))
-}
-
-//export ohbother_PcapConfig_Iface_Get
-func ohbother_PcapConfig_Iface_Get(handle CGoHandle) *C.char {
-	op := ptrFromHandle_ohbother_PcapConfig(handle)
-	return C.CString(op.Iface)
-}
-
-//export ohbother_PcapConfig_Iface_Set
-func ohbother_PcapConfig_Iface_Set(handle CGoHandle, val *C.char) {
-	op := ptrFromHandle_ohbother_PcapConfig(handle)
-	op.Iface = C.GoString(val)
-}
-
-//export ohbother_PcapConfig_SnapLen_Get
-func ohbother_PcapConfig_SnapLen_Get(handle CGoHandle) C.long {
-	op := ptrFromHandle_ohbother_PcapConfig(handle)
-	return C.long(op.SnapLen)
-}
-
-//export ohbother_PcapConfig_SnapLen_Set
-func ohbother_PcapConfig_SnapLen_Set(handle CGoHandle, val C.long) {
-	op := ptrFromHandle_ohbother_PcapConfig(handle)
-	op.SnapLen = int32(val)
-}
-
-//export ohbother_PcapConfig_Promisc_Get
-func ohbother_PcapConfig_Promisc_Get(handle CGoHandle) C.char {
-	op := ptrFromHandle_ohbother_PcapConfig(handle)
-	return boolGoToPy(op.Promisc)
-}
-
-//export ohbother_PcapConfig_Promisc_Set
-func ohbother_PcapConfig_Promisc_Set(handle CGoHandle, val C.char) {
-	op := ptrFromHandle_ohbother_PcapConfig(handle)
-	op.Promisc = boolPyToGo(val)
-}
-
-//export ohbother_PcapConfig_Timeout_Get
-func ohbother_PcapConfig_Timeout_Get(handle CGoHandle) C.longlong {
-	op := ptrFromHandle_ohbother_PcapConfig(handle)
-	return C.longlong(int64(op.Timeout))
-}
-
-//export ohbother_PcapConfig_Timeout_Set
-func ohbother_PcapConfig_Timeout_Set(handle CGoHandle, val C.longlong) {
-	op := ptrFromHandle_ohbother_PcapConfig(handle)
-	op.Timeout = time.Duration(int64(val))
-}
-
-//export ohbother_PcapConfig_BufferSize_Get
-func ohbother_PcapConfig_BufferSize_Get(handle CGoHandle) C.longlong {
-	op := ptrFromHandle_ohbother_PcapConfig(handle)
-	return C.longlong(op.BufferSize)
-}
-
-//export ohbother_PcapConfig_BufferSize_Set
-func ohbother_PcapConfig_BufferSize_Set(handle CGoHandle, val C.longlong) {
-	op := ptrFromHandle_ohbother_PcapConfig(handle)
-	op.BufferSize = int(val)
-}
-
-//export ohbother_PcapConfig_ImmediateMode_Get
-func ohbother_PcapConfig_ImmediateMode_Get(handle CGoHandle) C.char {
-	op := ptrFromHandle_ohbother_PcapConfig(handle)
-	return boolGoToPy(op.ImmediateMode)
-}
-
-//export ohbother_PcapConfig_ImmediateMode_Set
-func ohbother_PcapConfig_ImmediateMode_Set(handle CGoHandle, val C.char) {
-	op := ptrFromHandle_ohbother_PcapConfig(handle)
-	op.ImmediateMode = boolPyToGo(val)
-}
-
 // --- wrapping struct: ohbother.AsyncResult ---
 //
 //export ohbother_AsyncResult_CTor
@@ -2694,105 +2708,91 @@ func ohbother_BytePacket_GetData(_handle CGoHandle) CGoHandle {
 	return handleFromPtr_Slice_byte(&cret)
 }
 
-// --- wrapping struct: ohbother.ContinuousPacketReceiver ---
+// --- wrapping struct: ohbother.Config ---
 //
-//export ohbother_ContinuousPacketReceiver_CTor
-func ohbother_ContinuousPacketReceiver_CTor() CGoHandle {
-	return CGoHandle(handleFromPtr_ohbother_ContinuousPacketReceiver(&ohbother.ContinuousPacketReceiver{}))
+//export ohbother_Config_CTor
+func ohbother_Config_CTor() CGoHandle {
+	return CGoHandle(handleFromPtr_ohbother_Config(&ohbother.Config{}))
 }
 
-//export ohbother_ContinuousPacketReceiver_GetNextPacket
-func ohbother_ContinuousPacketReceiver_GetNextPacket(_handle CGoHandle) CGoHandle {
+//export ohbother_Config_Pcap_Get
+func ohbother_Config_Pcap_Get(handle CGoHandle) CGoHandle {
+	op := ptrFromHandle_ohbother_Config(handle)
+	return handleFromPtr_Ptr_ohbother_PcapConfig(op.Pcap)
+}
+
+//export ohbother_Config_Pcap_Set
+func ohbother_Config_Pcap_Set(handle CGoHandle, val CGoHandle) {
+	op := ptrFromHandle_ohbother_Config(handle)
+	op.Pcap = ptrFromHandle_Ptr_ohbother_PcapConfig(val)
+}
+
+//export ohbother_Config_Packet_Get
+func ohbother_Config_Packet_Get(handle CGoHandle) CGoHandle {
+	op := ptrFromHandle_ohbother_Config(handle)
+	return handleFromPtr_Ptr_ohbother_PacketConfig(op.Packet)
+}
+
+//export ohbother_Config_Packet_Set
+func ohbother_Config_Packet_Set(handle CGoHandle, val CGoHandle) {
+	op := ptrFromHandle_ohbother_Config(handle)
+	op.Packet = ptrFromHandle_Ptr_ohbother_PacketConfig(val)
+}
+
+//export ohbother_Config_Debug_Get
+func ohbother_Config_Debug_Get(handle CGoHandle) CGoHandle {
+	op := ptrFromHandle_ohbother_Config(handle)
+	return handleFromPtr_ohbother_DebugOptions(&op.Debug)
+}
+
+//export ohbother_Config_Debug_Set
+func ohbother_Config_Debug_Set(handle CGoHandle, val CGoHandle) {
+	op := ptrFromHandle_ohbother_Config(handle)
+	op.Debug = *ptrFromHandle_ohbother_DebugOptions(val)
+}
+
+//export ohbother_Config_EnableDebug
+func ohbother_Config_EnableDebug(_handle CGoHandle, level C.longlong, goRun C.char) {
 	_saved_thread := C.PyEval_SaveThread()
 	defer C.PyEval_RestoreThread(_saved_thread)
-	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.ContinuousPacketReceiver")
-	if __err != nil {
-		return handleFromPtr_Slice_byte(nil)
-	}
-	cret := gopyh.Embed(vifc, reflect.TypeOf(ohbother.ContinuousPacketReceiver{})).(*ohbother.ContinuousPacketReceiver).GetNextPacket()
-
-	return handleFromPtr_Slice_byte(&cret)
-}
-
-//export ohbother_ContinuousPacketReceiver_Close
-func ohbother_ContinuousPacketReceiver_Close(_handle CGoHandle, goRun C.char) {
-	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.ContinuousPacketReceiver")
-	if __err != nil {
-		return
-	}
-	if boolPyToGo(goRun) {
-		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.ContinuousPacketReceiver{})).(*ohbother.ContinuousPacketReceiver).Close()
-	} else {
-		gopyh.Embed(vifc, reflect.TypeOf(ohbother.ContinuousPacketReceiver{})).(*ohbother.ContinuousPacketReceiver).Close()
-	}
-}
-
-// --- wrapping struct: ohbother.DefaultLogger ---
-//
-//export ohbother_DefaultLogger_CTor
-func ohbother_DefaultLogger_CTor() CGoHandle {
-	return CGoHandle(handleFromPtr_ohbother_DefaultLogger(&ohbother.DefaultLogger{}))
-}
-
-//export ohbother_DefaultLogger_Debug
-func ohbother_DefaultLogger_Debug(_handle CGoHandle, format *C.char, args CGoHandle, goRun C.char) {
-	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.DefaultLogger")
-	if __err != nil {
-		return
-	}
-	if boolPyToGo(goRun) {
-		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Debug(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
-	} else {
-		gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Debug(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
-	}
-}
-
-//export ohbother_DefaultLogger_Info
-func ohbother_DefaultLogger_Info(_handle CGoHandle, format *C.char, args CGoHandle, goRun C.char) {
-	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.DefaultLogger")
+	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.Config")
 	if __err != nil {
 		return
 	}
 	if boolPyToGo(goRun) {
-		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Info(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.Config{})).(*ohbother.Config).EnableDebug(int(level))
 	} else {
-		gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Info(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+		gopyh.Embed(vifc, reflect.TypeOf(ohbother.Config{})).(*ohbother.Config).EnableDebug(int(level))
 	}
 }
 
-//export ohbother_DefaultLogger_Warn
-func ohbother_DefaultLogger_Warn(_handle CGoHandle, format *C.char, args CGoHandle, goRun C.char) {
+//export ohbother_Config_DisableDebug
+func ohbother_Config_DisableDebug(_handle CGoHandle, goRun C.char) {
 	_saved_thread := C.PyEval_SaveThread()
 	defer C.PyEval_RestoreThread(_saved_thread)
-	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.DefaultLogger")
+	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.Config")
 	if __err != nil {
 		return
 	}
 	if boolPyToGo(goRun) {
-		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Warn(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.Config{})).(*ohbother.Config).DisableDebug()
 	} else {
-		gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Warn(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+		gopyh.Embed(vifc, reflect.TypeOf(ohbother.Config{})).(*ohbother.Config).DisableDebug()
 	}
 }
 
-//export ohbother_DefaultLogger_Error
-func ohbother_DefaultLogger_Error(_handle CGoHandle, format *C.char, args CGoHandle, goRun C.char) {
+//export ohbother_Config_SetLogger
+func ohbother_Config_SetLogger(_handle CGoHandle, logger CGoHandle, goRun C.char) {
 	_saved_thread := C.PyEval_SaveThread()
 	defer C.PyEval_RestoreThread(_saved_thread)
-	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.DefaultLogger")
+	vifc, __err := gopyh.VarFromHandleTry((gopyh.CGoHandle)(_handle), "*ohbother.Config")
 	if __err != nil {
 		return
 	}
 	if boolPyToGo(goRun) {
-		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Error(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+		go gopyh.Embed(vifc, reflect.TypeOf(ohbother.Config{})).(*ohbother.Config).SetLogger(ptrFromHandle_ohbother_Logger(logger))
 	} else {
-		gopyh.Embed(vifc, reflect.TypeOf(ohbother.DefaultLogger{})).(*ohbother.DefaultLogger).Error(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+		gopyh.Embed(vifc, reflect.TypeOf(ohbother.Config{})).(*ohbother.Config).SetLogger(ptrFromHandle_ohbother_Logger(logger))
 	}
 }
 
@@ -2802,19 +2802,19 @@ func ohbother_DefaultLogger_Error(_handle CGoHandle, format *C.char, args CGoHan
 
 // ---- Constructors ---
 
+//export ohbother_NewReceiver
+func ohbother_NewReceiver(cfg CGoHandle) CGoHandle {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	return handleFromPtr_Ptr_ohbother_ContinuousPacketReceiver(ohbother.NewReceiver(ptrFromHandle_Ptr_ohbother_Config(cfg)))
+
+}
+
 //export ohbother_NewMultiStreamSender
 func ohbother_NewMultiStreamSender(cfg CGoHandle, rateLimit C.longlong) CGoHandle {
 	_saved_thread := C.PyEval_SaveThread()
 	defer C.PyEval_RestoreThread(_saved_thread)
 	return handleFromPtr_Ptr_ohbother_MultiStreamSender(ohbother.NewMultiStreamSender(ptrFromHandle_Ptr_ohbother_Config(cfg), int(rateLimit)))
-
-}
-
-//export ohbother_BenchmarkReceiveAsync
-func ohbother_BenchmarkReceiveAsync(cfg CGoHandle, duration C.double) CGoHandle {
-	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	return handleFromPtr_Ptr_ohbother_PacketReceiver(ohbother.BenchmarkReceiveAsync(ptrFromHandle_Ptr_ohbother_Config(cfg), float64(duration)))
 
 }
 
@@ -2834,19 +2834,20 @@ func ohbother_PacketReceiverByTime(cfg CGoHandle, duration C.double) CGoHandle {
 
 }
 
-//export ohbother_NewDefaultConfig
-func ohbother_NewDefaultConfig(iface *C.char, srcMAC *C.char, dstMAC *C.char, srcIP *C.char, dstIP *C.char, srcPort C.longlong, dstPort C.longlong, bpf *C.char, SnapLen C.longlong, Promisc C.char, BufferSize C.longlong, ImmediateMode C.char) CGoHandle {
+//export ohbother_BenchmarkReceiveAsync
+func ohbother_BenchmarkReceiveAsync(cfg CGoHandle, duration C.double) CGoHandle {
 	_saved_thread := C.PyEval_SaveThread()
-	cret, __err := ohbother.NewDefaultConfig(C.GoString(iface), C.GoString(srcMAC), C.GoString(dstMAC), C.GoString(srcIP), C.GoString(dstIP), int(srcPort), int(dstPort), C.GoString(bpf), int(SnapLen), boolPyToGo(Promisc), int(BufferSize), boolPyToGo(ImmediateMode))
+	defer C.PyEval_RestoreThread(_saved_thread)
+	return handleFromPtr_Ptr_ohbother_PacketReceiver(ohbother.BenchmarkReceiveAsync(ptrFromHandle_Ptr_ohbother_Config(cfg), float64(duration)))
 
-	C.PyEval_RestoreThread(_saved_thread)
-	if __err != nil {
-		estr := C.CString(__err.Error())
-		C.PyErr_SetString(C.PyExc_RuntimeError, estr)
-		C.free(unsafe.Pointer(estr))
-		return handleFromPtr_Ptr_ohbother_Config(nil)
-	}
-	return handleFromPtr_Ptr_ohbother_Config(cret)
+}
+
+//export ohbother_NewDefaultLogger
+func ohbother_NewDefaultLogger(cfg CGoHandle) CGoHandle {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	return handleFromPtr_Ptr_ohbother_DefaultLogger(ohbother.NewDefaultLogger(ptrFromHandle_Ptr_ohbother_Config(cfg)))
+
 }
 
 //export ohbother_NewPacketSequenceSender
@@ -2865,23 +2866,81 @@ func ohbother_NewBytePacket(data CGoHandle) CGoHandle {
 
 }
 
-//export ohbother_NewReceiver
-func ohbother_NewReceiver(cfg CGoHandle) CGoHandle {
+//export ohbother_NewDefaultConfig
+func ohbother_NewDefaultConfig(iface *C.char, srcMAC *C.char, dstMAC *C.char, srcIP *C.char, dstIP *C.char, srcPort C.longlong, dstPort C.longlong, bpf *C.char, SnapLen C.longlong, Promisc C.char, BufferSize C.longlong, ImmediateMode C.char) CGoHandle {
 	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	return handleFromPtr_Ptr_ohbother_ContinuousPacketReceiver(ohbother.NewReceiver(ptrFromHandle_Ptr_ohbother_Config(cfg)))
+	cret, __err := ohbother.NewDefaultConfig(C.GoString(iface), C.GoString(srcMAC), C.GoString(dstMAC), C.GoString(srcIP), C.GoString(dstIP), int(srcPort), int(dstPort), C.GoString(bpf), int(SnapLen), boolPyToGo(Promisc), int(BufferSize), boolPyToGo(ImmediateMode))
 
-}
-
-//export ohbother_NewDefaultLogger
-func ohbother_NewDefaultLogger(cfg CGoHandle) CGoHandle {
-	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	return handleFromPtr_Ptr_ohbother_DefaultLogger(ohbother.NewDefaultLogger(ptrFromHandle_Ptr_ohbother_Config(cfg)))
-
+	C.PyEval_RestoreThread(_saved_thread)
+	if __err != nil {
+		estr := C.CString(__err.Error())
+		C.PyErr_SetString(C.PyExc_RuntimeError, estr)
+		C.free(unsafe.Pointer(estr))
+		return handleFromPtr_Ptr_ohbother_Config(nil)
+	}
+	return handleFromPtr_Ptr_ohbother_Config(cret)
 }
 
 // ---- Functions ---
+
+//export ohbother_DeleteSliceBytes
+func ohbother_DeleteSliceBytes(handle C.longlong, goRun C.char) {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	if boolPyToGo(goRun) {
+		go ohbother.DeleteSliceBytes(int64(handle))
+	} else {
+		ohbother.DeleteSliceBytes(int64(handle))
+	}
+}
+
+//export ohbother_LogDebug
+func ohbother_LogDebug(format *C.char, args CGoHandle, goRun C.char) {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	if boolPyToGo(goRun) {
+		go ohbother.LogDebug(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	} else {
+		ohbother.LogDebug(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	}
+}
+
+//export ohbother_LogError
+func ohbother_LogError(format *C.char, args CGoHandle, goRun C.char) {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	if boolPyToGo(goRun) {
+		go ohbother.LogError(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	} else {
+		ohbother.LogError(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	}
+}
+
+//export ohbother_LogWarn
+func ohbother_LogWarn(format *C.char, args CGoHandle, goRun C.char) {
+	_saved_thread := C.PyEval_SaveThread()
+	defer C.PyEval_RestoreThread(_saved_thread)
+	if boolPyToGo(goRun) {
+		go ohbother.LogWarn(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	} else {
+		ohbother.LogWarn(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
+	}
+}
+
+//export ohbother_BenchmarkSend
+func ohbother_BenchmarkSend(cfg CGoHandle, packetCount C.longlong, payloadSize C.longlong, rateLimit C.longlong) C.double {
+	_saved_thread := C.PyEval_SaveThread()
+	cret, __err := ohbother.BenchmarkSend(ptrFromHandle_Ptr_ohbother_Config(cfg), int(packetCount), int(payloadSize), int(rateLimit))
+
+	C.PyEval_RestoreThread(_saved_thread)
+	if __err != nil {
+		estr := C.CString(__err.Error())
+		C.PyErr_SetString(C.PyExc_RuntimeError, estr)
+		C.free(unsafe.Pointer(estr))
+		return C.double(0)
+	}
+	return C.double(cret)
+}
 
 //export ohbother_PayloadNative
 func ohbother_PayloadNative(pyPayload *C.char) CGoHandle {
@@ -2892,10 +2951,10 @@ func ohbother_PayloadNative(pyPayload *C.char) CGoHandle {
 	return handleFromPtr_Slice_Slice_byte(&cret)
 }
 
-//export ohbother_ReceivePacketsByTimeSync
-func ohbother_ReceivePacketsByTimeSync(cfg CGoHandle, duration C.double) CGoHandle {
+//export ohbother_ReceivePacketsByCountSync
+func ohbother_ReceivePacketsByCountSync(cfg CGoHandle, count C.longlong, timeout C.double) CGoHandle {
 	_saved_thread := C.PyEval_SaveThread()
-	cret, __err := ohbother.ReceivePacketsByTimeSync(ptrFromHandle_Ptr_ohbother_Config(cfg), float64(duration))
+	cret, __err := ohbother.ReceivePacketsByCountSync(ptrFromHandle_Ptr_ohbother_Config(cfg), int(count), float64(timeout))
 
 	C.PyEval_RestoreThread(_saved_thread)
 	if __err != nil {
@@ -2905,21 +2964,6 @@ func ohbother_ReceivePacketsByTimeSync(cfg CGoHandle, duration C.double) CGoHand
 		return handleFromPtr_Slice_Slice_byte(nil)
 	}
 	return handleFromPtr_Slice_Slice_byte(&cret)
-}
-
-//export ohbother_SendPackets
-func ohbother_SendPackets(cfg CGoHandle, rawPayloads *C.char, rateLimit C.longlong) *C.char {
-	_saved_thread := C.PyEval_SaveThread()
-	var __err error
-	__err = ohbother.SendPackets(ptrFromHandle_Ptr_ohbother_Config(cfg), C.GoString(rawPayloads), int(rateLimit))
-
-	C.PyEval_RestoreThread(_saved_thread)
-	if __err != nil {
-		estr := C.CString(__err.Error())
-		C.PyErr_SetString(C.PyExc_RuntimeError, estr)
-		return estr
-	}
-	return C.CString("")
 }
 
 //export ohbother_SendByteArrays
@@ -2952,17 +2996,6 @@ func ohbother_SendPacket(cfg CGoHandle, payload CGoHandle, rateLimit C.longlong)
 	return C.CString("")
 }
 
-//export ohbother_LogError
-func ohbother_LogError(format *C.char, args CGoHandle, goRun C.char) {
-	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	if boolPyToGo(goRun) {
-		go ohbother.LogError(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
-	} else {
-		ohbother.LogError(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
-	}
-}
-
 //export ohbother_LogInfo
 func ohbother_LogInfo(format *C.char, args CGoHandle, goRun C.char) {
 	_saved_thread := C.PyEval_SaveThread()
@@ -2974,17 +3007,6 @@ func ohbother_LogInfo(format *C.char, args CGoHandle, goRun C.char) {
 	}
 }
 
-//export ohbother_LogWarn
-func ohbother_LogWarn(format *C.char, args CGoHandle, goRun C.char) {
-	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	if boolPyToGo(goRun) {
-		go ohbother.LogWarn(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
-	} else {
-		ohbother.LogWarn(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
-	}
-}
-
 //export ohbother_NewSliceByteFromBytes
 func ohbother_NewSliceByteFromBytes(data CGoHandle) C.longlong {
 	_saved_thread := C.PyEval_SaveThread()
@@ -2993,21 +3015,10 @@ func ohbother_NewSliceByteFromBytes(data CGoHandle) C.longlong {
 
 }
 
-//export ohbother_DeleteSliceBytes
-func ohbother_DeleteSliceBytes(handle C.longlong, goRun C.char) {
+//export ohbother_ReceivePacketsByTimeSync
+func ohbother_ReceivePacketsByTimeSync(cfg CGoHandle, duration C.double) CGoHandle {
 	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	if boolPyToGo(goRun) {
-		go ohbother.DeleteSliceBytes(int64(handle))
-	} else {
-		ohbother.DeleteSliceBytes(int64(handle))
-	}
-}
-
-//export ohbother_ReceivePacketsByCountSync
-func ohbother_ReceivePacketsByCountSync(cfg CGoHandle, count C.longlong, timeout C.double) CGoHandle {
-	_saved_thread := C.PyEval_SaveThread()
-	cret, __err := ohbother.ReceivePacketsByCountSync(ptrFromHandle_Ptr_ohbother_Config(cfg), int(count), float64(timeout))
+	cret, __err := ohbother.ReceivePacketsByTimeSync(ptrFromHandle_Ptr_ohbother_Config(cfg), float64(duration))
 
 	C.PyEval_RestoreThread(_saved_thread)
 	if __err != nil {
@@ -3019,6 +3030,21 @@ func ohbother_ReceivePacketsByCountSync(cfg CGoHandle, count C.longlong, timeout
 	return handleFromPtr_Slice_Slice_byte(&cret)
 }
 
+//export ohbother_SendPackets
+func ohbother_SendPackets(cfg CGoHandle, rawPayloads *C.char, rateLimit C.longlong) *C.char {
+	_saved_thread := C.PyEval_SaveThread()
+	var __err error
+	__err = ohbother.SendPackets(ptrFromHandle_Ptr_ohbother_Config(cfg), C.GoString(rawPayloads), int(rateLimit))
+
+	C.PyEval_RestoreThread(_saved_thread)
+	if __err != nil {
+		estr := C.CString(__err.Error())
+		C.PyErr_SetString(C.PyExc_RuntimeError, estr)
+		return estr
+	}
+	return C.CString("")
+}
+
 //export ohbother_BatchConvertPythonBytesToSlices
 func ohbother_BatchConvertPythonBytesToSlices(rawBytes CGoHandle, numWorkers C.longlong) CGoHandle {
 	_saved_thread := C.PyEval_SaveThread()
@@ -3026,30 +3052,4 @@ func ohbother_BatchConvertPythonBytesToSlices(rawBytes CGoHandle, numWorkers C.l
 	cret := ohbother.BatchConvertPythonBytesToSlices(deptrFromHandle_Slice_Slice_byte(rawBytes), int(numWorkers))
 
 	return handleFromPtr_Slice_int64(&cret)
-}
-
-//export ohbother_BenchmarkSend
-func ohbother_BenchmarkSend(cfg CGoHandle, packetCount C.longlong, payloadSize C.longlong, rateLimit C.longlong) C.double {
-	_saved_thread := C.PyEval_SaveThread()
-	cret, __err := ohbother.BenchmarkSend(ptrFromHandle_Ptr_ohbother_Config(cfg), int(packetCount), int(payloadSize), int(rateLimit))
-
-	C.PyEval_RestoreThread(_saved_thread)
-	if __err != nil {
-		estr := C.CString(__err.Error())
-		C.PyErr_SetString(C.PyExc_RuntimeError, estr)
-		C.free(unsafe.Pointer(estr))
-		return C.double(0)
-	}
-	return C.double(cret)
-}
-
-//export ohbother_LogDebug
-func ohbother_LogDebug(format *C.char, args CGoHandle, goRun C.char) {
-	_saved_thread := C.PyEval_SaveThread()
-	defer C.PyEval_RestoreThread(_saved_thread)
-	if boolPyToGo(goRun) {
-		go ohbother.LogDebug(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
-	} else {
-		ohbother.LogDebug(C.GoString(format), deptrFromHandle_Slice_interface_(args)...)
-	}
 }

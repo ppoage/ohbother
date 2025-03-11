@@ -2603,318 +2603,61 @@ PyObject * _wrap__ohbother_ohbother_Logger_Warn(PyObject * PYBINDGEN_UNUSED(dumm
 
 
 PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
+_wrap__ohbother_ohbother_ContinuousPacketReceiver_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
 {
     PyObject *py_retval;
     int64_t retval;
 
-    retval = ohbother_MultiStreamConfig_CTor();
+    retval = ohbother_ContinuousPacketReceiver_CTor();
     py_retval = Py_BuildValue((char *) "L", retval);
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs));
+PyObject * _wrap__ohbother_ohbother_ContinuousPacketReceiver_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs));
 
 
 PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_PacketWorkers_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_ContinuousPacketReceiver_GetNextPacket(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
+    int64_t _handle;
+    const char *keywords[] = {"_handle", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &_handle)) {
         return NULL;
     }
-    retval = ohbother_MultiStreamConfig_PacketWorkers_Get(handle);
+    retval = ohbother_ContinuousPacketReceiver_GetNextPacket(_handle);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
     py_retval = Py_BuildValue((char *) "L", retval);
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_PacketWorkers_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_ContinuousPacketReceiver_GetNextPacket(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_PacketWorkers_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_ContinuousPacketReceiver_Close(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
-    int64_t handle;
-    int64_t val;
-    const char *keywords[] = {"handle", "val", NULL};
+    int64_t _handle;
+    bool goRun;
+    PyObject *py_goRun;
+    const char *keywords[] = {"_handle", "goRun", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &_handle, &py_goRun)) {
         return NULL;
     }
-    ohbother_MultiStreamConfig_PacketWorkers_Set(handle, val);
+    goRun = (bool) PyObject_IsTrue(py_goRun);
+    ohbother_ContinuousPacketReceiver_Close(_handle, goRun);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
     Py_INCREF(Py_None);
     py_retval = Py_None;
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_PacketWorkers_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_StreamCount_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_MultiStreamConfig_StreamCount_Get(handle);
-    py_retval = Py_BuildValue((char *) "L", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_StreamCount_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_StreamCount_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    int64_t val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
-        return NULL;
-    }
-    ohbother_MultiStreamConfig_StreamCount_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_StreamCount_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_ChannelBuffers_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_MultiStreamConfig_ChannelBuffers_Get(handle);
-    py_retval = Py_BuildValue((char *) "L", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_ChannelBuffers_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_ChannelBuffers_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    int64_t val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
-        return NULL;
-    }
-    ohbother_MultiStreamConfig_ChannelBuffers_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_ChannelBuffers_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_ReportInterval_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_MultiStreamConfig_ReportInterval_Get(handle);
-    py_retval = Py_BuildValue((char *) "L", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_ReportInterval_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_ReportInterval_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    int64_t val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
-        return NULL;
-    }
-    ohbother_MultiStreamConfig_ReportInterval_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_ReportInterval_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_EnableCPUPinning_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    bool retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_MultiStreamConfig_EnableCPUPinning_Get(handle);
-    py_retval = Py_BuildValue((char *) "N", PyBool_FromLong(retval));
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_EnableCPUPinning_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_EnableCPUPinning_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    bool val;
-    PyObject *py_val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &handle, &py_val)) {
-        return NULL;
-    }
-    val = (bool) PyObject_IsTrue(py_val);
-    ohbother_MultiStreamConfig_EnableCPUPinning_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_EnableCPUPinning_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_DisableOrdering_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    bool retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_MultiStreamConfig_DisableOrdering_Get(handle);
-    py_retval = Py_BuildValue((char *) "N", PyBool_FromLong(retval));
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_DisableOrdering_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_DisableOrdering_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    bool val;
-    PyObject *py_val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &handle, &py_val)) {
-        return NULL;
-    }
-    val = (bool) PyObject_IsTrue(py_val);
-    ohbother_MultiStreamConfig_DisableOrdering_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_DisableOrdering_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_TurnstileBurst_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_MultiStreamConfig_TurnstileBurst_Get(handle);
-    py_retval = Py_BuildValue((char *) "L", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_TurnstileBurst_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_TurnstileBurst_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    int64_t val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
-        return NULL;
-    }
-    ohbother_MultiStreamConfig_TurnstileBurst_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_TurnstileBurst_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_EnableMetrics_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    bool retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_MultiStreamConfig_EnableMetrics_Get(handle);
-    py_retval = Py_BuildValue((char *) "N", PyBool_FromLong(retval));
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_EnableMetrics_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_MultiStreamConfig_EnableMetrics_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    bool val;
-    PyObject *py_val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &handle, &py_val)) {
-        return NULL;
-    }
-    val = (bool) PyObject_IsTrue(py_val);
-    ohbother_MultiStreamConfig_EnableMetrics_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_EnableMetrics_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_ContinuousPacketReceiver_Close(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
@@ -3498,167 +3241,133 @@ PyObject * _wrap__ohbother_ohbother_PacketReceiver_ResultNative(PyObject * PYBIN
 
 
 PyObject *
-_wrap__ohbother_ohbother_PacketSendResult_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
+_wrap__ohbother_ohbother_PcapConfig_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
 {
     PyObject *py_retval;
     int64_t retval;
 
-    retval = ohbother_PacketSendResult_CTor();
+    retval = ohbother_PcapConfig_CTor();
     py_retval = Py_BuildValue((char *) "L", retval);
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_PacketSendResult_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs));
+PyObject * _wrap__ohbother_ohbother_PcapConfig_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs));
 
 
 PyObject *
-_wrap__ohbother_ohbother_PacketSendResult_Index_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_PacketSendResult_Index_Get(handle);
-    py_retval = Py_BuildValue((char *) "L", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PacketSendResult_Index_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PacketSendResult_Index_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    int64_t val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
-        return NULL;
-    }
-    ohbother_PacketSendResult_Index_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PacketSendResult_Index_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PacketSendResult_TotalCount_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_PacketSendResult_TotalCount_Get(handle);
-    py_retval = Py_BuildValue((char *) "L", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PacketSendResult_TotalCount_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PacketSendResult_TotalCount_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    int64_t val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
-        return NULL;
-    }
-    ohbother_PacketSendResult_TotalCount_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PacketSendResult_TotalCount_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PacketSendResult_Elapsed_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    double retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_PacketSendResult_Elapsed_Get(handle);
-    py_retval = Py_BuildValue((char *) "d", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PacketSendResult_Elapsed_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PacketSendResult_Elapsed_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    double val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "Ld", (char **) keywords, &handle, &val)) {
-        return NULL;
-    }
-    ohbother_PacketSendResult_Elapsed_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PacketSendResult_Elapsed_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PacketSendResult_GetError(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_PcapConfig_Iface_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     char *retval;
-    int64_t _handle;
-    const char *keywords[] = {"_handle", NULL};
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &_handle)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
         return NULL;
     }
-    retval = ohbother_PacketSendResult_GetError(_handle);
-    if (PyErr_Occurred()) {
-        if (retval != NULL) free(retval);
-        return NULL;
-    }
+    retval = ohbother_PcapConfig_Iface_Get(handle);
     py_retval = Py_BuildValue((char *) "s", retval);
-    free(retval);
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_PacketSendResult_GetError(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_PcapConfig_Iface_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
-_wrap__ohbother_ohbother_Config_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
+_wrap__ohbother_ohbother_PcapConfig_Iface_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
-    int64_t retval;
+    int64_t handle;
+    char *val;
+    const char *keywords[] = {"handle", "val", NULL};
 
-    retval = ohbother_Config_CTor();
-    py_retval = Py_BuildValue((char *) "L", retval);
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "Ls", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_PcapConfig_Iface_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_Config_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs));
+PyObject * _wrap__ohbother_ohbother_PcapConfig_Iface_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
-_wrap__ohbother_ohbother_Config_Pcap_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_PcapConfig_SnapLen_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int32_t retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_PcapConfig_SnapLen_Get(handle);
+    py_retval = Py_BuildValue((char *) "i", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_PcapConfig_SnapLen_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_PcapConfig_SnapLen_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    int32_t val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "Li", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_PcapConfig_SnapLen_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_PcapConfig_SnapLen_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_PcapConfig_Promisc_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    bool retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_PcapConfig_Promisc_Get(handle);
+    py_retval = Py_BuildValue((char *) "N", PyBool_FromLong(retval));
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_PcapConfig_Promisc_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_PcapConfig_Promisc_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    bool val;
+    PyObject *py_val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &handle, &py_val)) {
+        return NULL;
+    }
+    val = (bool) PyObject_IsTrue(py_val);
+    ohbother_PcapConfig_Promisc_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_PcapConfig_Promisc_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_PcapConfig_Timeout_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t retval;
@@ -3668,15 +3377,15 @@ _wrap__ohbother_ohbother_Config_Pcap_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyO
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
         return NULL;
     }
-    retval = ohbother_Config_Pcap_Get(handle);
+    retval = ohbother_PcapConfig_Timeout_Get(handle);
     py_retval = Py_BuildValue((char *) "L", retval);
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_Config_Pcap_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_PcapConfig_Timeout_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
-_wrap__ohbother_ohbother_Config_Pcap_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_PcapConfig_Timeout_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t handle;
@@ -3686,16 +3395,16 @@ _wrap__ohbother_ohbother_Config_Pcap_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyO
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
         return NULL;
     }
-    ohbother_Config_Pcap_Set(handle, val);
+    ohbother_PcapConfig_Timeout_Set(handle, val);
     Py_INCREF(Py_None);
     py_retval = Py_None;
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_Config_Pcap_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_PcapConfig_Timeout_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
-_wrap__ohbother_ohbother_Config_Packet_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_PcapConfig_BufferSize_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t retval;
@@ -3705,15 +3414,15 @@ _wrap__ohbother_ohbother_Config_Packet_Get(PyObject * PYBINDGEN_UNUSED(dummy), P
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
         return NULL;
     }
-    retval = ohbother_Config_Packet_Get(handle);
+    retval = ohbother_PcapConfig_BufferSize_Get(handle);
     py_retval = Py_BuildValue((char *) "L", retval);
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_Config_Packet_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_PcapConfig_BufferSize_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
-_wrap__ohbother_ohbother_Config_Packet_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_PcapConfig_BufferSize_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t handle;
@@ -3723,123 +3432,51 @@ _wrap__ohbother_ohbother_Config_Packet_Set(PyObject * PYBINDGEN_UNUSED(dummy), P
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
         return NULL;
     }
-    ohbother_Config_Packet_Set(handle, val);
+    ohbother_PcapConfig_BufferSize_Set(handle, val);
     Py_INCREF(Py_None);
     py_retval = Py_None;
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_Config_Packet_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_PcapConfig_BufferSize_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
-_wrap__ohbother_ohbother_Config_Debug_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_PcapConfig_ImmediateMode_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
-    int64_t retval;
+    bool retval;
     int64_t handle;
     const char *keywords[] = {"handle", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
         return NULL;
     }
-    retval = ohbother_Config_Debug_Get(handle);
-    py_retval = Py_BuildValue((char *) "L", retval);
+    retval = ohbother_PcapConfig_ImmediateMode_Get(handle);
+    py_retval = Py_BuildValue((char *) "N", PyBool_FromLong(retval));
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_Config_Debug_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_PcapConfig_ImmediateMode_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
-_wrap__ohbother_ohbother_Config_Debug_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_PcapConfig_ImmediateMode_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t handle;
-    int64_t val;
+    bool val;
+    PyObject *py_val;
     const char *keywords[] = {"handle", "val", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &handle, &py_val)) {
         return NULL;
     }
-    ohbother_Config_Debug_Set(handle, val);
+    val = (bool) PyObject_IsTrue(py_val);
+    ohbother_PcapConfig_ImmediateMode_Set(handle, val);
     Py_INCREF(Py_None);
     py_retval = Py_None;
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_Config_Debug_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_Config_EnableDebug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t _handle;
-    int64_t level;
-    bool goRun;
-    PyObject *py_goRun;
-    const char *keywords[] = {"_handle", "level", "goRun", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LLO", (char **) keywords, &_handle, &level, &py_goRun)) {
-        return NULL;
-    }
-    goRun = (bool) PyObject_IsTrue(py_goRun);
-    ohbother_Config_EnableDebug(_handle, level, goRun);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_Config_EnableDebug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_Config_DisableDebug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t _handle;
-    bool goRun;
-    PyObject *py_goRun;
-    const char *keywords[] = {"_handle", "goRun", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &_handle, &py_goRun)) {
-        return NULL;
-    }
-    goRun = (bool) PyObject_IsTrue(py_goRun);
-    ohbother_Config_DisableDebug(_handle, goRun);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_Config_DisableDebug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_Config_SetLogger(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t _handle;
-    int64_t logger;
-    bool goRun;
-    PyObject *py_goRun;
-    const char *keywords[] = {"_handle", "logger", "goRun", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LLO", (char **) keywords, &_handle, &logger, &py_goRun)) {
-        return NULL;
-    }
-    goRun = (bool) PyObject_IsTrue(py_goRun);
-    ohbother_Config_SetLogger(_handle, logger, goRun);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_Config_SetLogger(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_PcapConfig_ImmediateMode_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
@@ -3966,6 +3603,438 @@ _wrap__ohbother_ohbother_DebugOptions_Logger_Set(PyObject * PYBINDGEN_UNUSED(dum
     return py_retval;
 }
 PyObject * _wrap__ohbother_ohbother_DebugOptions_Logger_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_DefaultLogger_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
+{
+    PyObject *py_retval;
+    int64_t retval;
+
+    retval = ohbother_DefaultLogger_CTor();
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_DefaultLogger_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs));
+
+
+PyObject *
+_wrap__ohbother_ohbother_DefaultLogger_Debug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t _handle;
+    char *format;
+    int64_t args2;
+    bool goRun;
+    PyObject *py_goRun;
+    const char *keywords[] = {"_handle", "format", "args", "goRun", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LsLO", (char **) keywords, &_handle, &format, &args2, &py_goRun)) {
+        return NULL;
+    }
+    goRun = (bool) PyObject_IsTrue(py_goRun);
+    ohbother_DefaultLogger_Debug(_handle, format, args2, goRun);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_DefaultLogger_Debug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_DefaultLogger_Info(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t _handle;
+    char *format;
+    int64_t args2;
+    bool goRun;
+    PyObject *py_goRun;
+    const char *keywords[] = {"_handle", "format", "args", "goRun", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LsLO", (char **) keywords, &_handle, &format, &args2, &py_goRun)) {
+        return NULL;
+    }
+    goRun = (bool) PyObject_IsTrue(py_goRun);
+    ohbother_DefaultLogger_Info(_handle, format, args2, goRun);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_DefaultLogger_Info(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_DefaultLogger_Warn(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t _handle;
+    char *format;
+    int64_t args2;
+    bool goRun;
+    PyObject *py_goRun;
+    const char *keywords[] = {"_handle", "format", "args", "goRun", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LsLO", (char **) keywords, &_handle, &format, &args2, &py_goRun)) {
+        return NULL;
+    }
+    goRun = (bool) PyObject_IsTrue(py_goRun);
+    ohbother_DefaultLogger_Warn(_handle, format, args2, goRun);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_DefaultLogger_Warn(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_DefaultLogger_Error(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t _handle;
+    char *format;
+    int64_t args2;
+    bool goRun;
+    PyObject *py_goRun;
+    const char *keywords[] = {"_handle", "format", "args", "goRun", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LsLO", (char **) keywords, &_handle, &format, &args2, &py_goRun)) {
+        return NULL;
+    }
+    goRun = (bool) PyObject_IsTrue(py_goRun);
+    ohbother_DefaultLogger_Error(_handle, format, args2, goRun);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_DefaultLogger_Error(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
+{
+    PyObject *py_retval;
+    int64_t retval;
+
+    retval = ohbother_MultiStreamConfig_CTor();
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs));
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_PacketWorkers_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_MultiStreamConfig_PacketWorkers_Get(handle);
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_PacketWorkers_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_PacketWorkers_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    int64_t val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_MultiStreamConfig_PacketWorkers_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_PacketWorkers_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_StreamCount_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_MultiStreamConfig_StreamCount_Get(handle);
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_StreamCount_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_StreamCount_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    int64_t val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_MultiStreamConfig_StreamCount_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_StreamCount_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_ChannelBuffers_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_MultiStreamConfig_ChannelBuffers_Get(handle);
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_ChannelBuffers_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_ChannelBuffers_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    int64_t val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_MultiStreamConfig_ChannelBuffers_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_ChannelBuffers_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_ReportInterval_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_MultiStreamConfig_ReportInterval_Get(handle);
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_ReportInterval_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_ReportInterval_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    int64_t val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_MultiStreamConfig_ReportInterval_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_ReportInterval_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_EnableCPUPinning_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    bool retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_MultiStreamConfig_EnableCPUPinning_Get(handle);
+    py_retval = Py_BuildValue((char *) "N", PyBool_FromLong(retval));
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_EnableCPUPinning_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_EnableCPUPinning_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    bool val;
+    PyObject *py_val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &handle, &py_val)) {
+        return NULL;
+    }
+    val = (bool) PyObject_IsTrue(py_val);
+    ohbother_MultiStreamConfig_EnableCPUPinning_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_EnableCPUPinning_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_DisableOrdering_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    bool retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_MultiStreamConfig_DisableOrdering_Get(handle);
+    py_retval = Py_BuildValue((char *) "N", PyBool_FromLong(retval));
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_DisableOrdering_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_DisableOrdering_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    bool val;
+    PyObject *py_val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &handle, &py_val)) {
+        return NULL;
+    }
+    val = (bool) PyObject_IsTrue(py_val);
+    ohbother_MultiStreamConfig_DisableOrdering_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_DisableOrdering_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_TurnstileBurst_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_MultiStreamConfig_TurnstileBurst_Get(handle);
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_TurnstileBurst_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_TurnstileBurst_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    int64_t val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_MultiStreamConfig_TurnstileBurst_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_TurnstileBurst_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_EnableMetrics_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    bool retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_MultiStreamConfig_EnableMetrics_Get(handle);
+    py_retval = Py_BuildValue((char *) "N", PyBool_FromLong(retval));
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_EnableMetrics_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_MultiStreamConfig_EnableMetrics_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    bool val;
+    PyObject *py_val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &handle, &py_val)) {
+        return NULL;
+    }
+    val = (bool) PyObject_IsTrue(py_val);
+    ohbother_MultiStreamConfig_EnableMetrics_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_MultiStreamConfig_EnableMetrics_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
@@ -4241,6 +4310,153 @@ PyObject * _wrap__ohbother_ohbother_PacketConfig_BPF_Set(PyObject * PYBINDGEN_UN
 
 
 PyObject *
+_wrap__ohbother_ohbother_PacketSendResult_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
+{
+    PyObject *py_retval;
+    int64_t retval;
+
+    retval = ohbother_PacketSendResult_CTor();
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_PacketSendResult_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs));
+
+
+PyObject *
+_wrap__ohbother_ohbother_PacketSendResult_Index_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_PacketSendResult_Index_Get(handle);
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_PacketSendResult_Index_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_PacketSendResult_Index_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    int64_t val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_PacketSendResult_Index_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_PacketSendResult_Index_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_PacketSendResult_TotalCount_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_PacketSendResult_TotalCount_Get(handle);
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_PacketSendResult_TotalCount_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_PacketSendResult_TotalCount_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    int64_t val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_PacketSendResult_TotalCount_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_PacketSendResult_TotalCount_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_PacketSendResult_Elapsed_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    double retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_PacketSendResult_Elapsed_Get(handle);
+    py_retval = Py_BuildValue((char *) "d", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_PacketSendResult_Elapsed_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_PacketSendResult_Elapsed_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    double val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "Ld", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_PacketSendResult_Elapsed_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_PacketSendResult_Elapsed_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_PacketSendResult_GetError(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    char *retval;
+    int64_t _handle;
+    const char *keywords[] = {"_handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &_handle)) {
+        return NULL;
+    }
+    retval = ohbother_PacketSendResult_GetError(_handle);
+    if (PyErr_Occurred()) {
+        if (retval != NULL) free(retval);
+        return NULL;
+    }
+    py_retval = Py_BuildValue((char *) "s", retval);
+    free(retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_PacketSendResult_GetError(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
 _wrap__ohbother_ohbother_PacketSequenceSender_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
 {
     PyObject *py_retval;
@@ -4453,245 +4669,6 @@ PyObject * _wrap__ohbother_ohbother_PacketSequenceSender_IsComplete(PyObject * P
 
 
 PyObject *
-_wrap__ohbother_ohbother_PcapConfig_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
-{
-    PyObject *py_retval;
-    int64_t retval;
-
-    retval = ohbother_PcapConfig_CTor();
-    py_retval = Py_BuildValue((char *) "L", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs));
-
-
-PyObject *
-_wrap__ohbother_ohbother_PcapConfig_Iface_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    char *retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_PcapConfig_Iface_Get(handle);
-    py_retval = Py_BuildValue((char *) "s", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_Iface_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PcapConfig_Iface_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    char *val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "Ls", (char **) keywords, &handle, &val)) {
-        return NULL;
-    }
-    ohbother_PcapConfig_Iface_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_Iface_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PcapConfig_SnapLen_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int32_t retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_PcapConfig_SnapLen_Get(handle);
-    py_retval = Py_BuildValue((char *) "i", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_SnapLen_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PcapConfig_SnapLen_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    int32_t val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "Li", (char **) keywords, &handle, &val)) {
-        return NULL;
-    }
-    ohbother_PcapConfig_SnapLen_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_SnapLen_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PcapConfig_Promisc_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    bool retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_PcapConfig_Promisc_Get(handle);
-    py_retval = Py_BuildValue((char *) "N", PyBool_FromLong(retval));
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_Promisc_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PcapConfig_Promisc_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    bool val;
-    PyObject *py_val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &handle, &py_val)) {
-        return NULL;
-    }
-    val = (bool) PyObject_IsTrue(py_val);
-    ohbother_PcapConfig_Promisc_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_Promisc_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PcapConfig_Timeout_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_PcapConfig_Timeout_Get(handle);
-    py_retval = Py_BuildValue((char *) "L", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_Timeout_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PcapConfig_Timeout_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    int64_t val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
-        return NULL;
-    }
-    ohbother_PcapConfig_Timeout_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_Timeout_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PcapConfig_BufferSize_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_PcapConfig_BufferSize_Get(handle);
-    py_retval = Py_BuildValue((char *) "L", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_BufferSize_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PcapConfig_BufferSize_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    int64_t val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
-        return NULL;
-    }
-    ohbother_PcapConfig_BufferSize_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_BufferSize_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PcapConfig_ImmediateMode_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    bool retval;
-    int64_t handle;
-    const char *keywords[] = {"handle", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
-        return NULL;
-    }
-    retval = ohbother_PcapConfig_ImmediateMode_Get(handle);
-    py_retval = Py_BuildValue((char *) "N", PyBool_FromLong(retval));
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_ImmediateMode_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_PcapConfig_ImmediateMode_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    bool val;
-    PyObject *py_val;
-    const char *keywords[] = {"handle", "val", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &handle, &py_val)) {
-        return NULL;
-    }
-    val = (bool) PyObject_IsTrue(py_val);
-    ohbother_PcapConfig_ImmediateMode_Set(handle, val);
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_PcapConfig_ImmediateMode_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
 _wrap__ohbother_ohbother_AsyncResult_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
 {
     PyObject *py_retval;
@@ -4855,41 +4832,156 @@ PyObject * _wrap__ohbother_ohbother_BytePacket_GetData(PyObject * PYBINDGEN_UNUS
 
 
 PyObject *
-_wrap__ohbother_ohbother_ContinuousPacketReceiver_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
+_wrap__ohbother_ohbother_Config_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
 {
     PyObject *py_retval;
     int64_t retval;
 
-    retval = ohbother_ContinuousPacketReceiver_CTor();
+    retval = ohbother_Config_CTor();
     py_retval = Py_BuildValue((char *) "L", retval);
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_ContinuousPacketReceiver_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs));
+PyObject * _wrap__ohbother_ohbother_Config_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs));
 
 
 PyObject *
-_wrap__ohbother_ohbother_ContinuousPacketReceiver_GetNextPacket(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_Config_Pcap_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t retval;
-    int64_t _handle;
-    const char *keywords[] = {"_handle", NULL};
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &_handle)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
         return NULL;
     }
-    retval = ohbother_ContinuousPacketReceiver_GetNextPacket(_handle);
+    retval = ohbother_Config_Pcap_Get(handle);
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_Config_Pcap_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_Config_Pcap_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    int64_t val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_Config_Pcap_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_Config_Pcap_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_Config_Packet_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_Config_Packet_Get(handle);
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_Config_Packet_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_Config_Packet_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    int64_t val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_Config_Packet_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_Config_Packet_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_Config_Debug_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t retval;
+    int64_t handle;
+    const char *keywords[] = {"handle", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &handle)) {
+        return NULL;
+    }
+    retval = ohbother_Config_Debug_Get(handle);
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_Config_Debug_Get(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_Config_Debug_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t handle;
+    int64_t val;
+    const char *keywords[] = {"handle", "val", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LL", (char **) keywords, &handle, &val)) {
+        return NULL;
+    }
+    ohbother_Config_Debug_Set(handle, val);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_Config_Debug_Set(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_Config_EnableDebug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t _handle;
+    int64_t level;
+    bool goRun;
+    PyObject *py_goRun;
+    const char *keywords[] = {"_handle", "level", "goRun", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LLO", (char **) keywords, &_handle, &level, &py_goRun)) {
+        return NULL;
+    }
+    goRun = (bool) PyObject_IsTrue(py_goRun);
+    ohbother_Config_EnableDebug(_handle, level, goRun);
     if (PyErr_Occurred()) {
         return NULL;
     }
-    py_retval = Py_BuildValue((char *) "L", retval);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_ContinuousPacketReceiver_GetNextPacket(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_Config_EnableDebug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
-_wrap__ohbother_ohbother_ContinuousPacketReceiver_Close(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_Config_DisableDebug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t _handle;
@@ -4901,7 +4993,7 @@ _wrap__ohbother_ohbother_ContinuousPacketReceiver_Close(PyObject * PYBINDGEN_UNU
         return NULL;
     }
     goRun = (bool) PyObject_IsTrue(py_goRun);
-    ohbother_ContinuousPacketReceiver_Close(_handle, goRun);
+    ohbother_Config_DisableDebug(_handle, goRun);
     if (PyErr_Occurred()) {
         return NULL;
     }
@@ -4909,124 +5001,53 @@ _wrap__ohbother_ohbother_ContinuousPacketReceiver_Close(PyObject * PYBINDGEN_UNU
     py_retval = Py_None;
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_ContinuousPacketReceiver_Close(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_Config_DisableDebug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
-_wrap__ohbother_ohbother_DefaultLogger_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs))
+_wrap__ohbother_ohbother_Config_SetLogger(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t _handle;
+    int64_t logger;
+    bool goRun;
+    PyObject *py_goRun;
+    const char *keywords[] = {"_handle", "logger", "goRun", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LLO", (char **) keywords, &_handle, &logger, &py_goRun)) {
+        return NULL;
+    }
+    goRun = (bool) PyObject_IsTrue(py_goRun);
+    ohbother_Config_SetLogger(_handle, logger, goRun);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_Config_SetLogger(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_NewReceiver(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t retval;
+    int64_t cfg;
+    const char *keywords[] = {"cfg", NULL};
 
-    retval = ohbother_DefaultLogger_CTor();
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &cfg)) {
+        return NULL;
+    }
+    retval = ohbother_NewReceiver(cfg);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
     py_retval = Py_BuildValue((char *) "L", retval);
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_DefaultLogger_CTor(PyObject *PYBINDGEN_UNUSED(_args), PyObject *PYBINDGEN_UNUSED(_kwargs));
-
-
-PyObject *
-_wrap__ohbother_ohbother_DefaultLogger_Debug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t _handle;
-    char *format;
-    int64_t args2;
-    bool goRun;
-    PyObject *py_goRun;
-    const char *keywords[] = {"_handle", "format", "args", "goRun", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LsLO", (char **) keywords, &_handle, &format, &args2, &py_goRun)) {
-        return NULL;
-    }
-    goRun = (bool) PyObject_IsTrue(py_goRun);
-    ohbother_DefaultLogger_Debug(_handle, format, args2, goRun);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_DefaultLogger_Debug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_DefaultLogger_Info(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t _handle;
-    char *format;
-    int64_t args2;
-    bool goRun;
-    PyObject *py_goRun;
-    const char *keywords[] = {"_handle", "format", "args", "goRun", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LsLO", (char **) keywords, &_handle, &format, &args2, &py_goRun)) {
-        return NULL;
-    }
-    goRun = (bool) PyObject_IsTrue(py_goRun);
-    ohbother_DefaultLogger_Info(_handle, format, args2, goRun);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_DefaultLogger_Info(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_DefaultLogger_Warn(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t _handle;
-    char *format;
-    int64_t args2;
-    bool goRun;
-    PyObject *py_goRun;
-    const char *keywords[] = {"_handle", "format", "args", "goRun", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LsLO", (char **) keywords, &_handle, &format, &args2, &py_goRun)) {
-        return NULL;
-    }
-    goRun = (bool) PyObject_IsTrue(py_goRun);
-    ohbother_DefaultLogger_Warn(_handle, format, args2, goRun);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_DefaultLogger_Warn(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_DefaultLogger_Error(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t _handle;
-    char *format;
-    int64_t args2;
-    bool goRun;
-    PyObject *py_goRun;
-    const char *keywords[] = {"_handle", "format", "args", "goRun", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LsLO", (char **) keywords, &_handle, &format, &args2, &py_goRun)) {
-        return NULL;
-    }
-    goRun = (bool) PyObject_IsTrue(py_goRun);
-    ohbother_DefaultLogger_Error(_handle, format, args2, goRun);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_DefaultLogger_Error(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_NewReceiver(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
@@ -5049,28 +5070,6 @@ _wrap__ohbother_ohbother_NewMultiStreamSender(PyObject * PYBINDGEN_UNUSED(dummy)
     return py_retval;
 }
 PyObject * _wrap__ohbother_ohbother_NewMultiStreamSender(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_BenchmarkReceiveAsync(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t retval;
-    int64_t cfg;
-    double duration;
-    const char *keywords[] = {"cfg", "duration", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "Ld", (char **) keywords, &cfg, &duration)) {
-        return NULL;
-    }
-    retval = ohbother_BenchmarkReceiveAsync(cfg, duration);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    py_retval = Py_BuildValue((char *) "L", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_BenchmarkReceiveAsync(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
@@ -5119,39 +5118,46 @@ PyObject * _wrap__ohbother_ohbother_PacketReceiverByTime(PyObject * PYBINDGEN_UN
 
 
 PyObject *
-_wrap__ohbother_ohbother_NewDefaultConfig(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_BenchmarkReceiveAsync(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t retval;
-    char *iface;
-    char *srcMAC;
-    char *dstMAC;
-    char *srcIP;
-    char *dstIP;
-    int64_t srcPort;
-    int64_t dstPort;
-    char *bpf;
-    int64_t SnapLen;
-    bool Promisc;
-    PyObject *py_Promisc;
-    int64_t BufferSize;
-    bool ImmediateMode;
-    PyObject *py_ImmediateMode;
-    const char *keywords[] = {"iface", "srcMAC", "dstMAC", "srcIP", "dstIP", "srcPort", "dstPort", "bpf", "SnapLen", "Promisc", "BufferSize", "ImmediateMode", NULL};
+    int64_t cfg;
+    double duration;
+    const char *keywords[] = {"cfg", "duration", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "sssssLLsLOLO", (char **) keywords, &iface, &srcMAC, &dstMAC, &srcIP, &dstIP, &srcPort, &dstPort, &bpf, &SnapLen, &py_Promisc, &BufferSize, &py_ImmediateMode)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "Ld", (char **) keywords, &cfg, &duration)) {
         return NULL;
     }
-    Promisc = (bool) PyObject_IsTrue(py_Promisc);
-    ImmediateMode = (bool) PyObject_IsTrue(py_ImmediateMode);
-    retval = ohbother_NewDefaultConfig(iface, srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, bpf, SnapLen, Promisc, BufferSize, ImmediateMode);
+    retval = ohbother_BenchmarkReceiveAsync(cfg, duration);
     if (PyErr_Occurred()) {
         return NULL;
     }
     py_retval = Py_BuildValue((char *) "L", retval);
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_NewDefaultConfig(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_BenchmarkReceiveAsync(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_NewDefaultLogger(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    int64_t retval;
+    int64_t cfg;
+    const char *keywords[] = {"cfg", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &cfg)) {
+        return NULL;
+    }
+    retval = ohbother_NewDefaultLogger(cfg);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    py_retval = Py_BuildValue((char *) "L", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_NewDefaultLogger(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
@@ -5198,45 +5204,162 @@ PyObject * _wrap__ohbother_ohbother_NewBytePacket(PyObject * PYBINDGEN_UNUSED(du
 
 
 PyObject *
-_wrap__ohbother_ohbother_NewReceiver(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_NewDefaultConfig(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t retval;
-    int64_t cfg;
-    const char *keywords[] = {"cfg", NULL};
+    char *iface;
+    char *srcMAC;
+    char *dstMAC;
+    char *srcIP;
+    char *dstIP;
+    int64_t srcPort;
+    int64_t dstPort;
+    char *bpf;
+    int64_t SnapLen;
+    bool Promisc;
+    PyObject *py_Promisc;
+    int64_t BufferSize;
+    bool ImmediateMode;
+    PyObject *py_ImmediateMode;
+    const char *keywords[] = {"iface", "srcMAC", "dstMAC", "srcIP", "dstIP", "srcPort", "dstPort", "bpf", "SnapLen", "Promisc", "BufferSize", "ImmediateMode", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &cfg)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "sssssLLsLOLO", (char **) keywords, &iface, &srcMAC, &dstMAC, &srcIP, &dstIP, &srcPort, &dstPort, &bpf, &SnapLen, &py_Promisc, &BufferSize, &py_ImmediateMode)) {
         return NULL;
     }
-    retval = ohbother_NewReceiver(cfg);
+    Promisc = (bool) PyObject_IsTrue(py_Promisc);
+    ImmediateMode = (bool) PyObject_IsTrue(py_ImmediateMode);
+    retval = ohbother_NewDefaultConfig(iface, srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, bpf, SnapLen, Promisc, BufferSize, ImmediateMode);
     if (PyErr_Occurred()) {
         return NULL;
     }
     py_retval = Py_BuildValue((char *) "L", retval);
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_NewReceiver(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_NewDefaultConfig(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
-_wrap__ohbother_ohbother_NewDefaultLogger(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_DeleteSliceBytes(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
-    int64_t retval;
-    int64_t cfg;
-    const char *keywords[] = {"cfg", NULL};
+    int64_t handle;
+    bool goRun;
+    PyObject *py_goRun;
+    const char *keywords[] = {"handle", "goRun", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "L", (char **) keywords, &cfg)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &handle, &py_goRun)) {
         return NULL;
     }
-    retval = ohbother_NewDefaultLogger(cfg);
+    goRun = (bool) PyObject_IsTrue(py_goRun);
+    ohbother_DeleteSliceBytes(handle, goRun);
     if (PyErr_Occurred()) {
         return NULL;
     }
-    py_retval = Py_BuildValue((char *) "L", retval);
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_NewDefaultLogger(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_DeleteSliceBytes(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_LogDebug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    char *format;
+    int64_t args2;
+    bool goRun;
+    PyObject *py_goRun;
+    const char *keywords[] = {"format", "args", "goRun", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "sLO", (char **) keywords, &format, &args2, &py_goRun)) {
+        return NULL;
+    }
+    goRun = (bool) PyObject_IsTrue(py_goRun);
+    ohbother_LogDebug(format, args2, goRun);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_LogDebug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_LogError(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    char *format;
+    int64_t args2;
+    bool goRun;
+    PyObject *py_goRun;
+    const char *keywords[] = {"format", "args", "goRun", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "sLO", (char **) keywords, &format, &args2, &py_goRun)) {
+        return NULL;
+    }
+    goRun = (bool) PyObject_IsTrue(py_goRun);
+    ohbother_LogError(format, args2, goRun);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_LogError(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_LogWarn(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    char *format;
+    int64_t args2;
+    bool goRun;
+    PyObject *py_goRun;
+    const char *keywords[] = {"format", "args", "goRun", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "sLO", (char **) keywords, &format, &args2, &py_goRun)) {
+        return NULL;
+    }
+    goRun = (bool) PyObject_IsTrue(py_goRun);
+    ohbother_LogWarn(format, args2, goRun);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    Py_INCREF(Py_None);
+    py_retval = Py_None;
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_LogWarn(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_BenchmarkSend(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    double retval;
+    int64_t cfg;
+    int64_t packetCount;
+    int64_t payloadSize;
+    int64_t rateLimit;
+    const char *keywords[] = {"cfg", "packetCount", "payloadSize", "rateLimit", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LLLL", (char **) keywords, &cfg, &packetCount, &payloadSize, &rateLimit)) {
+        return NULL;
+    }
+    retval = ohbother_BenchmarkSend(cfg, packetCount, payloadSize, rateLimit);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    py_retval = Py_BuildValue((char *) "d", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_BenchmarkSend(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
@@ -5261,48 +5384,26 @@ PyObject * _wrap__ohbother_ohbother_PayloadNative(PyObject * PYBINDGEN_UNUSED(du
 
 
 PyObject *
-_wrap__ohbother_ohbother_ReceivePacketsByTimeSync(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_ReceivePacketsByCountSync(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t retval;
     int64_t cfg;
-    double duration;
-    const char *keywords[] = {"cfg", "duration", NULL};
+    int64_t count;
+    double timeout;
+    const char *keywords[] = {"cfg", "count", "timeout", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "Ld", (char **) keywords, &cfg, &duration)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LLd", (char **) keywords, &cfg, &count, &timeout)) {
         return NULL;
     }
-    retval = ohbother_ReceivePacketsByTimeSync(cfg, duration);
+    retval = ohbother_ReceivePacketsByCountSync(cfg, count, timeout);
     if (PyErr_Occurred()) {
         return NULL;
     }
     py_retval = Py_BuildValue((char *) "L", retval);
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_ReceivePacketsByTimeSync(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_SendPackets(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    char *retval;
-    int64_t cfg;
-    char *rawPayloads;
-    int64_t rateLimit;
-    const char *keywords[] = {"cfg", "rawPayloads", "rateLimit", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LsL", (char **) keywords, &cfg, &rawPayloads, &rateLimit)) {
-        return NULL;
-    }
-    retval = ohbother_SendPackets(cfg, rawPayloads, rateLimit);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    py_retval = Py_BuildValue((char *) "s", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_SendPackets(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_ReceivePacketsByCountSync(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
@@ -5352,31 +5453,6 @@ PyObject * _wrap__ohbother_ohbother_SendPacket(PyObject * PYBINDGEN_UNUSED(dummy
 
 
 PyObject *
-_wrap__ohbother_ohbother_LogError(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    char *format;
-    int64_t args2;
-    bool goRun;
-    PyObject *py_goRun;
-    const char *keywords[] = {"format", "args", "goRun", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "sLO", (char **) keywords, &format, &args2, &py_goRun)) {
-        return NULL;
-    }
-    goRun = (bool) PyObject_IsTrue(py_goRun);
-    ohbother_LogError(format, args2, goRun);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_LogError(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
 _wrap__ohbother_ohbother_LogInfo(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
@@ -5402,31 +5478,6 @@ PyObject * _wrap__ohbother_ohbother_LogInfo(PyObject * PYBINDGEN_UNUSED(dummy), 
 
 
 PyObject *
-_wrap__ohbother_ohbother_LogWarn(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    char *format;
-    int64_t args2;
-    bool goRun;
-    PyObject *py_goRun;
-    const char *keywords[] = {"format", "args", "goRun", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "sLO", (char **) keywords, &format, &args2, &py_goRun)) {
-        return NULL;
-    }
-    goRun = (bool) PyObject_IsTrue(py_goRun);
-    ohbother_LogWarn(format, args2, goRun);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_LogWarn(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
 _wrap__ohbother_ohbother_NewSliceByteFromBytes(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
@@ -5448,50 +5499,48 @@ PyObject * _wrap__ohbother_ohbother_NewSliceByteFromBytes(PyObject * PYBINDGEN_U
 
 
 PyObject *
-_wrap__ohbother_ohbother_DeleteSliceBytes(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    int64_t handle;
-    bool goRun;
-    PyObject *py_goRun;
-    const char *keywords[] = {"handle", "goRun", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LO", (char **) keywords, &handle, &py_goRun)) {
-        return NULL;
-    }
-    goRun = (bool) PyObject_IsTrue(py_goRun);
-    ohbother_DeleteSliceBytes(handle, goRun);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_DeleteSliceBytes(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_ReceivePacketsByCountSync(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+_wrap__ohbother_ohbother_ReceivePacketsByTimeSync(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
 {
     PyObject *py_retval;
     int64_t retval;
     int64_t cfg;
-    int64_t count;
-    double timeout;
-    const char *keywords[] = {"cfg", "count", "timeout", NULL};
+    double duration;
+    const char *keywords[] = {"cfg", "duration", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LLd", (char **) keywords, &cfg, &count, &timeout)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "Ld", (char **) keywords, &cfg, &duration)) {
         return NULL;
     }
-    retval = ohbother_ReceivePacketsByCountSync(cfg, count, timeout);
+    retval = ohbother_ReceivePacketsByTimeSync(cfg, duration);
     if (PyErr_Occurred()) {
         return NULL;
     }
     py_retval = Py_BuildValue((char *) "L", retval);
     return py_retval;
 }
-PyObject * _wrap__ohbother_ohbother_ReceivePacketsByCountSync(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+PyObject * _wrap__ohbother_ohbother_ReceivePacketsByTimeSync(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
+
+
+PyObject *
+_wrap__ohbother_ohbother_SendPackets(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
+{
+    PyObject *py_retval;
+    char *retval;
+    int64_t cfg;
+    char *rawPayloads;
+    int64_t rateLimit;
+    const char *keywords[] = {"cfg", "rawPayloads", "rateLimit", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LsL", (char **) keywords, &cfg, &rawPayloads, &rateLimit)) {
+        return NULL;
+    }
+    retval = ohbother_SendPackets(cfg, rawPayloads, rateLimit);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    py_retval = Py_BuildValue((char *) "s", retval);
+    return py_retval;
+}
+PyObject * _wrap__ohbother_ohbother_SendPackets(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 
 PyObject *
@@ -5514,55 +5563,6 @@ _wrap__ohbother_ohbother_BatchConvertPythonBytesToSlices(PyObject * PYBINDGEN_UN
     return py_retval;
 }
 PyObject * _wrap__ohbother_ohbother_BatchConvertPythonBytesToSlices(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_BenchmarkSend(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    double retval;
-    int64_t cfg;
-    int64_t packetCount;
-    int64_t payloadSize;
-    int64_t rateLimit;
-    const char *keywords[] = {"cfg", "packetCount", "payloadSize", "rateLimit", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "LLLL", (char **) keywords, &cfg, &packetCount, &payloadSize, &rateLimit)) {
-        return NULL;
-    }
-    retval = ohbother_BenchmarkSend(cfg, packetCount, payloadSize, rateLimit);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    py_retval = Py_BuildValue((char *) "d", retval);
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_BenchmarkSend(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
-
-
-PyObject *
-_wrap__ohbother_ohbother_LogDebug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs)
-{
-    PyObject *py_retval;
-    char *format;
-    int64_t args2;
-    bool goRun;
-    PyObject *py_goRun;
-    const char *keywords[] = {"format", "args", "goRun", NULL};
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, (char *) "sLO", (char **) keywords, &format, &args2, &py_goRun)) {
-        return NULL;
-    }
-    goRun = (bool) PyObject_IsTrue(py_goRun);
-    ohbother_LogDebug(format, args2, goRun);
-    if (PyErr_Occurred()) {
-        return NULL;
-    }
-    Py_INCREF(Py_None);
-    py_retval = Py_None;
-    return py_retval;
-}
-PyObject * _wrap__ohbother_ohbother_LogDebug(PyObject * PYBINDGEN_UNUSED(dummy), PyObject *args, PyObject *kwargs);
 
 static PyMethodDef _ohbother_functions[] = {
     {(char *) "GoPyInit", (PyCFunction) _wrap__ohbother_GoPyInit, METH_NOARGS, "GoPyInit()\n\n" },
@@ -5702,23 +5702,9 @@ static PyMethodDef _ohbother_functions[] = {
     {(char *) "ohbother_Logger_Error", (PyCFunction) _wrap__ohbother_ohbother_Logger_Error, METH_KEYWORDS|METH_VARARGS, "ohbother_Logger_Error(_handle, format, args, goRun)\n\ntype: _handle: int64_t\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
     {(char *) "ohbother_Logger_Info", (PyCFunction) _wrap__ohbother_ohbother_Logger_Info, METH_KEYWORDS|METH_VARARGS, "ohbother_Logger_Info(_handle, format, args, goRun)\n\ntype: _handle: int64_t\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
     {(char *) "ohbother_Logger_Warn", (PyCFunction) _wrap__ohbother_ohbother_Logger_Warn, METH_KEYWORDS|METH_VARARGS, "ohbother_Logger_Warn(_handle, format, args, goRun)\n\ntype: _handle: int64_t\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
-    {(char *) "ohbother_MultiStreamConfig_CTor", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_CTor, METH_NOARGS, "ohbother_MultiStreamConfig_CTor()\n\n" },
-    {(char *) "ohbother_MultiStreamConfig_PacketWorkers_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_PacketWorkers_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_PacketWorkers_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_PacketWorkers_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_PacketWorkers_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_PacketWorkers_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_StreamCount_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_StreamCount_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_StreamCount_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_StreamCount_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_StreamCount_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_StreamCount_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_ChannelBuffers_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_ChannelBuffers_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_ChannelBuffers_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_ChannelBuffers_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_ChannelBuffers_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_ChannelBuffers_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_ReportInterval_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_ReportInterval_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_ReportInterval_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_ReportInterval_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_ReportInterval_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_ReportInterval_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_EnableCPUPinning_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_EnableCPUPinning_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_EnableCPUPinning_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_EnableCPUPinning_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_EnableCPUPinning_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_EnableCPUPinning_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: bool" },
-    {(char *) "ohbother_MultiStreamConfig_DisableOrdering_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_DisableOrdering_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_DisableOrdering_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_DisableOrdering_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_DisableOrdering_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_DisableOrdering_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: bool" },
-    {(char *) "ohbother_MultiStreamConfig_TurnstileBurst_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_TurnstileBurst_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_TurnstileBurst_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_TurnstileBurst_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_TurnstileBurst_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_TurnstileBurst_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_EnableMetrics_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_EnableMetrics_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_EnableMetrics_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_MultiStreamConfig_EnableMetrics_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_EnableMetrics_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_EnableMetrics_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: bool" },
+    {(char *) "ohbother_ContinuousPacketReceiver_CTor", (PyCFunction) _wrap__ohbother_ohbother_ContinuousPacketReceiver_CTor, METH_NOARGS, "ohbother_ContinuousPacketReceiver_CTor()\n\n" },
+    {(char *) "ohbother_ContinuousPacketReceiver_GetNextPacket", (PyCFunction) _wrap__ohbother_ohbother_ContinuousPacketReceiver_GetNextPacket, METH_KEYWORDS|METH_VARARGS, "ohbother_ContinuousPacketReceiver_GetNextPacket(_handle)\n\ntype: _handle: int64_t" },
+    {(char *) "ohbother_ContinuousPacketReceiver_Close", (PyCFunction) _wrap__ohbother_ohbother_ContinuousPacketReceiver_Close, METH_KEYWORDS|METH_VARARGS, "ohbother_ContinuousPacketReceiver_Close(_handle, goRun)\n\ntype: _handle: int64_t\ntype: goRun: bool" },
     {(char *) "ohbother_MultiStreamSender_CTor", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamSender_CTor, METH_NOARGS, "ohbother_MultiStreamSender_CTor()\n\n" },
     {(char *) "ohbother_MultiStreamSender_Cfg_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamSender_Cfg_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamSender_Cfg_Get(handle)\n\ntype: handle: int64_t" },
     {(char *) "ohbother_MultiStreamSender_Cfg_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamSender_Cfg_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamSender_Cfg_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
@@ -5747,24 +5733,19 @@ static PyMethodDef _ohbother_functions[] = {
     {(char *) "ohbother_PacketReceiver_CTor", (PyCFunction) _wrap__ohbother_ohbother_PacketReceiver_CTor, METH_NOARGS, "ohbother_PacketReceiver_CTor()\n\n" },
     {(char *) "ohbother_PacketReceiver_Result", (PyCFunction) _wrap__ohbother_ohbother_PacketReceiver_Result, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketReceiver_Result(_handle)\n\ntype: _handle: int64_t" },
     {(char *) "ohbother_PacketReceiver_ResultNative", (PyCFunction) _wrap__ohbother_ohbother_PacketReceiver_ResultNative, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketReceiver_ResultNative(_handle)\n\ntype: _handle: int64_t" },
-    {(char *) "ohbother_PacketSendResult_CTor", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_CTor, METH_NOARGS, "ohbother_PacketSendResult_CTor()\n\n" },
-    {(char *) "ohbother_PacketSendResult_Index_Get", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_Index_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_Index_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_PacketSendResult_Index_Set", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_Index_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_Index_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
-    {(char *) "ohbother_PacketSendResult_TotalCount_Get", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_TotalCount_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_TotalCount_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_PacketSendResult_TotalCount_Set", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_TotalCount_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_TotalCount_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
-    {(char *) "ohbother_PacketSendResult_Elapsed_Get", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_Elapsed_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_Elapsed_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_PacketSendResult_Elapsed_Set", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_Elapsed_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_Elapsed_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: double" },
-    {(char *) "ohbother_PacketSendResult_GetError", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_GetError, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_GetError(_handle)\n\ntype: _handle: int64_t" },
-    {(char *) "ohbother_Config_CTor", (PyCFunction) _wrap__ohbother_ohbother_Config_CTor, METH_NOARGS, "ohbother_Config_CTor()\n\n" },
-    {(char *) "ohbother_Config_Pcap_Get", (PyCFunction) _wrap__ohbother_ohbother_Config_Pcap_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_Pcap_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_Config_Pcap_Set", (PyCFunction) _wrap__ohbother_ohbother_Config_Pcap_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_Pcap_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
-    {(char *) "ohbother_Config_Packet_Get", (PyCFunction) _wrap__ohbother_ohbother_Config_Packet_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_Packet_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_Config_Packet_Set", (PyCFunction) _wrap__ohbother_ohbother_Config_Packet_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_Packet_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
-    {(char *) "ohbother_Config_Debug_Get", (PyCFunction) _wrap__ohbother_ohbother_Config_Debug_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_Debug_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_Config_Debug_Set", (PyCFunction) _wrap__ohbother_ohbother_Config_Debug_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_Debug_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
-    {(char *) "ohbother_Config_EnableDebug", (PyCFunction) _wrap__ohbother_ohbother_Config_EnableDebug, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_EnableDebug(_handle, level, goRun)\n\ntype: _handle: int64_t\ntype: level: int64_t\ntype: goRun: bool" },
-    {(char *) "ohbother_Config_DisableDebug", (PyCFunction) _wrap__ohbother_ohbother_Config_DisableDebug, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_DisableDebug(_handle, goRun)\n\ntype: _handle: int64_t\ntype: goRun: bool" },
-    {(char *) "ohbother_Config_SetLogger", (PyCFunction) _wrap__ohbother_ohbother_Config_SetLogger, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_SetLogger(_handle, logger, goRun)\n\ntype: _handle: int64_t\ntype: logger: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_PcapConfig_CTor", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_CTor, METH_NOARGS, "ohbother_PcapConfig_CTor()\n\n" },
+    {(char *) "ohbother_PcapConfig_Iface_Get", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_Iface_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_Iface_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_PcapConfig_Iface_Set", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_Iface_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_Iface_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: char *" },
+    {(char *) "ohbother_PcapConfig_SnapLen_Get", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_SnapLen_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_SnapLen_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_PcapConfig_SnapLen_Set", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_SnapLen_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_SnapLen_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int32_t" },
+    {(char *) "ohbother_PcapConfig_Promisc_Get", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_Promisc_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_Promisc_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_PcapConfig_Promisc_Set", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_Promisc_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_Promisc_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: bool" },
+    {(char *) "ohbother_PcapConfig_Timeout_Get", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_Timeout_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_Timeout_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_PcapConfig_Timeout_Set", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_Timeout_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_Timeout_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_PcapConfig_BufferSize_Get", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_BufferSize_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_BufferSize_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_PcapConfig_BufferSize_Set", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_BufferSize_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_BufferSize_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_PcapConfig_ImmediateMode_Get", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_ImmediateMode_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_ImmediateMode_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_PcapConfig_ImmediateMode_Set", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_ImmediateMode_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_ImmediateMode_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: bool" },
     {(char *) "ohbother_DebugOptions_CTor", (PyCFunction) _wrap__ohbother_ohbother_DebugOptions_CTor, METH_NOARGS, "ohbother_DebugOptions_CTor()\n\n" },
     {(char *) "ohbother_DebugOptions_Enabled_Get", (PyCFunction) _wrap__ohbother_ohbother_DebugOptions_Enabled_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_DebugOptions_Enabled_Get(handle)\n\ntype: handle: int64_t" },
     {(char *) "ohbother_DebugOptions_Enabled_Set", (PyCFunction) _wrap__ohbother_ohbother_DebugOptions_Enabled_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_DebugOptions_Enabled_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: bool" },
@@ -5772,6 +5753,28 @@ static PyMethodDef _ohbother_functions[] = {
     {(char *) "ohbother_DebugOptions_Level_Set", (PyCFunction) _wrap__ohbother_ohbother_DebugOptions_Level_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_DebugOptions_Level_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
     {(char *) "ohbother_DebugOptions_Logger_Get", (PyCFunction) _wrap__ohbother_ohbother_DebugOptions_Logger_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_DebugOptions_Logger_Get(handle)\n\ntype: handle: int64_t" },
     {(char *) "ohbother_DebugOptions_Logger_Set", (PyCFunction) _wrap__ohbother_ohbother_DebugOptions_Logger_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_DebugOptions_Logger_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_DefaultLogger_CTor", (PyCFunction) _wrap__ohbother_ohbother_DefaultLogger_CTor, METH_NOARGS, "ohbother_DefaultLogger_CTor()\n\n" },
+    {(char *) "ohbother_DefaultLogger_Debug", (PyCFunction) _wrap__ohbother_ohbother_DefaultLogger_Debug, METH_KEYWORDS|METH_VARARGS, "ohbother_DefaultLogger_Debug(_handle, format, args, goRun)\n\ntype: _handle: int64_t\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_DefaultLogger_Info", (PyCFunction) _wrap__ohbother_ohbother_DefaultLogger_Info, METH_KEYWORDS|METH_VARARGS, "ohbother_DefaultLogger_Info(_handle, format, args, goRun)\n\ntype: _handle: int64_t\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_DefaultLogger_Warn", (PyCFunction) _wrap__ohbother_ohbother_DefaultLogger_Warn, METH_KEYWORDS|METH_VARARGS, "ohbother_DefaultLogger_Warn(_handle, format, args, goRun)\n\ntype: _handle: int64_t\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_DefaultLogger_Error", (PyCFunction) _wrap__ohbother_ohbother_DefaultLogger_Error, METH_KEYWORDS|METH_VARARGS, "ohbother_DefaultLogger_Error(_handle, format, args, goRun)\n\ntype: _handle: int64_t\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_MultiStreamConfig_CTor", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_CTor, METH_NOARGS, "ohbother_MultiStreamConfig_CTor()\n\n" },
+    {(char *) "ohbother_MultiStreamConfig_PacketWorkers_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_PacketWorkers_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_PacketWorkers_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_PacketWorkers_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_PacketWorkers_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_PacketWorkers_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_StreamCount_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_StreamCount_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_StreamCount_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_StreamCount_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_StreamCount_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_StreamCount_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_ChannelBuffers_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_ChannelBuffers_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_ChannelBuffers_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_ChannelBuffers_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_ChannelBuffers_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_ChannelBuffers_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_ReportInterval_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_ReportInterval_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_ReportInterval_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_ReportInterval_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_ReportInterval_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_ReportInterval_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_EnableCPUPinning_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_EnableCPUPinning_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_EnableCPUPinning_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_EnableCPUPinning_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_EnableCPUPinning_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_EnableCPUPinning_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: bool" },
+    {(char *) "ohbother_MultiStreamConfig_DisableOrdering_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_DisableOrdering_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_DisableOrdering_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_DisableOrdering_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_DisableOrdering_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_DisableOrdering_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: bool" },
+    {(char *) "ohbother_MultiStreamConfig_TurnstileBurst_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_TurnstileBurst_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_TurnstileBurst_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_TurnstileBurst_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_TurnstileBurst_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_TurnstileBurst_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_EnableMetrics_Get", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_EnableMetrics_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_EnableMetrics_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_MultiStreamConfig_EnableMetrics_Set", (PyCFunction) _wrap__ohbother_ohbother_MultiStreamConfig_EnableMetrics_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_MultiStreamConfig_EnableMetrics_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: bool" },
     {(char *) "ohbother_PacketConfig_CTor", (PyCFunction) _wrap__ohbother_ohbother_PacketConfig_CTor, METH_NOARGS, "ohbother_PacketConfig_CTor()\n\n" },
     {(char *) "ohbother_PacketConfig_SrcMAC_Get", (PyCFunction) _wrap__ohbother_ohbother_PacketConfig_SrcMAC_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketConfig_SrcMAC_Get(handle)\n\ntype: handle: int64_t" },
     {(char *) "ohbother_PacketConfig_SrcMAC_Set", (PyCFunction) _wrap__ohbother_ohbother_PacketConfig_SrcMAC_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketConfig_SrcMAC_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
@@ -5787,6 +5790,14 @@ static PyMethodDef _ohbother_functions[] = {
     {(char *) "ohbother_PacketConfig_DstPort_Set", (PyCFunction) _wrap__ohbother_ohbother_PacketConfig_DstPort_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketConfig_DstPort_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
     {(char *) "ohbother_PacketConfig_BPF_Get", (PyCFunction) _wrap__ohbother_ohbother_PacketConfig_BPF_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketConfig_BPF_Get(handle)\n\ntype: handle: int64_t" },
     {(char *) "ohbother_PacketConfig_BPF_Set", (PyCFunction) _wrap__ohbother_ohbother_PacketConfig_BPF_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketConfig_BPF_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: char *" },
+    {(char *) "ohbother_PacketSendResult_CTor", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_CTor, METH_NOARGS, "ohbother_PacketSendResult_CTor()\n\n" },
+    {(char *) "ohbother_PacketSendResult_Index_Get", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_Index_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_Index_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_PacketSendResult_Index_Set", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_Index_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_Index_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_PacketSendResult_TotalCount_Get", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_TotalCount_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_TotalCount_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_PacketSendResult_TotalCount_Set", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_TotalCount_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_TotalCount_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_PacketSendResult_Elapsed_Get", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_Elapsed_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_Elapsed_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_PacketSendResult_Elapsed_Set", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_Elapsed_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_Elapsed_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: double" },
+    {(char *) "ohbother_PacketSendResult_GetError", (PyCFunction) _wrap__ohbother_ohbother_PacketSendResult_GetError, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSendResult_GetError(_handle)\n\ntype: _handle: int64_t" },
     {(char *) "ohbother_PacketSequenceSender_CTor", (PyCFunction) _wrap__ohbother_ohbother_PacketSequenceSender_CTor, METH_NOARGS, "ohbother_PacketSequenceSender_CTor()\n\n" },
     {(char *) "ohbother_PacketSequenceSender_Cfg_Get", (PyCFunction) _wrap__ohbother_ohbother_PacketSequenceSender_Cfg_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSequenceSender_Cfg_Get(handle)\n\ntype: handle: int64_t" },
     {(char *) "ohbother_PacketSequenceSender_Cfg_Set", (PyCFunction) _wrap__ohbother_ohbother_PacketSequenceSender_Cfg_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSequenceSender_Cfg_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
@@ -5798,19 +5809,6 @@ static PyMethodDef _ohbother_functions[] = {
     {(char *) "ohbother_PacketSequenceSender_Send", (PyCFunction) _wrap__ohbother_ohbother_PacketSequenceSender_Send, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSequenceSender_Send(_handle)\n\ntype: _handle: int64_t" },
     {(char *) "ohbother_PacketSequenceSender_GetNextResult", (PyCFunction) _wrap__ohbother_ohbother_PacketSequenceSender_GetNextResult, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSequenceSender_GetNextResult(_handle)\n\ntype: _handle: int64_t" },
     {(char *) "ohbother_PacketSequenceSender_IsComplete", (PyCFunction) _wrap__ohbother_ohbother_PacketSequenceSender_IsComplete, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketSequenceSender_IsComplete(_handle)\n\ntype: _handle: int64_t" },
-    {(char *) "ohbother_PcapConfig_CTor", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_CTor, METH_NOARGS, "ohbother_PcapConfig_CTor()\n\n" },
-    {(char *) "ohbother_PcapConfig_Iface_Get", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_Iface_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_Iface_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_PcapConfig_Iface_Set", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_Iface_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_Iface_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: char *" },
-    {(char *) "ohbother_PcapConfig_SnapLen_Get", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_SnapLen_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_SnapLen_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_PcapConfig_SnapLen_Set", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_SnapLen_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_SnapLen_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int32_t" },
-    {(char *) "ohbother_PcapConfig_Promisc_Get", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_Promisc_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_Promisc_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_PcapConfig_Promisc_Set", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_Promisc_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_Promisc_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: bool" },
-    {(char *) "ohbother_PcapConfig_Timeout_Get", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_Timeout_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_Timeout_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_PcapConfig_Timeout_Set", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_Timeout_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_Timeout_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
-    {(char *) "ohbother_PcapConfig_BufferSize_Get", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_BufferSize_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_BufferSize_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_PcapConfig_BufferSize_Set", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_BufferSize_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_BufferSize_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
-    {(char *) "ohbother_PcapConfig_ImmediateMode_Get", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_ImmediateMode_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_ImmediateMode_Get(handle)\n\ntype: handle: int64_t" },
-    {(char *) "ohbother_PcapConfig_ImmediateMode_Set", (PyCFunction) _wrap__ohbother_ohbother_PcapConfig_ImmediateMode_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_PcapConfig_ImmediateMode_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: bool" },
     {(char *) "ohbother_AsyncResult_CTor", (PyCFunction) _wrap__ohbother_ohbother_AsyncResult_CTor, METH_NOARGS, "ohbother_AsyncResult_CTor()\n\n" },
     {(char *) "ohbother_AsyncResult_Packets_Get", (PyCFunction) _wrap__ohbother_ohbother_AsyncResult_Packets_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_AsyncResult_Packets_Get(handle)\n\ntype: handle: int64_t" },
     {(char *) "ohbother_AsyncResult_Packets_Set", (PyCFunction) _wrap__ohbother_ohbother_AsyncResult_Packets_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_AsyncResult_Packets_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
@@ -5820,37 +5818,39 @@ static PyMethodDef _ohbother_functions[] = {
     {(char *) "ohbother_BytePacket_Data_Get", (PyCFunction) _wrap__ohbother_ohbother_BytePacket_Data_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_BytePacket_Data_Get(handle)\n\ntype: handle: int64_t" },
     {(char *) "ohbother_BytePacket_Data_Set", (PyCFunction) _wrap__ohbother_ohbother_BytePacket_Data_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_BytePacket_Data_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
     {(char *) "ohbother_BytePacket_GetData", (PyCFunction) _wrap__ohbother_ohbother_BytePacket_GetData, METH_KEYWORDS|METH_VARARGS, "ohbother_BytePacket_GetData(_handle)\n\ntype: _handle: int64_t" },
-    {(char *) "ohbother_ContinuousPacketReceiver_CTor", (PyCFunction) _wrap__ohbother_ohbother_ContinuousPacketReceiver_CTor, METH_NOARGS, "ohbother_ContinuousPacketReceiver_CTor()\n\n" },
-    {(char *) "ohbother_ContinuousPacketReceiver_GetNextPacket", (PyCFunction) _wrap__ohbother_ohbother_ContinuousPacketReceiver_GetNextPacket, METH_KEYWORDS|METH_VARARGS, "ohbother_ContinuousPacketReceiver_GetNextPacket(_handle)\n\ntype: _handle: int64_t" },
-    {(char *) "ohbother_ContinuousPacketReceiver_Close", (PyCFunction) _wrap__ohbother_ohbother_ContinuousPacketReceiver_Close, METH_KEYWORDS|METH_VARARGS, "ohbother_ContinuousPacketReceiver_Close(_handle, goRun)\n\ntype: _handle: int64_t\ntype: goRun: bool" },
-    {(char *) "ohbother_DefaultLogger_CTor", (PyCFunction) _wrap__ohbother_ohbother_DefaultLogger_CTor, METH_NOARGS, "ohbother_DefaultLogger_CTor()\n\n" },
-    {(char *) "ohbother_DefaultLogger_Debug", (PyCFunction) _wrap__ohbother_ohbother_DefaultLogger_Debug, METH_KEYWORDS|METH_VARARGS, "ohbother_DefaultLogger_Debug(_handle, format, args, goRun)\n\ntype: _handle: int64_t\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
-    {(char *) "ohbother_DefaultLogger_Info", (PyCFunction) _wrap__ohbother_ohbother_DefaultLogger_Info, METH_KEYWORDS|METH_VARARGS, "ohbother_DefaultLogger_Info(_handle, format, args, goRun)\n\ntype: _handle: int64_t\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
-    {(char *) "ohbother_DefaultLogger_Warn", (PyCFunction) _wrap__ohbother_ohbother_DefaultLogger_Warn, METH_KEYWORDS|METH_VARARGS, "ohbother_DefaultLogger_Warn(_handle, format, args, goRun)\n\ntype: _handle: int64_t\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
-    {(char *) "ohbother_DefaultLogger_Error", (PyCFunction) _wrap__ohbother_ohbother_DefaultLogger_Error, METH_KEYWORDS|METH_VARARGS, "ohbother_DefaultLogger_Error(_handle, format, args, goRun)\n\ntype: _handle: int64_t\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_Config_CTor", (PyCFunction) _wrap__ohbother_ohbother_Config_CTor, METH_NOARGS, "ohbother_Config_CTor()\n\n" },
+    {(char *) "ohbother_Config_Pcap_Get", (PyCFunction) _wrap__ohbother_ohbother_Config_Pcap_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_Pcap_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_Config_Pcap_Set", (PyCFunction) _wrap__ohbother_ohbother_Config_Pcap_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_Pcap_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_Config_Packet_Get", (PyCFunction) _wrap__ohbother_ohbother_Config_Packet_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_Packet_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_Config_Packet_Set", (PyCFunction) _wrap__ohbother_ohbother_Config_Packet_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_Packet_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_Config_Debug_Get", (PyCFunction) _wrap__ohbother_ohbother_Config_Debug_Get, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_Debug_Get(handle)\n\ntype: handle: int64_t" },
+    {(char *) "ohbother_Config_Debug_Set", (PyCFunction) _wrap__ohbother_ohbother_Config_Debug_Set, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_Debug_Set(handle, val)\n\ntype: handle: int64_t\ntype: val: int64_t" },
+    {(char *) "ohbother_Config_EnableDebug", (PyCFunction) _wrap__ohbother_ohbother_Config_EnableDebug, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_EnableDebug(_handle, level, goRun)\n\ntype: _handle: int64_t\ntype: level: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_Config_DisableDebug", (PyCFunction) _wrap__ohbother_ohbother_Config_DisableDebug, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_DisableDebug(_handle, goRun)\n\ntype: _handle: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_Config_SetLogger", (PyCFunction) _wrap__ohbother_ohbother_Config_SetLogger, METH_KEYWORDS|METH_VARARGS, "ohbother_Config_SetLogger(_handle, logger, goRun)\n\ntype: _handle: int64_t\ntype: logger: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_NewReceiver", (PyCFunction) _wrap__ohbother_ohbother_NewReceiver, METH_KEYWORDS|METH_VARARGS, "ohbother_NewReceiver(cfg)\n\ntype: cfg: int64_t" },
     {(char *) "ohbother_NewMultiStreamSender", (PyCFunction) _wrap__ohbother_ohbother_NewMultiStreamSender, METH_KEYWORDS|METH_VARARGS, "ohbother_NewMultiStreamSender(cfg, rateLimit)\n\ntype: cfg: int64_t\ntype: rateLimit: int64_t" },
-    {(char *) "ohbother_BenchmarkReceiveAsync", (PyCFunction) _wrap__ohbother_ohbother_BenchmarkReceiveAsync, METH_KEYWORDS|METH_VARARGS, "ohbother_BenchmarkReceiveAsync(cfg, duration)\n\ntype: cfg: int64_t\ntype: duration: double" },
     {(char *) "ohbother_PacketReceiverByCount", (PyCFunction) _wrap__ohbother_ohbother_PacketReceiverByCount, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketReceiverByCount(cfg, count, timeout)\n\ntype: cfg: int64_t\ntype: count: int64_t\ntype: timeout: double" },
     {(char *) "ohbother_PacketReceiverByTime", (PyCFunction) _wrap__ohbother_ohbother_PacketReceiverByTime, METH_KEYWORDS|METH_VARARGS, "ohbother_PacketReceiverByTime(cfg, duration)\n\ntype: cfg: int64_t\ntype: duration: double" },
-    {(char *) "ohbother_NewDefaultConfig", (PyCFunction) _wrap__ohbother_ohbother_NewDefaultConfig, METH_KEYWORDS|METH_VARARGS, "ohbother_NewDefaultConfig(iface, srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, bpf, SnapLen, Promisc, BufferSize, ImmediateMode)\n\ntype: iface: char *\ntype: srcMAC: char *\ntype: dstMAC: char *\ntype: srcIP: char *\ntype: dstIP: char *\ntype: srcPort: int64_t\ntype: dstPort: int64_t\ntype: bpf: char *\ntype: SnapLen: int64_t\ntype: Promisc: bool\ntype: BufferSize: int64_t\ntype: ImmediateMode: bool" },
+    {(char *) "ohbother_BenchmarkReceiveAsync", (PyCFunction) _wrap__ohbother_ohbother_BenchmarkReceiveAsync, METH_KEYWORDS|METH_VARARGS, "ohbother_BenchmarkReceiveAsync(cfg, duration)\n\ntype: cfg: int64_t\ntype: duration: double" },
+    {(char *) "ohbother_NewDefaultLogger", (PyCFunction) _wrap__ohbother_ohbother_NewDefaultLogger, METH_KEYWORDS|METH_VARARGS, "ohbother_NewDefaultLogger(cfg)\n\ntype: cfg: int64_t" },
     {(char *) "ohbother_NewPacketSequenceSender", (PyCFunction) _wrap__ohbother_ohbother_NewPacketSequenceSender, METH_KEYWORDS|METH_VARARGS, "ohbother_NewPacketSequenceSender(cfg, rateLimit)\n\ntype: cfg: int64_t\ntype: rateLimit: int64_t" },
     {(char *) "ohbother_NewBytePacket", (PyCFunction) _wrap__ohbother_ohbother_NewBytePacket, METH_KEYWORDS|METH_VARARGS, "ohbother_NewBytePacket(data)\n\ntype: data: int64_t" },
-    {(char *) "ohbother_NewReceiver", (PyCFunction) _wrap__ohbother_ohbother_NewReceiver, METH_KEYWORDS|METH_VARARGS, "ohbother_NewReceiver(cfg)\n\ntype: cfg: int64_t" },
-    {(char *) "ohbother_NewDefaultLogger", (PyCFunction) _wrap__ohbother_ohbother_NewDefaultLogger, METH_KEYWORDS|METH_VARARGS, "ohbother_NewDefaultLogger(cfg)\n\ntype: cfg: int64_t" },
+    {(char *) "ohbother_NewDefaultConfig", (PyCFunction) _wrap__ohbother_ohbother_NewDefaultConfig, METH_KEYWORDS|METH_VARARGS, "ohbother_NewDefaultConfig(iface, srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, bpf, SnapLen, Promisc, BufferSize, ImmediateMode)\n\ntype: iface: char *\ntype: srcMAC: char *\ntype: dstMAC: char *\ntype: srcIP: char *\ntype: dstIP: char *\ntype: srcPort: int64_t\ntype: dstPort: int64_t\ntype: bpf: char *\ntype: SnapLen: int64_t\ntype: Promisc: bool\ntype: BufferSize: int64_t\ntype: ImmediateMode: bool" },
+    {(char *) "ohbother_DeleteSliceBytes", (PyCFunction) _wrap__ohbother_ohbother_DeleteSliceBytes, METH_KEYWORDS|METH_VARARGS, "ohbother_DeleteSliceBytes(handle, goRun)\n\ntype: handle: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_LogDebug", (PyCFunction) _wrap__ohbother_ohbother_LogDebug, METH_KEYWORDS|METH_VARARGS, "ohbother_LogDebug(format, args, goRun)\n\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_LogError", (PyCFunction) _wrap__ohbother_ohbother_LogError, METH_KEYWORDS|METH_VARARGS, "ohbother_LogError(format, args, goRun)\n\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_LogWarn", (PyCFunction) _wrap__ohbother_ohbother_LogWarn, METH_KEYWORDS|METH_VARARGS, "ohbother_LogWarn(format, args, goRun)\n\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
+    {(char *) "ohbother_BenchmarkSend", (PyCFunction) _wrap__ohbother_ohbother_BenchmarkSend, METH_KEYWORDS|METH_VARARGS, "ohbother_BenchmarkSend(cfg, packetCount, payloadSize, rateLimit)\n\ntype: cfg: int64_t\ntype: packetCount: int64_t\ntype: payloadSize: int64_t\ntype: rateLimit: int64_t" },
     {(char *) "ohbother_PayloadNative", (PyCFunction) _wrap__ohbother_ohbother_PayloadNative, METH_KEYWORDS|METH_VARARGS, "ohbother_PayloadNative(pyPayload)\n\ntype: pyPayload: char *" },
-    {(char *) "ohbother_ReceivePacketsByTimeSync", (PyCFunction) _wrap__ohbother_ohbother_ReceivePacketsByTimeSync, METH_KEYWORDS|METH_VARARGS, "ohbother_ReceivePacketsByTimeSync(cfg, duration)\n\ntype: cfg: int64_t\ntype: duration: double" },
-    {(char *) "ohbother_SendPackets", (PyCFunction) _wrap__ohbother_ohbother_SendPackets, METH_KEYWORDS|METH_VARARGS, "ohbother_SendPackets(cfg, rawPayloads, rateLimit)\n\ntype: cfg: int64_t\ntype: rawPayloads: char *\ntype: rateLimit: int64_t" },
+    {(char *) "ohbother_ReceivePacketsByCountSync", (PyCFunction) _wrap__ohbother_ohbother_ReceivePacketsByCountSync, METH_KEYWORDS|METH_VARARGS, "ohbother_ReceivePacketsByCountSync(cfg, count, timeout)\n\ntype: cfg: int64_t\ntype: count: int64_t\ntype: timeout: double" },
     {(char *) "ohbother_SendByteArrays", (PyCFunction) _wrap__ohbother_ohbother_SendByteArrays, METH_KEYWORDS|METH_VARARGS, "ohbother_SendByteArrays(cfg, bytePayloads, rateLimit)\n\ntype: cfg: int64_t\ntype: bytePayloads: int64_t\ntype: rateLimit: int64_t" },
     {(char *) "ohbother_SendPacket", (PyCFunction) _wrap__ohbother_ohbother_SendPacket, METH_KEYWORDS|METH_VARARGS, "ohbother_SendPacket(cfg, payload, rateLimit)\n\ntype: cfg: int64_t\ntype: payload: int64_t\ntype: rateLimit: int64_t" },
-    {(char *) "ohbother_LogError", (PyCFunction) _wrap__ohbother_ohbother_LogError, METH_KEYWORDS|METH_VARARGS, "ohbother_LogError(format, args, goRun)\n\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
     {(char *) "ohbother_LogInfo", (PyCFunction) _wrap__ohbother_ohbother_LogInfo, METH_KEYWORDS|METH_VARARGS, "ohbother_LogInfo(format, args, goRun)\n\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
-    {(char *) "ohbother_LogWarn", (PyCFunction) _wrap__ohbother_ohbother_LogWarn, METH_KEYWORDS|METH_VARARGS, "ohbother_LogWarn(format, args, goRun)\n\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
     {(char *) "ohbother_NewSliceByteFromBytes", (PyCFunction) _wrap__ohbother_ohbother_NewSliceByteFromBytes, METH_KEYWORDS|METH_VARARGS, "ohbother_NewSliceByteFromBytes(data)\n\ntype: data: int64_t" },
-    {(char *) "ohbother_DeleteSliceBytes", (PyCFunction) _wrap__ohbother_ohbother_DeleteSliceBytes, METH_KEYWORDS|METH_VARARGS, "ohbother_DeleteSliceBytes(handle, goRun)\n\ntype: handle: int64_t\ntype: goRun: bool" },
-    {(char *) "ohbother_ReceivePacketsByCountSync", (PyCFunction) _wrap__ohbother_ohbother_ReceivePacketsByCountSync, METH_KEYWORDS|METH_VARARGS, "ohbother_ReceivePacketsByCountSync(cfg, count, timeout)\n\ntype: cfg: int64_t\ntype: count: int64_t\ntype: timeout: double" },
+    {(char *) "ohbother_ReceivePacketsByTimeSync", (PyCFunction) _wrap__ohbother_ohbother_ReceivePacketsByTimeSync, METH_KEYWORDS|METH_VARARGS, "ohbother_ReceivePacketsByTimeSync(cfg, duration)\n\ntype: cfg: int64_t\ntype: duration: double" },
+    {(char *) "ohbother_SendPackets", (PyCFunction) _wrap__ohbother_ohbother_SendPackets, METH_KEYWORDS|METH_VARARGS, "ohbother_SendPackets(cfg, rawPayloads, rateLimit)\n\ntype: cfg: int64_t\ntype: rawPayloads: char *\ntype: rateLimit: int64_t" },
     {(char *) "ohbother_BatchConvertPythonBytesToSlices", (PyCFunction) _wrap__ohbother_ohbother_BatchConvertPythonBytesToSlices, METH_KEYWORDS|METH_VARARGS, "ohbother_BatchConvertPythonBytesToSlices(rawBytes, numWorkers)\n\ntype: rawBytes: int64_t\ntype: numWorkers: int64_t" },
-    {(char *) "ohbother_BenchmarkSend", (PyCFunction) _wrap__ohbother_ohbother_BenchmarkSend, METH_KEYWORDS|METH_VARARGS, "ohbother_BenchmarkSend(cfg, packetCount, payloadSize, rateLimit)\n\ntype: cfg: int64_t\ntype: packetCount: int64_t\ntype: payloadSize: int64_t\ntype: rateLimit: int64_t" },
-    {(char *) "ohbother_LogDebug", (PyCFunction) _wrap__ohbother_ohbother_LogDebug, METH_KEYWORDS|METH_VARARGS, "ohbother_LogDebug(format, args, goRun)\n\ntype: format: char *\ntype: args: int64_t\ntype: goRun: bool" },
     {NULL, NULL, 0, NULL}
 };
 #if PY_VERSION_HEX >= 0x03000000

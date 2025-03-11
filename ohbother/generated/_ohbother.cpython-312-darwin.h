@@ -329,25 +329,11 @@ extern void ohbother_Logger_Error(long long _handle, char* format, long long arg
 extern void ohbother_Logger_Info(long long _handle, char* format, long long args, char goRun);
 extern void ohbother_Logger_Warn(long long _handle, char* format, long long args, char goRun);
 
-// --- wrapping struct: ohbother.MultiStreamConfig ---
+// --- wrapping struct: ohbother.ContinuousPacketReceiver ---
 //
-extern long long ohbother_MultiStreamConfig_CTor();
-extern long long ohbother_MultiStreamConfig_PacketWorkers_Get(long long handle);
-extern void ohbother_MultiStreamConfig_PacketWorkers_Set(long long handle, long long val);
-extern long long ohbother_MultiStreamConfig_StreamCount_Get(long long handle);
-extern void ohbother_MultiStreamConfig_StreamCount_Set(long long handle, long long val);
-extern long long ohbother_MultiStreamConfig_ChannelBuffers_Get(long long handle);
-extern void ohbother_MultiStreamConfig_ChannelBuffers_Set(long long handle, long long val);
-extern long long ohbother_MultiStreamConfig_ReportInterval_Get(long long handle);
-extern void ohbother_MultiStreamConfig_ReportInterval_Set(long long handle, long long val);
-extern char ohbother_MultiStreamConfig_EnableCPUPinning_Get(long long handle);
-extern void ohbother_MultiStreamConfig_EnableCPUPinning_Set(long long handle, char val);
-extern char ohbother_MultiStreamConfig_DisableOrdering_Get(long long handle);
-extern void ohbother_MultiStreamConfig_DisableOrdering_Set(long long handle, char val);
-extern long long ohbother_MultiStreamConfig_TurnstileBurst_Get(long long handle);
-extern void ohbother_MultiStreamConfig_TurnstileBurst_Set(long long handle, long long val);
-extern char ohbother_MultiStreamConfig_EnableMetrics_Get(long long handle);
-extern void ohbother_MultiStreamConfig_EnableMetrics_Set(long long handle, char val);
+extern long long ohbother_ContinuousPacketReceiver_CTor();
+extern long long ohbother_ContinuousPacketReceiver_GetNextPacket(long long _handle);
+extern void ohbother_ContinuousPacketReceiver_Close(long long _handle, char goRun);
 
 // --- wrapping struct: ohbother.MultiStreamSender ---
 //
@@ -383,29 +369,21 @@ extern long long ohbother_PacketReceiver_CTor();
 extern long long ohbother_PacketReceiver_Result(long long _handle);
 extern long long ohbother_PacketReceiver_ResultNative(long long _handle);
 
-// --- wrapping struct: ohbother.PacketSendResult ---
+// --- wrapping struct: ohbother.PcapConfig ---
 //
-extern long long ohbother_PacketSendResult_CTor();
-extern long long ohbother_PacketSendResult_Index_Get(long long handle);
-extern void ohbother_PacketSendResult_Index_Set(long long handle, long long val);
-extern long long ohbother_PacketSendResult_TotalCount_Get(long long handle);
-extern void ohbother_PacketSendResult_TotalCount_Set(long long handle, long long val);
-extern double ohbother_PacketSendResult_Elapsed_Get(long long handle);
-extern void ohbother_PacketSendResult_Elapsed_Set(long long handle, double val);
-extern char* ohbother_PacketSendResult_GetError(long long _handle);
-
-// --- wrapping struct: ohbother.Config ---
-//
-extern long long ohbother_Config_CTor();
-extern long long ohbother_Config_Pcap_Get(long long handle);
-extern void ohbother_Config_Pcap_Set(long long handle, long long val);
-extern long long ohbother_Config_Packet_Get(long long handle);
-extern void ohbother_Config_Packet_Set(long long handle, long long val);
-extern long long ohbother_Config_Debug_Get(long long handle);
-extern void ohbother_Config_Debug_Set(long long handle, long long val);
-extern void ohbother_Config_EnableDebug(long long _handle, long long level, char goRun);
-extern void ohbother_Config_DisableDebug(long long _handle, char goRun);
-extern void ohbother_Config_SetLogger(long long _handle, long long logger, char goRun);
+extern long long ohbother_PcapConfig_CTor();
+extern char* ohbother_PcapConfig_Iface_Get(long long handle);
+extern void ohbother_PcapConfig_Iface_Set(long long handle, char* val);
+extern long ohbother_PcapConfig_SnapLen_Get(long long handle);
+extern void ohbother_PcapConfig_SnapLen_Set(long long handle, long val);
+extern char ohbother_PcapConfig_Promisc_Get(long long handle);
+extern void ohbother_PcapConfig_Promisc_Set(long long handle, char val);
+extern long long ohbother_PcapConfig_Timeout_Get(long long handle);
+extern void ohbother_PcapConfig_Timeout_Set(long long handle, long long val);
+extern long long ohbother_PcapConfig_BufferSize_Get(long long handle);
+extern void ohbother_PcapConfig_BufferSize_Set(long long handle, long long val);
+extern char ohbother_PcapConfig_ImmediateMode_Get(long long handle);
+extern void ohbother_PcapConfig_ImmediateMode_Set(long long handle, char val);
 
 // --- wrapping struct: ohbother.DebugOptions ---
 //
@@ -416,6 +394,34 @@ extern long long ohbother_DebugOptions_Level_Get(long long handle);
 extern void ohbother_DebugOptions_Level_Set(long long handle, long long val);
 extern long long ohbother_DebugOptions_Logger_Get(long long handle);
 extern void ohbother_DebugOptions_Logger_Set(long long handle, long long val);
+
+// --- wrapping struct: ohbother.DefaultLogger ---
+//
+extern long long ohbother_DefaultLogger_CTor();
+extern void ohbother_DefaultLogger_Debug(long long _handle, char* format, long long args, char goRun);
+extern void ohbother_DefaultLogger_Info(long long _handle, char* format, long long args, char goRun);
+extern void ohbother_DefaultLogger_Warn(long long _handle, char* format, long long args, char goRun);
+extern void ohbother_DefaultLogger_Error(long long _handle, char* format, long long args, char goRun);
+
+// --- wrapping struct: ohbother.MultiStreamConfig ---
+//
+extern long long ohbother_MultiStreamConfig_CTor();
+extern long long ohbother_MultiStreamConfig_PacketWorkers_Get(long long handle);
+extern void ohbother_MultiStreamConfig_PacketWorkers_Set(long long handle, long long val);
+extern long long ohbother_MultiStreamConfig_StreamCount_Get(long long handle);
+extern void ohbother_MultiStreamConfig_StreamCount_Set(long long handle, long long val);
+extern long long ohbother_MultiStreamConfig_ChannelBuffers_Get(long long handle);
+extern void ohbother_MultiStreamConfig_ChannelBuffers_Set(long long handle, long long val);
+extern long long ohbother_MultiStreamConfig_ReportInterval_Get(long long handle);
+extern void ohbother_MultiStreamConfig_ReportInterval_Set(long long handle, long long val);
+extern char ohbother_MultiStreamConfig_EnableCPUPinning_Get(long long handle);
+extern void ohbother_MultiStreamConfig_EnableCPUPinning_Set(long long handle, char val);
+extern char ohbother_MultiStreamConfig_DisableOrdering_Get(long long handle);
+extern void ohbother_MultiStreamConfig_DisableOrdering_Set(long long handle, char val);
+extern long long ohbother_MultiStreamConfig_TurnstileBurst_Get(long long handle);
+extern void ohbother_MultiStreamConfig_TurnstileBurst_Set(long long handle, long long val);
+extern char ohbother_MultiStreamConfig_EnableMetrics_Get(long long handle);
+extern void ohbother_MultiStreamConfig_EnableMetrics_Set(long long handle, char val);
 
 // --- wrapping struct: ohbother.PacketConfig ---
 //
@@ -435,6 +441,17 @@ extern void ohbother_PacketConfig_DstPort_Set(long long handle, long long val);
 extern char* ohbother_PacketConfig_BPF_Get(long long handle);
 extern void ohbother_PacketConfig_BPF_Set(long long handle, char* val);
 
+// --- wrapping struct: ohbother.PacketSendResult ---
+//
+extern long long ohbother_PacketSendResult_CTor();
+extern long long ohbother_PacketSendResult_Index_Get(long long handle);
+extern void ohbother_PacketSendResult_Index_Set(long long handle, long long val);
+extern long long ohbother_PacketSendResult_TotalCount_Get(long long handle);
+extern void ohbother_PacketSendResult_TotalCount_Set(long long handle, long long val);
+extern double ohbother_PacketSendResult_Elapsed_Get(long long handle);
+extern void ohbother_PacketSendResult_Elapsed_Set(long long handle, double val);
+extern char* ohbother_PacketSendResult_GetError(long long _handle);
+
 // --- wrapping struct: ohbother.PacketSequenceSender ---
 //
 extern long long ohbother_PacketSequenceSender_CTor();
@@ -448,22 +465,6 @@ extern void ohbother_PacketSequenceSender_AddPayload(long long _handle, long lon
 extern char* ohbother_PacketSequenceSender_Send(long long _handle);
 extern long long ohbother_PacketSequenceSender_GetNextResult(long long _handle);
 extern char ohbother_PacketSequenceSender_IsComplete(long long _handle);
-
-// --- wrapping struct: ohbother.PcapConfig ---
-//
-extern long long ohbother_PcapConfig_CTor();
-extern char* ohbother_PcapConfig_Iface_Get(long long handle);
-extern void ohbother_PcapConfig_Iface_Set(long long handle, char* val);
-extern long ohbother_PcapConfig_SnapLen_Get(long long handle);
-extern void ohbother_PcapConfig_SnapLen_Set(long long handle, long val);
-extern char ohbother_PcapConfig_Promisc_Get(long long handle);
-extern void ohbother_PcapConfig_Promisc_Set(long long handle, char val);
-extern long long ohbother_PcapConfig_Timeout_Get(long long handle);
-extern void ohbother_PcapConfig_Timeout_Set(long long handle, long long val);
-extern long long ohbother_PcapConfig_BufferSize_Get(long long handle);
-extern void ohbother_PcapConfig_BufferSize_Set(long long handle, long long val);
-extern char ohbother_PcapConfig_ImmediateMode_Get(long long handle);
-extern void ohbother_PcapConfig_ImmediateMode_Set(long long handle, char val);
 
 // --- wrapping struct: ohbother.AsyncResult ---
 //
@@ -480,42 +481,41 @@ extern long long ohbother_BytePacket_Data_Get(long long handle);
 extern void ohbother_BytePacket_Data_Set(long long handle, long long val);
 extern long long ohbother_BytePacket_GetData(long long _handle);
 
-// --- wrapping struct: ohbother.ContinuousPacketReceiver ---
+// --- wrapping struct: ohbother.Config ---
 //
-extern long long ohbother_ContinuousPacketReceiver_CTor();
-extern long long ohbother_ContinuousPacketReceiver_GetNextPacket(long long _handle);
-extern void ohbother_ContinuousPacketReceiver_Close(long long _handle, char goRun);
-
-// --- wrapping struct: ohbother.DefaultLogger ---
-//
-extern long long ohbother_DefaultLogger_CTor();
-extern void ohbother_DefaultLogger_Debug(long long _handle, char* format, long long args, char goRun);
-extern void ohbother_DefaultLogger_Info(long long _handle, char* format, long long args, char goRun);
-extern void ohbother_DefaultLogger_Warn(long long _handle, char* format, long long args, char goRun);
-extern void ohbother_DefaultLogger_Error(long long _handle, char* format, long long args, char goRun);
+extern long long ohbother_Config_CTor();
+extern long long ohbother_Config_Pcap_Get(long long handle);
+extern void ohbother_Config_Pcap_Set(long long handle, long long val);
+extern long long ohbother_Config_Packet_Get(long long handle);
+extern void ohbother_Config_Packet_Set(long long handle, long long val);
+extern long long ohbother_Config_Debug_Get(long long handle);
+extern void ohbother_Config_Debug_Set(long long handle, long long val);
+extern void ohbother_Config_EnableDebug(long long _handle, long long level, char goRun);
+extern void ohbother_Config_DisableDebug(long long _handle, char goRun);
+extern void ohbother_Config_SetLogger(long long _handle, long long logger, char goRun);
+extern long long ohbother_NewReceiver(long long cfg);
 extern long long ohbother_NewMultiStreamSender(long long cfg, long long rateLimit);
-extern long long ohbother_BenchmarkReceiveAsync(long long cfg, double duration);
 extern long long ohbother_PacketReceiverByCount(long long cfg, long long count, double timeout);
 extern long long ohbother_PacketReceiverByTime(long long cfg, double duration);
-extern long long ohbother_NewDefaultConfig(char* iface, char* srcMAC, char* dstMAC, char* srcIP, char* dstIP, long long srcPort, long long dstPort, char* bpf, long long SnapLen, char Promisc, long long BufferSize, char ImmediateMode);
+extern long long ohbother_BenchmarkReceiveAsync(long long cfg, double duration);
+extern long long ohbother_NewDefaultLogger(long long cfg);
 extern long long ohbother_NewPacketSequenceSender(long long cfg, long long rateLimit);
 extern long long ohbother_NewBytePacket(long long data);
-extern long long ohbother_NewReceiver(long long cfg);
-extern long long ohbother_NewDefaultLogger(long long cfg);
+extern long long ohbother_NewDefaultConfig(char* iface, char* srcMAC, char* dstMAC, char* srcIP, char* dstIP, long long srcPort, long long dstPort, char* bpf, long long SnapLen, char Promisc, long long BufferSize, char ImmediateMode);
+extern void ohbother_DeleteSliceBytes(long long handle, char goRun);
+extern void ohbother_LogDebug(char* format, long long args, char goRun);
+extern void ohbother_LogError(char* format, long long args, char goRun);
+extern void ohbother_LogWarn(char* format, long long args, char goRun);
+extern double ohbother_BenchmarkSend(long long cfg, long long packetCount, long long payloadSize, long long rateLimit);
 extern long long ohbother_PayloadNative(char* pyPayload);
-extern long long ohbother_ReceivePacketsByTimeSync(long long cfg, double duration);
-extern char* ohbother_SendPackets(long long cfg, char* rawPayloads, long long rateLimit);
+extern long long ohbother_ReceivePacketsByCountSync(long long cfg, long long count, double timeout);
 extern char* ohbother_SendByteArrays(long long cfg, long long bytePayloads, long long rateLimit);
 extern char* ohbother_SendPacket(long long cfg, long long payload, long long rateLimit);
-extern void ohbother_LogError(char* format, long long args, char goRun);
 extern void ohbother_LogInfo(char* format, long long args, char goRun);
-extern void ohbother_LogWarn(char* format, long long args, char goRun);
 extern long long ohbother_NewSliceByteFromBytes(long long data);
-extern void ohbother_DeleteSliceBytes(long long handle, char goRun);
-extern long long ohbother_ReceivePacketsByCountSync(long long cfg, long long count, double timeout);
+extern long long ohbother_ReceivePacketsByTimeSync(long long cfg, double duration);
+extern char* ohbother_SendPackets(long long cfg, char* rawPayloads, long long rateLimit);
 extern long long ohbother_BatchConvertPythonBytesToSlices(long long rawBytes, long long numWorkers);
-extern double ohbother_BenchmarkSend(long long cfg, long long packetCount, long long payloadSize, long long rateLimit);
-extern void ohbother_LogDebug(char* format, long long args, char goRun);
 
 #ifdef __cplusplus
 }

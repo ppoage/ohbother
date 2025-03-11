@@ -305,9 +305,9 @@ class Logger(go.GoClass):
 
 # ---- Structs ---
 
-# Python type for struct ohbother.MultiStreamConfig
-class MultiStreamConfig(go.GoClass):
-	"""MultiStreamConfig holds configuration for the multi-stream sender\n"""
+# Python type for struct ohbother.ContinuousPacketReceiver
+class ContinuousPacketReceiver(go.GoClass):
+	"""ContinuousPacketReceiver provides a streaming interface to receive packets\n"""
 	def __init__(self, *args, **kwargs):
 		"""
 		handle=A Go-side object is always initialized with an explicit handle=arg
@@ -321,45 +321,13 @@ class MultiStreamConfig(go.GoClass):
 			self.handle = args[0].handle
 			_ohbother.IncRef(self.handle)
 		else:
-			self.handle = _ohbother.ohbother_MultiStreamConfig_CTor()
+			self.handle = _ohbother.ohbother_ContinuousPacketReceiver_CTor()
 			_ohbother.IncRef(self.handle)
-			if  0 < len(args):
-				self.PacketWorkers = args[0]
-			if "PacketWorkers" in kwargs:
-				self.PacketWorkers = kwargs["PacketWorkers"]
-			if  1 < len(args):
-				self.StreamCount = args[1]
-			if "StreamCount" in kwargs:
-				self.StreamCount = kwargs["StreamCount"]
-			if  2 < len(args):
-				self.ChannelBuffers = args[2]
-			if "ChannelBuffers" in kwargs:
-				self.ChannelBuffers = kwargs["ChannelBuffers"]
-			if  3 < len(args):
-				self.ReportInterval = args[3]
-			if "ReportInterval" in kwargs:
-				self.ReportInterval = kwargs["ReportInterval"]
-			if  4 < len(args):
-				self.EnableCPUPinning = args[4]
-			if "EnableCPUPinning" in kwargs:
-				self.EnableCPUPinning = kwargs["EnableCPUPinning"]
-			if  5 < len(args):
-				self.DisableOrdering = args[5]
-			if "DisableOrdering" in kwargs:
-				self.DisableOrdering = kwargs["DisableOrdering"]
-			if  6 < len(args):
-				self.TurnstileBurst = args[6]
-			if "TurnstileBurst" in kwargs:
-				self.TurnstileBurst = kwargs["TurnstileBurst"]
-			if  7 < len(args):
-				self.EnableMetrics = args[7]
-			if "EnableMetrics" in kwargs:
-				self.EnableMetrics = kwargs["EnableMetrics"]
 	def __del__(self):
 		_ohbother.DecRef(self.handle)
 	def __str__(self):
 		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
-		sv = 'ohbother.MultiStreamConfig{'
+		sv = 'ohbother.ContinuousPacketReceiver{'
 		first = True
 		for v in pr:
 			if callable(v[1]):
@@ -372,83 +340,23 @@ class MultiStreamConfig(go.GoClass):
 		return sv + '}'
 	def __repr__(self):
 		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
-		sv = 'ohbother.MultiStreamConfig ( '
+		sv = 'ohbother.ContinuousPacketReceiver ( '
 		for v in pr:
 			if not callable(v[1]):
 				sv += v[0] + '=' + str(v[1]) + ', '
 		return sv + ')'
-	@property
-	def PacketWorkers(self):
-		return _ohbother.ohbother_MultiStreamConfig_PacketWorkers_Get(self.handle)
-	@PacketWorkers.setter
-	def PacketWorkers(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_MultiStreamConfig_PacketWorkers_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_MultiStreamConfig_PacketWorkers_Set(self.handle, value)
-	@property
-	def StreamCount(self):
-		return _ohbother.ohbother_MultiStreamConfig_StreamCount_Get(self.handle)
-	@StreamCount.setter
-	def StreamCount(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_MultiStreamConfig_StreamCount_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_MultiStreamConfig_StreamCount_Set(self.handle, value)
-	@property
-	def ChannelBuffers(self):
-		return _ohbother.ohbother_MultiStreamConfig_ChannelBuffers_Get(self.handle)
-	@ChannelBuffers.setter
-	def ChannelBuffers(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_MultiStreamConfig_ChannelBuffers_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_MultiStreamConfig_ChannelBuffers_Set(self.handle, value)
-	@property
-	def ReportInterval(self):
-		return _ohbother.ohbother_MultiStreamConfig_ReportInterval_Get(self.handle)
-	@ReportInterval.setter
-	def ReportInterval(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_MultiStreamConfig_ReportInterval_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_MultiStreamConfig_ReportInterval_Set(self.handle, value)
-	@property
-	def EnableCPUPinning(self):
-		return _ohbother.ohbother_MultiStreamConfig_EnableCPUPinning_Get(self.handle)
-	@EnableCPUPinning.setter
-	def EnableCPUPinning(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_MultiStreamConfig_EnableCPUPinning_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_MultiStreamConfig_EnableCPUPinning_Set(self.handle, value)
-	@property
-	def DisableOrdering(self):
-		return _ohbother.ohbother_MultiStreamConfig_DisableOrdering_Get(self.handle)
-	@DisableOrdering.setter
-	def DisableOrdering(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_MultiStreamConfig_DisableOrdering_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_MultiStreamConfig_DisableOrdering_Set(self.handle, value)
-	@property
-	def TurnstileBurst(self):
-		return _ohbother.ohbother_MultiStreamConfig_TurnstileBurst_Get(self.handle)
-	@TurnstileBurst.setter
-	def TurnstileBurst(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_MultiStreamConfig_TurnstileBurst_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_MultiStreamConfig_TurnstileBurst_Set(self.handle, value)
-	@property
-	def EnableMetrics(self):
-		return _ohbother.ohbother_MultiStreamConfig_EnableMetrics_Get(self.handle)
-	@EnableMetrics.setter
-	def EnableMetrics(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_MultiStreamConfig_EnableMetrics_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_MultiStreamConfig_EnableMetrics_Set(self.handle, value)
+	def GetNextPacket(self):
+		"""GetNextPacket() []int
+		
+		GetNextPacket returns the next received packet or nil if receiver is closed
+		"""
+		return go.Slice_byte(handle=_ohbother.ohbother_ContinuousPacketReceiver_GetNextPacket(self.handle))
+	def Close(self, goRun=False):
+		"""Close() 
+		
+		Close shuts down the receiver
+		"""
+		_ohbother.ohbother_ContinuousPacketReceiver_Close(self.handle, goRun)
 
 # Python type for struct ohbother.MultiStreamSender
 class MultiStreamSender(go.GoClass):
@@ -697,9 +605,9 @@ class PacketReceiver(go.GoClass):
 		"""
 		return Slice_Slice_byte(handle=_ohbother.ohbother_PacketReceiver_ResultNative(self.handle))
 
-# Python type for struct ohbother.PacketSendResult
-class PacketSendResult(go.GoClass):
-	"""PacketSendResult represents the result of sending a single packet\n"""
+# Python type for struct ohbother.PcapConfig
+class PcapConfig(go.GoClass):
+	"""PcapConfig holds additional settings for pcap handles.\n"""
 	def __init__(self, *args, **kwargs):
 		"""
 		handle=A Go-side object is always initialized with an explicit handle=arg
@@ -713,25 +621,37 @@ class PacketSendResult(go.GoClass):
 			self.handle = args[0].handle
 			_ohbother.IncRef(self.handle)
 		else:
-			self.handle = _ohbother.ohbother_PacketSendResult_CTor()
+			self.handle = _ohbother.ohbother_PcapConfig_CTor()
 			_ohbother.IncRef(self.handle)
 			if  0 < len(args):
-				self.Index = args[0]
-			if "Index" in kwargs:
-				self.Index = kwargs["Index"]
+				self.Iface = args[0]
+			if "Iface" in kwargs:
+				self.Iface = kwargs["Iface"]
 			if  1 < len(args):
-				self.TotalCount = args[1]
-			if "TotalCount" in kwargs:
-				self.TotalCount = kwargs["TotalCount"]
+				self.SnapLen = args[1]
+			if "SnapLen" in kwargs:
+				self.SnapLen = kwargs["SnapLen"]
 			if  2 < len(args):
-				self.Elapsed = args[2]
-			if "Elapsed" in kwargs:
-				self.Elapsed = kwargs["Elapsed"]
+				self.Promisc = args[2]
+			if "Promisc" in kwargs:
+				self.Promisc = kwargs["Promisc"]
+			if  3 < len(args):
+				self.Timeout = args[3]
+			if "Timeout" in kwargs:
+				self.Timeout = kwargs["Timeout"]
+			if  4 < len(args):
+				self.BufferSize = args[4]
+			if "BufferSize" in kwargs:
+				self.BufferSize = kwargs["BufferSize"]
+			if  5 < len(args):
+				self.ImmediateMode = args[5]
+			if "ImmediateMode" in kwargs:
+				self.ImmediateMode = kwargs["ImmediateMode"]
 	def __del__(self):
 		_ohbother.DecRef(self.handle)
 	def __str__(self):
 		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
-		sv = 'ohbother.PacketSendResult{'
+		sv = 'ohbother.PcapConfig{'
 		first = True
 		for v in pr:
 			if callable(v[1]):
@@ -744,140 +664,65 @@ class PacketSendResult(go.GoClass):
 		return sv + '}'
 	def __repr__(self):
 		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
-		sv = 'ohbother.PacketSendResult ( '
+		sv = 'ohbother.PcapConfig ( '
 		for v in pr:
 			if not callable(v[1]):
 				sv += v[0] + '=' + str(v[1]) + ', '
 		return sv + ')'
 	@property
-	def Index(self):
-		return _ohbother.ohbother_PacketSendResult_Index_Get(self.handle)
-	@Index.setter
-	def Index(self, value):
+	def Iface(self):
+		return _ohbother.ohbother_PcapConfig_Iface_Get(self.handle)
+	@Iface.setter
+	def Iface(self, value):
 		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_PacketSendResult_Index_Set(self.handle, value.handle)
+			_ohbother.ohbother_PcapConfig_Iface_Set(self.handle, value.handle)
 		else:
-			_ohbother.ohbother_PacketSendResult_Index_Set(self.handle, value)
+			_ohbother.ohbother_PcapConfig_Iface_Set(self.handle, value)
 	@property
-	def TotalCount(self):
-		return _ohbother.ohbother_PacketSendResult_TotalCount_Get(self.handle)
-	@TotalCount.setter
-	def TotalCount(self, value):
+	def SnapLen(self):
+		return _ohbother.ohbother_PcapConfig_SnapLen_Get(self.handle)
+	@SnapLen.setter
+	def SnapLen(self, value):
 		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_PacketSendResult_TotalCount_Set(self.handle, value.handle)
+			_ohbother.ohbother_PcapConfig_SnapLen_Set(self.handle, value.handle)
 		else:
-			_ohbother.ohbother_PacketSendResult_TotalCount_Set(self.handle, value)
+			_ohbother.ohbother_PcapConfig_SnapLen_Set(self.handle, value)
 	@property
-	def Elapsed(self):
-		return _ohbother.ohbother_PacketSendResult_Elapsed_Get(self.handle)
-	@Elapsed.setter
-	def Elapsed(self, value):
+	def Promisc(self):
+		return _ohbother.ohbother_PcapConfig_Promisc_Get(self.handle)
+	@Promisc.setter
+	def Promisc(self, value):
 		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_PacketSendResult_Elapsed_Set(self.handle, value.handle)
+			_ohbother.ohbother_PcapConfig_Promisc_Set(self.handle, value.handle)
 		else:
-			_ohbother.ohbother_PacketSendResult_Elapsed_Set(self.handle, value)
-	def GetError(self):
-		"""GetError() str
-		
-		GetError returns error as string or empty string
-		"""
-		return _ohbother.ohbother_PacketSendResult_GetError(self.handle)
-
-# Python type for struct ohbother.Config
-class Config(go.GoClass):
-	"""Config holds both the packet header settings and the pcap settings.\n"""
-	def __init__(self, *args, **kwargs):
-		"""
-		handle=A Go-side object is always initialized with an explicit handle=arg
-		otherwise parameters can be unnamed in order of field names or named fields
-		in which case a new Go object is constructed first
-		"""
-		if len(kwargs) == 1 and 'handle' in kwargs:
-			self.handle = kwargs['handle']
-			_ohbother.IncRef(self.handle)
-		elif len(args) == 1 and isinstance(args[0], go.GoClass):
-			self.handle = args[0].handle
-			_ohbother.IncRef(self.handle)
-		else:
-			self.handle = _ohbother.ohbother_Config_CTor()
-			_ohbother.IncRef(self.handle)
-			if  0 < len(args):
-				self.Pcap = args[0]
-			if "Pcap" in kwargs:
-				self.Pcap = kwargs["Pcap"]
-			if  1 < len(args):
-				self.Packet = args[1]
-			if "Packet" in kwargs:
-				self.Packet = kwargs["Packet"]
-			if  2 < len(args):
-				self.Debug = args[2]
-			if "Debug" in kwargs:
-				self.Debug = kwargs["Debug"]
-	def __del__(self):
-		_ohbother.DecRef(self.handle)
-	def __str__(self):
-		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
-		sv = 'ohbother.Config{'
-		first = True
-		for v in pr:
-			if callable(v[1]):
-				continue
-			if first:
-				first = False
-			else:
-				sv += ', '
-			sv += v[0] + '=' + str(v[1])
-		return sv + '}'
-	def __repr__(self):
-		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
-		sv = 'ohbother.Config ( '
-		for v in pr:
-			if not callable(v[1]):
-				sv += v[0] + '=' + str(v[1]) + ', '
-		return sv + ')'
+			_ohbother.ohbother_PcapConfig_Promisc_Set(self.handle, value)
 	@property
-	def Pcap(self):
-		return PcapConfig(handle=_ohbother.ohbother_Config_Pcap_Get(self.handle))
-	@Pcap.setter
-	def Pcap(self, value):
+	def Timeout(self):
+		return _ohbother.ohbother_PcapConfig_Timeout_Get(self.handle)
+	@Timeout.setter
+	def Timeout(self, value):
 		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_Config_Pcap_Set(self.handle, value.handle)
+			_ohbother.ohbother_PcapConfig_Timeout_Set(self.handle, value.handle)
 		else:
-			raise TypeError("supplied argument type {t} is not a go.GoClass".format(t=type(value)))
+			_ohbother.ohbother_PcapConfig_Timeout_Set(self.handle, value)
 	@property
-	def Packet(self):
-		return PacketConfig(handle=_ohbother.ohbother_Config_Packet_Get(self.handle))
-	@Packet.setter
-	def Packet(self, value):
+	def BufferSize(self):
+		return _ohbother.ohbother_PcapConfig_BufferSize_Get(self.handle)
+	@BufferSize.setter
+	def BufferSize(self, value):
 		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_Config_Packet_Set(self.handle, value.handle)
+			_ohbother.ohbother_PcapConfig_BufferSize_Set(self.handle, value.handle)
 		else:
-			raise TypeError("supplied argument type {t} is not a go.GoClass".format(t=type(value)))
+			_ohbother.ohbother_PcapConfig_BufferSize_Set(self.handle, value)
 	@property
-	def Debug(self):
-		return DebugOptions(handle=_ohbother.ohbother_Config_Debug_Get(self.handle))
-	@Debug.setter
-	def Debug(self, value):
+	def ImmediateMode(self):
+		return _ohbother.ohbother_PcapConfig_ImmediateMode_Get(self.handle)
+	@ImmediateMode.setter
+	def ImmediateMode(self, value):
 		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_Config_Debug_Set(self.handle, value.handle)
+			_ohbother.ohbother_PcapConfig_ImmediateMode_Set(self.handle, value.handle)
 		else:
-			raise TypeError("supplied argument type {t} is not a go.GoClass".format(t=type(value)))
-	def EnableDebug(self, level, goRun=False):
-		"""EnableDebug(int level) 
-		
-		Level 0: Off (no debug output)
-		Level 1: Errors only
-		Level 2: Warnings and errors
-		Level 3: Info, warnings, and errors
-		Level 4: Verbose (debug, info, warnings, and errors)
-		"""
-		_ohbother.ohbother_Config_EnableDebug(self.handle, level, goRun)
-	def DisableDebug(self, goRun=False):
-		"""DisableDebug() """
-		_ohbother.ohbother_Config_DisableDebug(self.handle, goRun)
-	def SetLogger(self, logger, goRun=False):
-		"""SetLogger(object logger) """
-		_ohbother.ohbother_Config_SetLogger(self.handle, logger.handle, goRun)
+			_ohbother.ohbother_PcapConfig_ImmediateMode_Set(self.handle, value)
 
 # Python type for struct ohbother.DebugOptions
 class DebugOptions(go.GoClass):
@@ -958,6 +803,208 @@ class DebugOptions(go.GoClass):
 			_ohbother.ohbother_DebugOptions_Logger_Set(self.handle, value.handle)
 		else:
 			raise TypeError("supplied argument type {t} is not a go.GoClass".format(t=type(value)))
+
+# Python type for struct ohbother.DefaultLogger
+class DefaultLogger(go.GoClass):
+	"""Implement a default logger that has a reference to its parent Config\n"""
+	def __init__(self, *args, **kwargs):
+		"""
+		handle=A Go-side object is always initialized with an explicit handle=arg
+		otherwise parameters can be unnamed in order of field names or named fields
+		in which case a new Go object is constructed first
+		"""
+		if len(kwargs) == 1 and 'handle' in kwargs:
+			self.handle = kwargs['handle']
+			_ohbother.IncRef(self.handle)
+		elif len(args) == 1 and isinstance(args[0], go.GoClass):
+			self.handle = args[0].handle
+			_ohbother.IncRef(self.handle)
+		else:
+			self.handle = _ohbother.ohbother_DefaultLogger_CTor()
+			_ohbother.IncRef(self.handle)
+	def __del__(self):
+		_ohbother.DecRef(self.handle)
+	def __str__(self):
+		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
+		sv = 'ohbother.DefaultLogger{'
+		first = True
+		for v in pr:
+			if callable(v[1]):
+				continue
+			if first:
+				first = False
+			else:
+				sv += ', '
+			sv += v[0] + '=' + str(v[1])
+		return sv + '}'
+	def __repr__(self):
+		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
+		sv = 'ohbother.DefaultLogger ( '
+		for v in pr:
+			if not callable(v[1]):
+				sv += v[0] + '=' + str(v[1]) + ', '
+		return sv + ')'
+	def Debug(self, format, goRun=False, *args):
+		"""Debug(str format, []str args) """
+		args = Slice_interface_(args)
+		_ohbother.ohbother_DefaultLogger_Debug(self.handle, format, args.handle, goRun)
+	def Info(self, format, goRun=False, *args):
+		"""Info(str format, []str args) """
+		args = Slice_interface_(args)
+		_ohbother.ohbother_DefaultLogger_Info(self.handle, format, args.handle, goRun)
+	def Warn(self, format, goRun=False, *args):
+		"""Warn(str format, []str args) """
+		args = Slice_interface_(args)
+		_ohbother.ohbother_DefaultLogger_Warn(self.handle, format, args.handle, goRun)
+	def Error(self, format, goRun=False, *args):
+		"""Error(str format, []str args) """
+		args = Slice_interface_(args)
+		_ohbother.ohbother_DefaultLogger_Error(self.handle, format, args.handle, goRun)
+
+# Python type for struct ohbother.MultiStreamConfig
+class MultiStreamConfig(go.GoClass):
+	"""MultiStreamConfig holds configuration for the multi-stream sender\n"""
+	def __init__(self, *args, **kwargs):
+		"""
+		handle=A Go-side object is always initialized with an explicit handle=arg
+		otherwise parameters can be unnamed in order of field names or named fields
+		in which case a new Go object is constructed first
+		"""
+		if len(kwargs) == 1 and 'handle' in kwargs:
+			self.handle = kwargs['handle']
+			_ohbother.IncRef(self.handle)
+		elif len(args) == 1 and isinstance(args[0], go.GoClass):
+			self.handle = args[0].handle
+			_ohbother.IncRef(self.handle)
+		else:
+			self.handle = _ohbother.ohbother_MultiStreamConfig_CTor()
+			_ohbother.IncRef(self.handle)
+			if  0 < len(args):
+				self.PacketWorkers = args[0]
+			if "PacketWorkers" in kwargs:
+				self.PacketWorkers = kwargs["PacketWorkers"]
+			if  1 < len(args):
+				self.StreamCount = args[1]
+			if "StreamCount" in kwargs:
+				self.StreamCount = kwargs["StreamCount"]
+			if  2 < len(args):
+				self.ChannelBuffers = args[2]
+			if "ChannelBuffers" in kwargs:
+				self.ChannelBuffers = kwargs["ChannelBuffers"]
+			if  3 < len(args):
+				self.ReportInterval = args[3]
+			if "ReportInterval" in kwargs:
+				self.ReportInterval = kwargs["ReportInterval"]
+			if  4 < len(args):
+				self.EnableCPUPinning = args[4]
+			if "EnableCPUPinning" in kwargs:
+				self.EnableCPUPinning = kwargs["EnableCPUPinning"]
+			if  5 < len(args):
+				self.DisableOrdering = args[5]
+			if "DisableOrdering" in kwargs:
+				self.DisableOrdering = kwargs["DisableOrdering"]
+			if  6 < len(args):
+				self.TurnstileBurst = args[6]
+			if "TurnstileBurst" in kwargs:
+				self.TurnstileBurst = kwargs["TurnstileBurst"]
+			if  7 < len(args):
+				self.EnableMetrics = args[7]
+			if "EnableMetrics" in kwargs:
+				self.EnableMetrics = kwargs["EnableMetrics"]
+	def __del__(self):
+		_ohbother.DecRef(self.handle)
+	def __str__(self):
+		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
+		sv = 'ohbother.MultiStreamConfig{'
+		first = True
+		for v in pr:
+			if callable(v[1]):
+				continue
+			if first:
+				first = False
+			else:
+				sv += ', '
+			sv += v[0] + '=' + str(v[1])
+		return sv + '}'
+	def __repr__(self):
+		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
+		sv = 'ohbother.MultiStreamConfig ( '
+		for v in pr:
+			if not callable(v[1]):
+				sv += v[0] + '=' + str(v[1]) + ', '
+		return sv + ')'
+	@property
+	def PacketWorkers(self):
+		return _ohbother.ohbother_MultiStreamConfig_PacketWorkers_Get(self.handle)
+	@PacketWorkers.setter
+	def PacketWorkers(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_MultiStreamConfig_PacketWorkers_Set(self.handle, value.handle)
+		else:
+			_ohbother.ohbother_MultiStreamConfig_PacketWorkers_Set(self.handle, value)
+	@property
+	def StreamCount(self):
+		return _ohbother.ohbother_MultiStreamConfig_StreamCount_Get(self.handle)
+	@StreamCount.setter
+	def StreamCount(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_MultiStreamConfig_StreamCount_Set(self.handle, value.handle)
+		else:
+			_ohbother.ohbother_MultiStreamConfig_StreamCount_Set(self.handle, value)
+	@property
+	def ChannelBuffers(self):
+		return _ohbother.ohbother_MultiStreamConfig_ChannelBuffers_Get(self.handle)
+	@ChannelBuffers.setter
+	def ChannelBuffers(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_MultiStreamConfig_ChannelBuffers_Set(self.handle, value.handle)
+		else:
+			_ohbother.ohbother_MultiStreamConfig_ChannelBuffers_Set(self.handle, value)
+	@property
+	def ReportInterval(self):
+		return _ohbother.ohbother_MultiStreamConfig_ReportInterval_Get(self.handle)
+	@ReportInterval.setter
+	def ReportInterval(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_MultiStreamConfig_ReportInterval_Set(self.handle, value.handle)
+		else:
+			_ohbother.ohbother_MultiStreamConfig_ReportInterval_Set(self.handle, value)
+	@property
+	def EnableCPUPinning(self):
+		return _ohbother.ohbother_MultiStreamConfig_EnableCPUPinning_Get(self.handle)
+	@EnableCPUPinning.setter
+	def EnableCPUPinning(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_MultiStreamConfig_EnableCPUPinning_Set(self.handle, value.handle)
+		else:
+			_ohbother.ohbother_MultiStreamConfig_EnableCPUPinning_Set(self.handle, value)
+	@property
+	def DisableOrdering(self):
+		return _ohbother.ohbother_MultiStreamConfig_DisableOrdering_Get(self.handle)
+	@DisableOrdering.setter
+	def DisableOrdering(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_MultiStreamConfig_DisableOrdering_Set(self.handle, value.handle)
+		else:
+			_ohbother.ohbother_MultiStreamConfig_DisableOrdering_Set(self.handle, value)
+	@property
+	def TurnstileBurst(self):
+		return _ohbother.ohbother_MultiStreamConfig_TurnstileBurst_Get(self.handle)
+	@TurnstileBurst.setter
+	def TurnstileBurst(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_MultiStreamConfig_TurnstileBurst_Set(self.handle, value.handle)
+		else:
+			_ohbother.ohbother_MultiStreamConfig_TurnstileBurst_Set(self.handle, value)
+	@property
+	def EnableMetrics(self):
+		return _ohbother.ohbother_MultiStreamConfig_EnableMetrics_Get(self.handle)
+	@EnableMetrics.setter
+	def EnableMetrics(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_MultiStreamConfig_EnableMetrics_Set(self.handle, value.handle)
+		else:
+			_ohbother.ohbother_MultiStreamConfig_EnableMetrics_Set(self.handle, value)
 
 # Python type for struct ohbother.PacketConfig
 class PacketConfig(go.GoClass):
@@ -1091,6 +1138,92 @@ class PacketConfig(go.GoClass):
 		else:
 			_ohbother.ohbother_PacketConfig_BPF_Set(self.handle, value)
 
+# Python type for struct ohbother.PacketSendResult
+class PacketSendResult(go.GoClass):
+	"""PacketSendResult represents the result of sending a single packet\n"""
+	def __init__(self, *args, **kwargs):
+		"""
+		handle=A Go-side object is always initialized with an explicit handle=arg
+		otherwise parameters can be unnamed in order of field names or named fields
+		in which case a new Go object is constructed first
+		"""
+		if len(kwargs) == 1 and 'handle' in kwargs:
+			self.handle = kwargs['handle']
+			_ohbother.IncRef(self.handle)
+		elif len(args) == 1 and isinstance(args[0], go.GoClass):
+			self.handle = args[0].handle
+			_ohbother.IncRef(self.handle)
+		else:
+			self.handle = _ohbother.ohbother_PacketSendResult_CTor()
+			_ohbother.IncRef(self.handle)
+			if  0 < len(args):
+				self.Index = args[0]
+			if "Index" in kwargs:
+				self.Index = kwargs["Index"]
+			if  1 < len(args):
+				self.TotalCount = args[1]
+			if "TotalCount" in kwargs:
+				self.TotalCount = kwargs["TotalCount"]
+			if  2 < len(args):
+				self.Elapsed = args[2]
+			if "Elapsed" in kwargs:
+				self.Elapsed = kwargs["Elapsed"]
+	def __del__(self):
+		_ohbother.DecRef(self.handle)
+	def __str__(self):
+		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
+		sv = 'ohbother.PacketSendResult{'
+		first = True
+		for v in pr:
+			if callable(v[1]):
+				continue
+			if first:
+				first = False
+			else:
+				sv += ', '
+			sv += v[0] + '=' + str(v[1])
+		return sv + '}'
+	def __repr__(self):
+		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
+		sv = 'ohbother.PacketSendResult ( '
+		for v in pr:
+			if not callable(v[1]):
+				sv += v[0] + '=' + str(v[1]) + ', '
+		return sv + ')'
+	@property
+	def Index(self):
+		return _ohbother.ohbother_PacketSendResult_Index_Get(self.handle)
+	@Index.setter
+	def Index(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_PacketSendResult_Index_Set(self.handle, value.handle)
+		else:
+			_ohbother.ohbother_PacketSendResult_Index_Set(self.handle, value)
+	@property
+	def TotalCount(self):
+		return _ohbother.ohbother_PacketSendResult_TotalCount_Get(self.handle)
+	@TotalCount.setter
+	def TotalCount(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_PacketSendResult_TotalCount_Set(self.handle, value.handle)
+		else:
+			_ohbother.ohbother_PacketSendResult_TotalCount_Set(self.handle, value)
+	@property
+	def Elapsed(self):
+		return _ohbother.ohbother_PacketSendResult_Elapsed_Get(self.handle)
+	@Elapsed.setter
+	def Elapsed(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_PacketSendResult_Elapsed_Set(self.handle, value.handle)
+		else:
+			_ohbother.ohbother_PacketSendResult_Elapsed_Set(self.handle, value)
+	def GetError(self):
+		"""GetError() str
+		
+		GetError returns error as string or empty string
+		"""
+		return _ohbother.ohbother_PacketSendResult_GetError(self.handle)
+
 # Python type for struct ohbother.PacketSequenceSender
 class PacketSequenceSender(go.GoClass):
 	"""PacketSequenceSender provides a simple API for packet transmission\n"""
@@ -1195,125 +1328,6 @@ class PacketSequenceSender(go.GoClass):
 		IsComplete returns true when all packets have been sent
 		"""
 		return _ohbother.ohbother_PacketSequenceSender_IsComplete(self.handle)
-
-# Python type for struct ohbother.PcapConfig
-class PcapConfig(go.GoClass):
-	"""PcapConfig holds additional settings for pcap handles.\n"""
-	def __init__(self, *args, **kwargs):
-		"""
-		handle=A Go-side object is always initialized with an explicit handle=arg
-		otherwise parameters can be unnamed in order of field names or named fields
-		in which case a new Go object is constructed first
-		"""
-		if len(kwargs) == 1 and 'handle' in kwargs:
-			self.handle = kwargs['handle']
-			_ohbother.IncRef(self.handle)
-		elif len(args) == 1 and isinstance(args[0], go.GoClass):
-			self.handle = args[0].handle
-			_ohbother.IncRef(self.handle)
-		else:
-			self.handle = _ohbother.ohbother_PcapConfig_CTor()
-			_ohbother.IncRef(self.handle)
-			if  0 < len(args):
-				self.Iface = args[0]
-			if "Iface" in kwargs:
-				self.Iface = kwargs["Iface"]
-			if  1 < len(args):
-				self.SnapLen = args[1]
-			if "SnapLen" in kwargs:
-				self.SnapLen = kwargs["SnapLen"]
-			if  2 < len(args):
-				self.Promisc = args[2]
-			if "Promisc" in kwargs:
-				self.Promisc = kwargs["Promisc"]
-			if  3 < len(args):
-				self.Timeout = args[3]
-			if "Timeout" in kwargs:
-				self.Timeout = kwargs["Timeout"]
-			if  4 < len(args):
-				self.BufferSize = args[4]
-			if "BufferSize" in kwargs:
-				self.BufferSize = kwargs["BufferSize"]
-			if  5 < len(args):
-				self.ImmediateMode = args[5]
-			if "ImmediateMode" in kwargs:
-				self.ImmediateMode = kwargs["ImmediateMode"]
-	def __del__(self):
-		_ohbother.DecRef(self.handle)
-	def __str__(self):
-		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
-		sv = 'ohbother.PcapConfig{'
-		first = True
-		for v in pr:
-			if callable(v[1]):
-				continue
-			if first:
-				first = False
-			else:
-				sv += ', '
-			sv += v[0] + '=' + str(v[1])
-		return sv + '}'
-	def __repr__(self):
-		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
-		sv = 'ohbother.PcapConfig ( '
-		for v in pr:
-			if not callable(v[1]):
-				sv += v[0] + '=' + str(v[1]) + ', '
-		return sv + ')'
-	@property
-	def Iface(self):
-		return _ohbother.ohbother_PcapConfig_Iface_Get(self.handle)
-	@Iface.setter
-	def Iface(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_PcapConfig_Iface_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_PcapConfig_Iface_Set(self.handle, value)
-	@property
-	def SnapLen(self):
-		return _ohbother.ohbother_PcapConfig_SnapLen_Get(self.handle)
-	@SnapLen.setter
-	def SnapLen(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_PcapConfig_SnapLen_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_PcapConfig_SnapLen_Set(self.handle, value)
-	@property
-	def Promisc(self):
-		return _ohbother.ohbother_PcapConfig_Promisc_Get(self.handle)
-	@Promisc.setter
-	def Promisc(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_PcapConfig_Promisc_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_PcapConfig_Promisc_Set(self.handle, value)
-	@property
-	def Timeout(self):
-		return _ohbother.ohbother_PcapConfig_Timeout_Get(self.handle)
-	@Timeout.setter
-	def Timeout(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_PcapConfig_Timeout_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_PcapConfig_Timeout_Set(self.handle, value)
-	@property
-	def BufferSize(self):
-		return _ohbother.ohbother_PcapConfig_BufferSize_Get(self.handle)
-	@BufferSize.setter
-	def BufferSize(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_PcapConfig_BufferSize_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_PcapConfig_BufferSize_Set(self.handle, value)
-	@property
-	def ImmediateMode(self):
-		return _ohbother.ohbother_PcapConfig_ImmediateMode_Get(self.handle)
-	@ImmediateMode.setter
-	def ImmediateMode(self, value):
-		if isinstance(value, go.GoClass):
-			_ohbother.ohbother_PcapConfig_ImmediateMode_Set(self.handle, value.handle)
-		else:
-			_ohbother.ohbother_PcapConfig_ImmediateMode_Set(self.handle, value)
 
 # Python type for struct ohbother.AsyncResult
 class AsyncResult(go.GoClass):
@@ -1442,9 +1456,9 @@ class BytePacket(go.GoClass):
 		"""
 		return go.Slice_byte(handle=_ohbother.ohbother_BytePacket_GetData(self.handle))
 
-# Python type for struct ohbother.ContinuousPacketReceiver
-class ContinuousPacketReceiver(go.GoClass):
-	"""ContinuousPacketReceiver provides a streaming interface to receive packets\n"""
+# Python type for struct ohbother.Config
+class Config(go.GoClass):
+	"""Config holds both the packet header settings and the pcap settings.\n"""
 	def __init__(self, *args, **kwargs):
 		"""
 		handle=A Go-side object is always initialized with an explicit handle=arg
@@ -1458,13 +1472,25 @@ class ContinuousPacketReceiver(go.GoClass):
 			self.handle = args[0].handle
 			_ohbother.IncRef(self.handle)
 		else:
-			self.handle = _ohbother.ohbother_ContinuousPacketReceiver_CTor()
+			self.handle = _ohbother.ohbother_Config_CTor()
 			_ohbother.IncRef(self.handle)
+			if  0 < len(args):
+				self.Pcap = args[0]
+			if "Pcap" in kwargs:
+				self.Pcap = kwargs["Pcap"]
+			if  1 < len(args):
+				self.Packet = args[1]
+			if "Packet" in kwargs:
+				self.Packet = kwargs["Packet"]
+			if  2 < len(args):
+				self.Debug = args[2]
+			if "Debug" in kwargs:
+				self.Debug = kwargs["Debug"]
 	def __del__(self):
 		_ohbother.DecRef(self.handle)
 	def __str__(self):
 		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
-		sv = 'ohbother.ContinuousPacketReceiver{'
+		sv = 'ohbother.Config{'
 		first = True
 		for v in pr:
 			if callable(v[1]):
@@ -1477,80 +1503,54 @@ class ContinuousPacketReceiver(go.GoClass):
 		return sv + '}'
 	def __repr__(self):
 		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
-		sv = 'ohbother.ContinuousPacketReceiver ( '
+		sv = 'ohbother.Config ( '
 		for v in pr:
 			if not callable(v[1]):
 				sv += v[0] + '=' + str(v[1]) + ', '
 		return sv + ')'
-	def GetNextPacket(self):
-		"""GetNextPacket() []int
-		
-		GetNextPacket returns the next received packet or nil if receiver is closed
-		"""
-		return go.Slice_byte(handle=_ohbother.ohbother_ContinuousPacketReceiver_GetNextPacket(self.handle))
-	def Close(self, goRun=False):
-		"""Close() 
-		
-		Close shuts down the receiver
-		"""
-		_ohbother.ohbother_ContinuousPacketReceiver_Close(self.handle, goRun)
-
-# Python type for struct ohbother.DefaultLogger
-class DefaultLogger(go.GoClass):
-	"""Implement a default logger that has a reference to its parent Config\n"""
-	def __init__(self, *args, **kwargs):
-		"""
-		handle=A Go-side object is always initialized with an explicit handle=arg
-		otherwise parameters can be unnamed in order of field names or named fields
-		in which case a new Go object is constructed first
-		"""
-		if len(kwargs) == 1 and 'handle' in kwargs:
-			self.handle = kwargs['handle']
-			_ohbother.IncRef(self.handle)
-		elif len(args) == 1 and isinstance(args[0], go.GoClass):
-			self.handle = args[0].handle
-			_ohbother.IncRef(self.handle)
+	@property
+	def Pcap(self):
+		return PcapConfig(handle=_ohbother.ohbother_Config_Pcap_Get(self.handle))
+	@Pcap.setter
+	def Pcap(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_Config_Pcap_Set(self.handle, value.handle)
 		else:
-			self.handle = _ohbother.ohbother_DefaultLogger_CTor()
-			_ohbother.IncRef(self.handle)
-	def __del__(self):
-		_ohbother.DecRef(self.handle)
-	def __str__(self):
-		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
-		sv = 'ohbother.DefaultLogger{'
-		first = True
-		for v in pr:
-			if callable(v[1]):
-				continue
-			if first:
-				first = False
-			else:
-				sv += ', '
-			sv += v[0] + '=' + str(v[1])
-		return sv + '}'
-	def __repr__(self):
-		pr = [(p, getattr(self, p)) for p in dir(self) if not p.startswith('__')]
-		sv = 'ohbother.DefaultLogger ( '
-		for v in pr:
-			if not callable(v[1]):
-				sv += v[0] + '=' + str(v[1]) + ', '
-		return sv + ')'
-	def Debug(self, format, goRun=False, *args):
-		"""Debug(str format, []str args) """
-		args = Slice_interface_(args)
-		_ohbother.ohbother_DefaultLogger_Debug(self.handle, format, args.handle, goRun)
-	def Info(self, format, goRun=False, *args):
-		"""Info(str format, []str args) """
-		args = Slice_interface_(args)
-		_ohbother.ohbother_DefaultLogger_Info(self.handle, format, args.handle, goRun)
-	def Warn(self, format, goRun=False, *args):
-		"""Warn(str format, []str args) """
-		args = Slice_interface_(args)
-		_ohbother.ohbother_DefaultLogger_Warn(self.handle, format, args.handle, goRun)
-	def Error(self, format, goRun=False, *args):
-		"""Error(str format, []str args) """
-		args = Slice_interface_(args)
-		_ohbother.ohbother_DefaultLogger_Error(self.handle, format, args.handle, goRun)
+			raise TypeError("supplied argument type {t} is not a go.GoClass".format(t=type(value)))
+	@property
+	def Packet(self):
+		return PacketConfig(handle=_ohbother.ohbother_Config_Packet_Get(self.handle))
+	@Packet.setter
+	def Packet(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_Config_Packet_Set(self.handle, value.handle)
+		else:
+			raise TypeError("supplied argument type {t} is not a go.GoClass".format(t=type(value)))
+	@property
+	def Debug(self):
+		return DebugOptions(handle=_ohbother.ohbother_Config_Debug_Get(self.handle))
+	@Debug.setter
+	def Debug(self, value):
+		if isinstance(value, go.GoClass):
+			_ohbother.ohbother_Config_Debug_Set(self.handle, value.handle)
+		else:
+			raise TypeError("supplied argument type {t} is not a go.GoClass".format(t=type(value)))
+	def EnableDebug(self, level, goRun=False):
+		"""EnableDebug(int level) 
+		
+		Level 0: Off (no debug output)
+		Level 1: Errors only
+		Level 2: Warnings and errors
+		Level 3: Info, warnings, and errors
+		Level 4: Verbose (debug, info, warnings, and errors)
+		"""
+		_ohbother.ohbother_Config_EnableDebug(self.handle, level, goRun)
+	def DisableDebug(self, goRun=False):
+		"""DisableDebug() """
+		_ohbother.ohbother_Config_DisableDebug(self.handle, goRun)
+	def SetLogger(self, logger, goRun=False):
+		"""SetLogger(object logger) """
+		_ohbother.ohbother_Config_SetLogger(self.handle, logger.handle, goRun)
 
 
 # ---- Slices ---
@@ -1560,20 +1560,18 @@ class DefaultLogger(go.GoClass):
 
 
 # ---- Constructors ---
+def NewReceiver(cfg):
+	"""NewReceiver(object cfg) object
+	
+	NewReceiver creates a new continuous packet receiver
+	"""
+	return ContinuousPacketReceiver(handle=_ohbother.ohbother_NewReceiver(cfg.handle))
 def NewMultiStreamSender(cfg, rateLimit):
 	"""NewMultiStreamSender(object cfg, int rateLimit) object
 	
 	NewMultiStreamSender creates a high-performance sender with worker pools
 	"""
 	return MultiStreamSender(handle=_ohbother.ohbother_NewMultiStreamSender(cfg.handle, rateLimit))
-def BenchmarkReceiveAsync(cfg, duration):
-	"""BenchmarkReceiveAsync(object cfg, float duration) object
-	
-	BenchmarkReceiveAsync starts an asynchronous receive operation for the specified duration (in seconds)
-	and returns an AsyncReceiver pointer. Later, the caller can call Result() on the AsyncReceiver
-	to obtain the full slice of received UDP payloads (each a []byte) or an error.
-	"""
-	return PacketReceiver(handle=_ohbother.ohbother_BenchmarkReceiveAsync(cfg.handle, duration))
 def PacketReceiverByCount(cfg, count, timeout):
 	"""PacketReceiverByCount(object cfg, int count, float timeout) object
 	
@@ -1588,13 +1586,20 @@ def PacketReceiverByTime(cfg, duration):
 	for the specified duration (in seconds). It immediately returns an PacketReceiver.
 	"""
 	return PacketReceiver(handle=_ohbother.ohbother_PacketReceiverByTime(cfg.handle, duration))
-def NewDefaultConfig(iface, srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, bpf, SnapLen, Promisc, BufferSize, ImmediateMode):
-	"""NewDefaultConfig(str iface, str srcMAC, str dstMAC, str srcIP, str dstIP, int srcPort, int dstPort, str bpf, int SnapLen, bool Promisc, int BufferSize, bool ImmediateMode) object, str
+def BenchmarkReceiveAsync(cfg, duration):
+	"""BenchmarkReceiveAsync(object cfg, float duration) object
 	
-	NewDefaultConfig creates a new Config using the provided parameters.
-	The iface is set only once under the PcapConfig.
+	BenchmarkReceiveAsync starts an asynchronous receive operation for the specified duration (in seconds)
+	and returns an AsyncReceiver pointer. Later, the caller can call Result() on the AsyncReceiver
+	to obtain the full slice of received UDP payloads (each a []byte) or an error.
 	"""
-	return Config(handle=_ohbother.ohbother_NewDefaultConfig(iface, srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, bpf, SnapLen, Promisc, BufferSize, ImmediateMode))
+	return PacketReceiver(handle=_ohbother.ohbother_BenchmarkReceiveAsync(cfg.handle, duration))
+def NewDefaultLogger(cfg):
+	"""NewDefaultLogger(object cfg) object
+	
+	NewDefaultLogger creates a logger with a reference to its parent Config
+	"""
+	return DefaultLogger(handle=_ohbother.ohbother_NewDefaultLogger(cfg.handle))
 def NewPacketSequenceSender(cfg, rateLimit):
 	"""NewPacketSequenceSender(object cfg, int rateLimit) object
 	
@@ -1607,27 +1612,75 @@ def NewBytePacket(data):
 	NewBytePacket creates a new BytePacket.
 	"""
 	return BytePacket(handle=_ohbother.ohbother_NewBytePacket(data.handle))
-def NewReceiver(cfg):
-	"""NewReceiver(object cfg) object
+def NewDefaultConfig(iface, srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, bpf, SnapLen, Promisc, BufferSize, ImmediateMode):
+	"""NewDefaultConfig(str iface, str srcMAC, str dstMAC, str srcIP, str dstIP, int srcPort, int dstPort, str bpf, int SnapLen, bool Promisc, int BufferSize, bool ImmediateMode) object, str
 	
-	NewReceiver creates a new continuous packet receiver
+	NewDefaultConfig creates a new Config using the provided parameters.
+	The iface is set only once under the PcapConfig.
 	"""
-	return ContinuousPacketReceiver(handle=_ohbother.ohbother_NewReceiver(cfg.handle))
-def NewDefaultLogger(cfg):
-	"""NewDefaultLogger(object cfg) object
-	
-	NewDefaultLogger creates a logger with a reference to its parent Config
-	"""
-	return DefaultLogger(handle=_ohbother.ohbother_NewDefaultLogger(cfg.handle))
+	return Config(handle=_ohbother.ohbother_NewDefaultConfig(iface, srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, bpf, SnapLen, Promisc, BufferSize, ImmediateMode))
 
 
 # ---- Functions ---
+def DeleteSliceBytes(handle, goRun=False):
+	"""DeleteSliceBytes(long handle) 
+	
+	DeleteSliceBytes removes a byte slice from the registry
+	"""
+	_ohbother.ohbother_DeleteSliceBytes(handle, goRun)
+def LogDebug(format, goRun=False, *args):
+	"""LogDebug(str format, []str args) 
+	
+	Add to config.go
+	"""
+	args = Slice_interface_(args)
+	_ohbother.ohbother_LogDebug(format, args.handle, goRun)
+def LogError(format, goRun=False, *args):
+	"""LogError(str format, []str args) """
+	args = Slice_interface_(args)
+	_ohbother.ohbother_LogError(format, args.handle, goRun)
+def LogWarn(format, goRun=False, *args):
+	"""LogWarn(str format, []str args) """
+	args = Slice_interface_(args)
+	_ohbother.ohbother_LogWarn(format, args.handle, goRun)
+def BenchmarkSend(cfg, packetCount, payloadSize, rateLimit):
+	"""BenchmarkSend(object cfg, int packetCount, int payloadSize, int rateLimit) float, str"""
+	return _ohbother.ohbother_BenchmarkSend(cfg.handle, packetCount, payloadSize, rateLimit)
 def PayloadNative(pyPayload):
 	"""PayloadNative(str pyPayload) [][]int
 	
 	PayloadNative converts various payload formats to [][]byte
 	"""
 	return Slice_Slice_byte(handle=_ohbother.ohbother_PayloadNative(pyPayload))
+def ReceivePacketsByCountSync(cfg, count, timeout):
+	"""ReceivePacketsByCountSync(object cfg, int count, float timeout) [][]int, str
+	
+	ReceivePacketsByCountSync is a synchronous wrapper around CallReceivePacketsByCount.
+	It collects UDP packets until 'count' packets are received or the optional timeout (in seconds) is reached.
+	"""
+	return Slice_Slice_byte(handle=_ohbother.ohbother_ReceivePacketsByCountSync(cfg.handle, count, timeout))
+def SendByteArrays(cfg, bytePayloads, rateLimit):
+	"""SendByteArrays(object cfg, [][]int bytePayloads, int rateLimit) str
+	
+	SendByteArrays accepts a direct [][]byte type for Python integration
+	"""
+	return _ohbother.ohbother_SendByteArrays(cfg.handle, bytePayloads.handle, rateLimit)
+def SendPacket(cfg, payload, rateLimit):
+	"""SendPacket(object cfg, []int payload, int rateLimit) str
+	
+	SendPacket transmits a single UDP packet
+	"""
+	return _ohbother.ohbother_SendPacket(cfg.handle, payload.handle, rateLimit)
+def LogInfo(format, goRun=False, *args):
+	"""LogInfo(str format, []str args) """
+	args = Slice_interface_(args)
+	_ohbother.ohbother_LogInfo(format, args.handle, goRun)
+def NewSliceByteFromBytes(data):
+	"""NewSliceByteFromBytes([]int data) long
+	
+	NewSliceByteFromBytes creates a new byte slice in Go memory
+	"""
+	return _ohbother.ohbother_NewSliceByteFromBytes(data.handle)
 def ReceivePacketsByTimeSync(cfg, duration):
 	"""ReceivePacketsByTimeSync(object cfg, float duration) [][]int, str
 	
@@ -1641,64 +1694,11 @@ def SendPackets(cfg, rawPayloads, rateLimit):
 	SendPackets transmits multiple packets with optional rate limiting
 	"""
 	return _ohbother.ohbother_SendPackets(cfg.handle, rawPayloads, rateLimit)
-def SendByteArrays(cfg, bytePayloads, rateLimit):
-	"""SendByteArrays(object cfg, [][]int bytePayloads, int rateLimit) str
-	
-	SendByteArrays accepts a direct [][]byte type for Python integration
-	"""
-	return _ohbother.ohbother_SendByteArrays(cfg.handle, bytePayloads.handle, rateLimit)
-def SendPacket(cfg, payload, rateLimit):
-	"""SendPacket(object cfg, []int payload, int rateLimit) str
-	
-	SendPacket transmits a single UDP packet
-	"""
-	return _ohbother.ohbother_SendPacket(cfg.handle, payload.handle, rateLimit)
-def LogError(format, goRun=False, *args):
-	"""LogError(str format, []str args) """
-	args = Slice_interface_(args)
-	_ohbother.ohbother_LogError(format, args.handle, goRun)
-def LogInfo(format, goRun=False, *args):
-	"""LogInfo(str format, []str args) """
-	args = Slice_interface_(args)
-	_ohbother.ohbother_LogInfo(format, args.handle, goRun)
-def LogWarn(format, goRun=False, *args):
-	"""LogWarn(str format, []str args) """
-	args = Slice_interface_(args)
-	_ohbother.ohbother_LogWarn(format, args.handle, goRun)
-def NewSliceByteFromBytes(data):
-	"""NewSliceByteFromBytes([]int data) long
-	
-	NewSliceByteFromBytes creates a new byte slice in Go memory
-	"""
-	return _ohbother.ohbother_NewSliceByteFromBytes(data.handle)
-def DeleteSliceBytes(handle, goRun=False):
-	"""DeleteSliceBytes(long handle) 
-	
-	DeleteSliceBytes removes a byte slice from the registry
-	"""
-	_ohbother.ohbother_DeleteSliceBytes(handle, goRun)
-def ReceivePacketsByCountSync(cfg, count, timeout):
-	"""ReceivePacketsByCountSync(object cfg, int count, float timeout) [][]int, str
-	
-	ReceivePacketsByCountSync is a synchronous wrapper around CallReceivePacketsByCount.
-	It collects UDP packets until 'count' packets are received or the optional timeout (in seconds) is reached.
-	"""
-	return Slice_Slice_byte(handle=_ohbother.ohbother_ReceivePacketsByCountSync(cfg.handle, count, timeout))
 def BatchConvertPythonBytesToSlices(rawBytes, numWorkers):
 	"""BatchConvertPythonBytesToSlices([][]int rawBytes, int numWorkers) []long
 	
 	BatchConvertPythonBytesToSlices converts a list of Python byte arrays to Go handles
 	"""
 	return go.Slice_int64(handle=_ohbother.ohbother_BatchConvertPythonBytesToSlices(rawBytes.handle, numWorkers))
-def BenchmarkSend(cfg, packetCount, payloadSize, rateLimit):
-	"""BenchmarkSend(object cfg, int packetCount, int payloadSize, int rateLimit) float, str"""
-	return _ohbother.ohbother_BenchmarkSend(cfg.handle, packetCount, payloadSize, rateLimit)
-def LogDebug(format, goRun=False, *args):
-	"""LogDebug(str format, []str args) 
-	
-	Add to config.go
-	"""
-	args = Slice_interface_(args)
-	_ohbother.ohbother_LogDebug(format, args.handle, goRun)
 
 
