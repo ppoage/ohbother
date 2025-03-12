@@ -24,6 +24,7 @@ from .generated.ohbother import (
 
 from .generated.go import (
     Slice_byte, 
+    Slice_int,
     nil,
     HardwareAddr
 )
@@ -31,6 +32,7 @@ from .generated.go import (
 
 from .config import Config, MultiStreamConfig
 from .utilities import pass_bytes_to_go
+from .parallel_utils import parallel_flatten_byte_arrays, prepare_flattened_data_for_go
 
 
 @dataclass
@@ -229,17 +231,15 @@ class MultiStreamSender:
         
         start_time = time.perf_counter()
         
+        batch_size = 100_000
+
         # Convert if needed
-        if convert:
+        if isinstance(payloads[0], bytes):
             converted = self.fast_convert_payloads(payloads)
-        else:
-            # Assume already converted
+        elif isinstance(payloads[0], Slice_byte):
             converted = payloads
-        
-        # Add in batches to avoid potential GIL issues
-        batch_size = 100_000  # Add 100k at a time
-        added_count = 0
-        
+        else:
+            raise ValueError(f"Unknown payload type: {type(payloads[0])}")
         for i in range(0, len(converted), batch_size):
             batch = converted[i:i+batch_size]
             for payload in batch:
@@ -249,6 +249,61 @@ class MultiStreamSender:
         duration = time.perf_counter() - start_time
         print(f"Added {added_count:,} payloads in {duration:.3f}s "
               f"({added_count/duration:,.0f}/s)", file=sys.stderr, flush=True)
+        
+        return added_count
+        
+    def add_batch_payloads_flat(self, payloads: List[bytes], num_workers: int = None, perf_measure: bool = False) -> int:
+        """
+        Add multiple payloads in one batch using efficient flattening.
+        
+        This method uses a flattened representation to efficiently transfer data
+        across the Python-Go boundary, which can be significantly faster for
+        large datasets.
+        
+        Args:
+            payloads: List of byte arrays to add
+            num_workers: Number of Python processes to use for flattening
+                         (defaults to CPU count - 1)
+        
+        Returns:
+            Number of payloads added
+        """
+        if not payloads:
+            return 0
+        
+        start_time = time.perf_counter()
+        
+        # Step 1: Flatten the data using parallel processing
+        if perf_measure: print(f"Flattening {len(payloads):,} payloads...", file=sys.stderr, flush=True)
+        flat_data, offsets = parallel_flatten_byte_arrays(payloads, num_workers)
+        flatten_time = time.perf_counter() - start_time
+        if perf_measure: print(f"Flattened {len(payloads):,} payloads into {len(flat_data):,} bytes with {len(offsets):,} offset entries "
+              f"in {flatten_time:.3f}s ({len(payloads)/flatten_time:,.0f}/s)", 
+              file=sys.stderr, flush=True)
+        
+        # Step 2: Convert to Go types
+        convert_start = time.perf_counter()
+        go_flat_data, go_offsets = prepare_flattened_data_for_go(flat_data, offsets)
+        convert_time = time.perf_counter() - convert_start
+        if perf_measure: print(f"Converted to Go types in {convert_time:.3f}s", file=sys.stderr, flush=True)
+        
+        # Step 3: Add to sender using the flattened method
+        add_start = time.perf_counter()
+        added_count = self._sender.AddPayloadsFlat(go_flat_data, go_offsets)
+        add_time = time.perf_counter() - add_start
+        
+        if not perf_measure: 
+            return added_count
+        # Calculate total time and rate
+        total_time = time.perf_counter() - start_time
+        print(f"Added {added_count:,} payloads using flattened approach in {total_time:.3f}s "
+              f"({added_count/total_time:,.0f}/s)", file=sys.stderr, flush=True)
+        print(f"  - Flatten: {flatten_time:.3f}s ({flatten_time/total_time*100:.1f}%)", 
+              file=sys.stderr, flush=True)
+        print(f"  - Convert: {convert_time:.3f}s ({convert_time/total_time*100:.1f}%)", 
+              file=sys.stderr, flush=True)
+        print(f"  - Add:     {add_time:.3f}s ({add_time/total_time*100:.1f}%)", 
+              file=sys.stderr, flush=True)
         
         return added_count
 

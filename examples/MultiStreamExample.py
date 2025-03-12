@@ -18,9 +18,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Import from our new library interface
 import ohbother
 from ohbother.config import Config, create_default_config, create_default_multi_stream_config
+from ohbother.config import create_default_config, MultiStreamConfig
 from ohbother.transmit import MultiStreamSender
 from ohbother.receive import ContinuousPacketReceiver
 from ohbother.utilities import pass_bytes_to_go
+
 
 # Network configuration
 SRC_MAC = "1a:c0:9f:b8:84:45"
@@ -244,66 +246,67 @@ def run_multistream(
     print(f"Generating {count} payloads of size {size} with pattern '{pattern}'...")
     payloads = generate_pattern_payloads(count, size, pattern, gen_workers)
 
-    # Create the multi-stream configuration
-    stream_config = create_default_multi_stream_config(
+    # Create multi-stream configuration
+    stream_config = MultiStreamConfig(
         packet_workers=workers,
         stream_count=streams,
-        rate_limit=RATE_LIMIT,
+        channel_buffer_size=1000,
+        report_interval=10000,
+        enable_cpu_pinning=True,
         disable_ordering=True,
-        turnstile_burst=1,
-        enable_metrics=False,
-        enable_cpu_pinning=False
+        turnstile_burst=16,
+        enable_metrics=True,
+        rate_limit=RATE_LIMIT  # No rate limit
     )
-    
     # Create the multi-stream sender
     sender = MultiStreamSender(config, stream_config)
+
+    
     
     # Start the sender
-    with sender:
-        print(f"Starting transmission of {count} packets...")
+    #with sender:
+    print(f"Starting transmission of {count} packets...")
+    
+    # Send the packets across all streams - with detailed timing
+
+
+
+    
+    t0_add = time.perf_counter()
+    print("Converting and adding payloads to sender...")
+    added = sender.add_batch_payloads_flat(payloads, num_workers=workers)
+    # sender.add_payloads(_payloads)
+    add_time = time.perf_counter() - t0_add
+    add_rate = added / add_time if add_time > 0 else 0
+    print(f"Payloads added: {added:,} payloads in {add_time:.3f}s ({add_rate:.0f}/s)")
+    
+    t0_send = time.perf_counter()
+    print("Starting packet transmission...")
+    sender.send()
+    sender.flush()
+    # Process and display results
+    #process_results(sender, count)
+    metrics = sender.metrics
+    print(f"Sent {metrics['packets_sent']:,} packets")
+    # Display CPU pinning information
+    if stream_config.enable_cpu_pinning:
+        print("CPU pinning is enabled")
         
-        # Send the packets across all streams - with detailed timing
-        t0_convert = time.perf_counter()
-        print("Converting payloads to Go format...")
-        _payloads = sender.fast_convert_payloads(payloads)
-        convert_time = time.perf_counter() - t0_convert
-        convert_rate = len(_payloads) / convert_time if convert_time > 0 else 0
-        print(f"Conversion complete: {len(_payloads):,} payloads in {convert_time:.3f}s ({convert_rate:.0f}/s)")
-        
-        t0_add = time.perf_counter()
-        print("Adding payloads to sender...")
-        sender.add_payloads(_payloads)
-        add_time = time.perf_counter() - t0_add
-        add_rate = len(_payloads) / add_time if add_time > 0 else 0
-        print(f"Payloads added: {len(_payloads):,} payloads in {add_time:.3f}s ({add_rate:.0f}/s)")
-        
-        t0_send = time.perf_counter()
-        print("Starting packet transmission...")
-        sender.send()
-        
-        # Process and display results
-        process_results(sender, count)
-        
-        # Display CPU pinning information
-        if stream_config.enable_cpu_pinning:
-            print("CPU pinning is enabled")
-            
-        # Flush remaining packets
-        print("Flushing remaining packets...")
-        sender.flush()
-        
-        send_time = time.perf_counter() - t0_send
+    # Flush remaining packets
+    print("Flushing remaining packets...")
+    sender.flush()
+    
+    send_time = time.perf_counter() - t0_send
         
     # Clean up
     if receiver:
         receiver.close()
 
     # Performance summary
-    total_time = convert_time + add_time + send_time
+    total_time =  add_time + send_time
     print("\n=== Performance Summary ===")
-    print(f"Conversion: {convert_time:.3f}s ({convert_time/total_time*100:.1f}%)")
-    print(f"Addition: {add_time:.3f}s ({add_time/total_time*100:.1f}%)")
-    print(f"Sending: {send_time:.3f}s ({send_time/total_time*100:.1f}%)")
+    print(f"Convert & Addition: {add_time:.3f}s ({add_time/total_time*100:.1f}%)")
+    print(f"Sending Time: {send_time:.3f}s ({send_time/total_time*100:.1f}%)")
     print(f"Total throughput: {count/total_time:.0f} packets/second")
 
     return sender

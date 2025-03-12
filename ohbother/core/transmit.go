@@ -1113,3 +1113,22 @@ func (ms *MultiStreamSender) FastConvertPayloads(payloads [][]byte) [][]byte {
 
 	return results
 }
+
+// AddPayloadsFlat adds multiple payloads from a flattened representation
+// Exported to Python - uses compatible types ([]byte and []int)
+func (ms *MultiStreamSender) AddPayloadsFlat(flatData []byte, offsets []int) int {
+	// Reconstruct the byte slices
+	payloads := ReconstructByteArrays(flatData, offsets)
+
+	// Add each payload to the sender
+	count := 0
+	for _, payload := range payloads {
+		ms.AddPayload(payload)
+		count++
+	}
+
+	LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets)\n",
+		count, len(flatData), len(offsets))
+
+	return count
+}

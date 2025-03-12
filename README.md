@@ -140,3 +140,6 @@ Python 3.10+
 Go 1.24+ (for building from source)
 libpcap development headers (for Linux)
 npcap/winpcap .dll in sys32 or /user folder (for Windows)
+
+### Dev Build:
+python build.py --dev && python dev_cleanup.py

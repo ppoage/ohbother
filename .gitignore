@@ -6,3 +6,7 @@ python/
 *.backup
 *.whl
 *dist/
+build/
+.dev/
+/ohbother/generated/
+*__pycache__/

@@ -155,13 +155,24 @@ def build_dev(env):
     cmd = [
         "gopy",
         "build",
-        "-build-tags=" + "GOEXPERIMENT=cgocheck2",
+        #"-build-tags=" + "GOEXPERIMENT=cgocheck2",
         "-output=" + str(temp_dir.resolve()),
         "-no-make=true",
         "-vm=" + python_path,
         ".",
     ]
     try:
+        _clean_cache = "go clean -cache"
+        _tidy = "go mod tidy"
+        print(f"Running go mod tidy...")
+        tidy_result = subprocess.run(_tidy,cwd=working_dir, shell=True, check=True)
+        print(tidy_result.stdout)
+
+        # print(f"Running go clean -cache...")
+        # clean_result = subprocess.run(_clean_cache,cwd=working_dir, shell=True, check=True)
+        # print(clean_result.stdout)
+
+        print(f"Running gopy build...")
         result = subprocess.run(
             cmd,
             cwd=working_dir,
@@ -201,74 +212,6 @@ def build_dev(env):
         raise
     
     print("Development build completed successfully")
-
-
-def make_wheel_dev(python_version='3.12', output_dir='wheelhouse'):
-    """
-    Build wheels locally using cibuildwheel via pipx for development testing.
-    
-    This function replicates what the GitHub Actions workflow does but locally.
-    
-    Args:
-        python_version (str): Python version to build for ('3.10', '3.11', '3.12')
-        output_dir (str): Directory to output wheels to
-    """
-    import os
-    import platform
-    import subprocess
-    import tempfile
-    import shutil
-    from pathlib import Path
-    
-    print(f"Building wheels for Python {python_version}")
-    
-    
-    # Determine Python version tag
-    py_tag = f"cp{python_version.replace('.', '')}"
-    
-    # Set up environment variables
-    env = os.environ.copy()
-    
-    # Platform specific settings
-    system = platform.system()
-    current_dir = os.getcwd()
-    
-    if system == "Windows":
-        # Windows needs PATH set to include the generated directory
-        env["PATH"] = f"{current_dir}\\ohbother\\generated;{env.get('PATH', '')}"
-    elif system == "Darwin":  # macOS
-        env["DYLD_LIBRARY_PATH"] = f"{env.get('DYLD_LIBRARY_PATH', '')}:{current_dir}/ohbother/generated"
-        env["MACOSX_DEPLOYMENT_TARGET"] = "15.0"
-    else:  # Linux
-        env["LD_LIBRARY_PATH"] = f"{env.get('LD_LIBRARY_PATH', '')}:{current_dir}/ohbother/generated"
-    
-    # Common environment variables
-    env["CIBW_BUILD_FRONTEND"] = "build; args:" # default: "pip"
-    env["CIBW_BUILD"] = f"{py_tag}*"
-    env["CIBW_SKIP"] = "*-musllinux_* *-manylinux_i686 *-win32"
-    env["CIBW_TEST_SKIP"] = "*"
-    env["CIBW_BEFORE_BUILD"] = "pip install setuptools wheel"
-    env["CIBW_BUILD_VERBOSITY"] = "1"
-    env["PIP_NO_BUILD_ISOLATION"] = "false"
-    
-    if system == "Darwin":
-        env["CIBW_ARCHS_MACOS"] = "arm64"
-    
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Run cibuildwheel using pipx
-    print(f"Running cibuildwheel via pipx...")
-    cmd = ["pipx", "run", "cibuildwheel", "--output-dir", output_dir]
-    
-    try:
-        result = subprocess.run(cmd, env=env, check=True)
-        print(f"Wheels built successfully and saved to {output_dir}/")
-        return 0
-    except subprocess.CalledProcessError as e:
-        print(f"Error building wheels: {e}")
-        return e.returncode
-
 
 def make_poetry_wheel(output_dir='dist'):
     """
@@ -335,11 +278,6 @@ def main():
         help="Run in development mode with more detailed output"
     )
     parser.add_argument(
-        "--wheel", 
-        action="store_true", 
-        help="Build wheels for distribution"
-    )
-    parser.add_argument(
         "--poetry", 
         action="store_true", 
         help="Build wheel with poetry"
@@ -358,8 +296,6 @@ def main():
     # Run appropriate build
     if args.dev:
         build_dev(env)
-    elif args.wheel:
-        make_wheel_dev()
     elif args.poetry:
         make_poetry_wheel()
     else:
