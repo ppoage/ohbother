@@ -42,7 +42,6 @@ func init() {
 }
 
 // newSliceByteFromBytes creates a new byte slice in Go memory
-// Internal function - not exported to Python
 func newSliceByteFromBytes(data []byte) int64 {
 	// Make a copy to ensure memory safety
 	copied := make([]byte, len(data))
@@ -61,7 +60,6 @@ func newSliceByteFromBytes(data []byte) int64 {
 }
 
 // getSliceBytes retrieves a byte slice by its handle
-// Internal function - not exported to Python
 func getSliceBytes(handle int64) ([]byte, error) {
 	shard := int(handle) % registryShards
 	shardedRegistry[shard].RLock()
@@ -75,7 +73,6 @@ func getSliceBytes(handle int64) ([]byte, error) {
 }
 
 // deleteSliceBytes removes a byte slice from the registry
-// Internal function - not exported to Python
 func deleteSliceBytes(handle int64) {
 	shard := int(handle) % registryShards
 	shardedRegistry[shard].Lock()
@@ -84,7 +81,6 @@ func deleteSliceBytes(handle int64) {
 }
 
 // GetRegistryStats returns statistics about the registry
-// Exported to Python - uses compatible return type
 func GetRegistryStats() *RegistryStats {
 	stats := &RegistryStats{
 		ShardCount: registryShards,
@@ -108,7 +104,6 @@ func GetRegistryStats() *RegistryStats {
 }
 
 // ClearRegistry removes all items from the registry
-// Exported to Python - uses compatible return type
 func ClearRegistry() {
 	for i := 0; i < registryShards; i++ {
 		shardedRegistry[i].Lock()
@@ -122,9 +117,7 @@ func ClearRegistry() {
 	runtime.GC()
 }
 
-// batchStoreByteSlices stores multiple byte slices in the registry
-// and returns their handles
-// Internal function - not exported to Python
+// batchStoreByteSlices stores multiple byte slices in the registry and returns their handles
 func batchStoreByteSlices(slices [][]byte) []int64 {
 	if len(slices) == 0 {
 		return []int64{} // Return empty slice instead of nil for better Python compatibility
@@ -177,13 +170,11 @@ func batchStoreByteSlices(slices [][]byte) []int64 {
 }
 
 // StoreByteSlice stores a single byte slice in the registry and returns its handle
-// Exported to Python - uses compatible types ([]byte)
 func StoreByteSlice(data []byte) int64 {
 	return newSliceByteFromBytes(data)
 }
 
 // GetByteSlice retrieves a byte slice from the registry by its handle
-// Exported to Python - uses compatible types (int64)
 func GetByteSlice(handle int64) []byte {
 	data, err := getSliceBytes(handle)
 	if err != nil {
@@ -193,13 +184,11 @@ func GetByteSlice(handle int64) []byte {
 }
 
 // DeleteByteSlice removes a byte slice from the registry
-// Exported to Python - uses compatible types (int64)
 func DeleteByteSlice(handle int64) {
 	deleteSliceBytes(handle)
 }
 
 // ReconstructByteArrays rebuilds a [][]byte from flattened data and offsets
-// Exported to Python - uses compatible types ([]byte and []int)
 func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 	// Offsets come in pairs: (start, length)
 	numArrays := len(offsets) / 2
@@ -220,7 +209,6 @@ func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 }
 
 // BatchStoreByteSlicesFlat stores multiple byte slices from a flattened representation
-// Exported to Python - uses compatible types ([]byte and []int)
 func BatchStoreByteSlicesFlat(flatData []byte, offsets []int) []int64 {
 	// Reconstruct the byte slices
 	slices := ReconstructByteArrays(flatData, offsets)
@@ -230,7 +218,6 @@ func BatchStoreByteSlicesFlat(flatData []byte, offsets []int) []int64 {
 }
 
 // BatchConvertPythonBytesToSlices converts a list of Python byte arrays to Go handles
-// Exported to Python - uses compatible types
 func BatchConvertPythonBytesToSlices(rawBytes [][]byte, numWorkers int) []int64 {
 	size := len(rawBytes)
 	if size == 0 {

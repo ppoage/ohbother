@@ -35,10 +35,11 @@ INTERFACE = "en0"
 BPF_FILTER = f"udp and dst port {DST_PORT}"
 
 # Test parameters
-PACKET_COUNT = 35_000_000 #500_000
-#PACKET_COUNT = 500_000
-RATE_LIMIT = 100000
-PAYLOAD_SIZE = 60
+#PACKET_COUNT = 35_000_000 #500_000
+PACKET_COUNT = 2_000_000
+RATE_LIMIT = 0
+PAYLOAD_SIZE = 1200
+#PAYLOAD_SIZE = 60
 WORKER_COUNT = 12
 STREAM_COUNT = 4
 SNAP_LEN = 1500
@@ -251,7 +252,7 @@ def run_multistream(
         packet_workers=workers,
         stream_count=streams,
         channel_buffer_size=1000,
-        report_interval=10000,
+        report_interval=1000,
         enable_cpu_pinning=True,
         disable_ordering=True,
         turnstile_burst=16,
@@ -261,36 +262,27 @@ def run_multistream(
     # Create the multi-stream sender
     sender = MultiStreamSender(config, stream_config)
 
-    
-    
-    # Start the sender
-    #with sender:
     print(f"Starting transmission of {count} packets...")
     
     # Send the packets across all streams - with detailed timing
 
-
-
-    
     t0_add = time.perf_counter()
     print("Converting and adding payloads to sender...")
     added = sender.add_batch_payloads_flat(payloads, num_workers=workers)
-    # sender.add_payloads(_payloads)
     add_time = time.perf_counter() - t0_add
     add_rate = added / add_time if add_time > 0 else 0
     print(f"Payloads added: {added:,} payloads in {add_time:.3f}s ({add_rate:.0f}/s)")
-    
+
     t0_send = time.perf_counter()
     print("Starting packet transmission...")
     sender.send()
     sender.flush()
     # Process and display results
-    #process_results(sender, count)
+    process_results(sender, count)
     metrics = sender.metrics
     print(f"Sent {metrics['packets_sent']:,} packets")
     # Display CPU pinning information
-    if stream_config.enable_cpu_pinning:
-        print("CPU pinning is enabled")
+    if stream_config.enable_cpu_pinning: print("CPU pinning is enabled")
         
     # Flush remaining packets
     print("Flushing remaining packets...")
