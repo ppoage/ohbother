@@ -16,12 +16,21 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+#include = [
+#    { path = "/ohbother/generated/", format = "sdist" }
+#]
+
 [tool.poetry.dependencies]
 python = ">=3.10"
 
 # Include everything under ohbother
 [[tool.poetry.include]]
 path = "ohbother/**/*"
+format = ["wheel"]
+
+[[tool.poetry.include]]
+path = "ohbother/generated/**"
+format = ["wheel"]
 
 # Include compiled extension modules (so, dylib, dll, pyd, etc.)
 #[[tool.poetry.include]]

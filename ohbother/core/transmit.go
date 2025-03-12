@@ -1117,18 +1117,66 @@ func (ms *MultiStreamSender) FastConvertPayloads(payloads [][]byte) [][]byte {
 // AddPayloadsFlat adds multiple payloads from a flattened representation
 // Exported to Python - uses compatible types ([]byte and []int)
 func (ms *MultiStreamSender) AddPayloadsFlat(flatData []byte, offsets []int) int {
-	// Reconstruct the byte slices
+	// Reconstruct the byte slices using optimized function
 	payloads := ReconstructByteArrays(flatData, offsets)
+	count := len(payloads)
 
-	// Add each payload to the sender
-	count := 0
-	for _, payload := range payloads {
-		ms.AddPayload(payload)
-		count++
+	// For small payload counts, add sequentially to avoid goroutine overhead
+	if count < 100 {
+		for _, payload := range payloads {
+			ms.AddPayload(payload)
+		}
+
+		LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets)\n",
+			count, len(flatData), len(offsets))
+
+		return count
 	}
 
-	LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets)\n",
-		count, len(flatData), len(offsets))
+	// For larger payload sets, use parallel processing
+	var wg sync.WaitGroup
+
+	// Calculate optimal worker count
+	numWorkers := runtime.NumCPU()
+	if numWorkers > 8 {
+		numWorkers = 8
+	}
+
+	// Ensure we don't create more workers than needed
+	if numWorkers > count {
+		numWorkers = count
+	}
+
+	// Calculate items per worker
+	itemsPerWorker := (count + numWorkers - 1) / numWorkers
+
+	for w := 0; w < numWorkers; w++ {
+		wg.Add(1)
+
+		startIdx := w * itemsPerWorker
+		endIdx := startIdx + itemsPerWorker
+		if endIdx > count {
+			endIdx = count
+		}
+
+		go func(start, end int) {
+			defer wg.Done()
+
+			// Process a batch of payloads
+			for i := start; i < end; i++ {
+				if payloads[i] != nil {
+					// Make a copy for memory safety
+					// (AddPayload already makes a copy, but we ensure consistency)
+					ms.AddPayload(payloads[i])
+				}
+			}
+		}(startIdx, endIdx)
+	}
+
+	wg.Wait()
+
+	LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets) using %d workers\n",
+		count, len(flatData), len(offsets), numWorkers)
 
 	return count
 }

@@ -268,7 +268,7 @@ def run_multistream(
 
     t0_add = time.perf_counter()
     print("Converting and adding payloads to sender...")
-    added = sender.add_batch_payloads_flat(payloads, num_workers=workers)
+    added = sender.add_batch_payloads_flat(payloads, num_workers=workers, perf_measure=True)
     add_time = time.perf_counter() - t0_add
     add_rate = added / add_time if add_time > 0 else 0
     print(f"Payloads added: {added:,} payloads in {add_time:.3f}s ({add_rate:.0f}/s)")

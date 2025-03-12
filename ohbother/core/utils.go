@@ -192,14 +192,83 @@ func DeleteByteSlice(handle int64) {
 func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 	// Offsets come in pairs: (start, length)
 	numArrays := len(offsets) / 2
+	if numArrays == 0 {
+		return [][]byte{}
+	}
+
+	// For small arrays, use the sequential version to avoid goroutine overhead
+	if numArrays < 100 {
+		return reconstructSequential(flatData, offsets, numArrays)
+	}
+
+	result := make([][]byte, numArrays)
+
+	// Calculate optimal worker count - cap at reasonable maximum
+	numWorkers := runtime.NumCPU()
+	if numWorkers > 8 {
+		numWorkers = 8
+	}
+
+	// Ensure we don't create more workers than needed
+	if numWorkers > numArrays {
+		numWorkers = numArrays
+	}
+
+	var wg sync.WaitGroup
+
+	// Calculate workload per worker
+	itemsPerWorker := (numArrays + numWorkers - 1) / numWorkers
+
+	for w := 0; w < numWorkers; w++ {
+		wg.Add(1)
+
+		startIdx := w * itemsPerWorker
+		endIdx := startIdx + itemsPerWorker
+		if endIdx > numArrays {
+			endIdx = numArrays
+		}
+
+		go func(start, end int) {
+			defer wg.Done()
+
+			// Each worker processes its assigned range
+			for i := start; i < end; i++ {
+				startOffset := offsets[i*2]
+				length := offsets[i*2+1]
+
+				// Check bounds to avoid panics
+				if startOffset < 0 || length <= 0 || startOffset+length > len(flatData) {
+					// Handle invalid offsets gracefully
+					result[i] = make([]byte, 0)
+					continue
+				}
+
+				// Create and copy the slice
+				slice := make([]byte, length)
+				copy(slice, flatData[startOffset:startOffset+length])
+				result[i] = slice
+			}
+		}(startIdx, endIdx)
+	}
+
+	wg.Wait()
+	return result
+}
+
+// Sequential version for small arrays or fallback
+func reconstructSequential(flatData []byte, offsets []int, numArrays int) [][]byte {
 	result := make([][]byte, numArrays)
 
 	for i := 0; i < numArrays; i++ {
 		start := offsets[i*2]
 		length := offsets[i*2+1]
 
-		// Create a slice that references the portion of flatData
-		// Make a copy to ensure memory safety
+		// Bounds checking
+		if start < 0 || length <= 0 || start+length > len(flatData) {
+			result[i] = make([]byte, 0)
+			continue
+		}
+
 		slice := make([]byte, length)
 		copy(slice, flatData[start:start+length])
 		result[i] = slice
