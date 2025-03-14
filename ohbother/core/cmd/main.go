@@ -2,19 +2,18 @@ package main
 
 import (
 	"fmt"
-	"ohbother/src/config"
-	"ohbother/src/transmit"
+	"ohbother"
 	"runtime"
 	"sort"
 	"sync"
 	"time"
 )
 
-type Config = config.Config
+type Config = ohbother.Config
 
-var NewMultiStreamSender = transmit.NewMultiStreamSender
-var NewDefaultConfig = config.NewDefaultConfig
-var LogDebug = config.LogDebug
+var NewMultiStreamSender = ohbother.NewMultiStreamSender
+var NewDefaultConfig = ohbother.NewDefaultConfig
+var LogDebug = ohbother.LogDebug
 
 // Constants for maximum load
 const (

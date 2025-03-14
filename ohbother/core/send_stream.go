@@ -1,4 +1,4 @@
-package transmit
+package ohbother
 
 import (
 	"context"
@@ -12,14 +12,7 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcap"
-
-	"ohbother/src/config"
-	"ohbother/src/packet"
-	"ohbother/src/utils"
 )
-
-var ReconstructByteArrays = utils.ReconstructByteArrays
-var NewDefaultConfig = config.NewDefaultConfig
 
 // MultiStreamConfig holds configuration for the multi-stream sender
 type MultiStreamConfig struct {
@@ -33,23 +26,9 @@ type MultiStreamConfig struct {
 	EnableMetrics    bool // Enable lightweight performance metrics
 }
 
-// NewDefaultConfig creates a MultiStreamConfig with sensible defaults
-func NewMultiStreamConfig() *MultiStreamConfig {
-	return &MultiStreamConfig{
-		PacketWorkers:    runtime.NumCPU(),
-		StreamCount:      4,
-		ChannelBuffers:   1000,
-		ReportInterval:   1000,
-		EnableCPUPinning: false,
-		DisableOrdering:  false,
-		TurnstileBurst:   1,
-		EnableMetrics:    true,
-	}
-}
-
 // MultiStreamSender provides high-performance parallel packet sending
 type MultiStreamSender struct {
-	Cfg            *config.Config
+	Cfg            *Config
 	StreamConfig   *MultiStreamConfig
 	RateLimit      int
 	Payloads       [][]byte
@@ -72,11 +51,20 @@ type MultiStreamSender struct {
 }
 
 // NewMultiStreamSender creates a high-performance sender with worker pools
-func NewMultiStreamSender(cfg *config.Config, rateLimit int) *MultiStreamSender {
+func NewMultiStreamSender(cfg *Config, rateLimit int) *MultiStreamSender {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Use new package path
-	streamConfig := NewMultiStreamConfig()
+	// Default configuration with all fields initialized
+	streamConfig := &MultiStreamConfig{
+		PacketWorkers:    8,
+		StreamCount:      4,
+		ChannelBuffers:   1000,
+		ReportInterval:   1000,
+		EnableCPUPinning: false, // Default to false for wider compatibility
+		DisableOrdering:  false, // Default to ordered transmission
+		TurnstileBurst:   1,     // Default to single packet burst
+		EnableMetrics:    true,  // Default to metrics enabled
+	}
 
 	ms := &MultiStreamSender{
 		Cfg:            cfg,
@@ -133,7 +121,7 @@ func (ms *MultiStreamSender) SetStreamConfig(packetWorkers, streamCount, channel
 	}
 
 	// Log the configuration for debugging
-	config.LogDebug("MultiStreamSender configured with: workers=%d, streams=%d, buffers=%d, report=%d",
+	LogDebug("MultiStreamSender configured with: workers=%d, streams=%d, buffers=%d, report=%d",
 		ms.StreamConfig.PacketWorkers,
 		ms.StreamConfig.StreamCount,
 		ms.StreamConfig.ChannelBuffers,
@@ -319,7 +307,7 @@ func (ms *MultiStreamSender) sendPackets(streamID int, handle *pcap.Handle, in <
 	// Pin to CPU if enabled
 	if ms.StreamConfig.EnableCPUPinning {
 		cpuID := 1 + streamID // Skip CPU 0
-		if err := utils.PinToCPU(cpuID); err != nil {
+		if err := PinToCPU(cpuID); err != nil {
 			ms.reportError(-1, fmt.Errorf("stream %d: failed to pin to CPU %d: %v", streamID, cpuID, err))
 		}
 	}
@@ -855,7 +843,7 @@ func (ms *MultiStreamSender) AddPayloadsFlat(flatData []byte, offsets []int) int
 	// Reconstruct the byte slices using optimized function
 	payloads := ReconstructByteArrays(flatData, offsets)
 	count := len(payloads)
-	config.LogDebug("Adding flat payloads: %d payloads, %d bytes, %d offsets\n",
+	LogDebug("Adding flat payloads: %d payloads, %d bytes, %d offsets\n",
 		count, len(flatData), len(offsets))
 
 	// For small payload counts, add sequentially to avoid goroutine overhead
@@ -864,7 +852,7 @@ func (ms *MultiStreamSender) AddPayloadsFlat(flatData []byte, offsets []int) int
 			ms.AddPayload(payload)
 		}
 
-		config.LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets)\n",
+		LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets)\n",
 			count, len(flatData), len(offsets))
 
 		return count
@@ -912,7 +900,7 @@ func (ms *MultiStreamSender) AddPayloadsFlat(flatData []byte, offsets []int) int
 
 	wg.Wait()
 
-	config.LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets) using %d workers\n",
+	LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets) using %d workers\n",
 		count, len(flatData), len(offsets), numWorkers)
 
 	return count
@@ -1006,7 +994,7 @@ func RegisterFlattenedPayloads(sender *MultiStreamSender, flatData []byte, offse
 			// Memory safety - recover from OOM conditions
 			defer func() {
 				if r := recover(); r != nil {
-					config.LogDebug("Memory error in payload batch %d-%d: %v\n", batchStart, batchEnd, r)
+					LogDebug("Memory error in payload batch %d-%d: %v\n", batchStart, batchEnd, r)
 
 					// If we hit memory issues, process one by one as a fallback
 					for i := batchStart; i < batchEnd; i++ {
@@ -1023,7 +1011,7 @@ func RegisterFlattenedPayloads(sender *MultiStreamSender, flatData []byte, offse
 							defer func() {
 								if r := recover(); r != nil {
 									// Individual payload caused OOM, skip it
-									config.LogDebug("Skipping payload %d due to memory error: %v\n", i, r)
+									LogDebug("Skipping payload %d due to memory error: %v\n", i, r)
 								}
 							}()
 
@@ -1045,7 +1033,7 @@ func RegisterFlattenedPayloads(sender *MultiStreamSender, flatData []byte, offse
 			}()
 
 			// Try to process the batch normally
-			payloads := packet.ReconstructBatch(flatData, batchOffsets, batchEnd-batchStart)
+			payloads := ReconstructBatch(flatData, batchOffsets, batchEnd-batchStart)
 			for _, payload := range payloads {
 				if payload != nil && len(payload) > 0 {
 					sender.AddPayload(payload)
@@ -1060,7 +1048,7 @@ func RegisterFlattenedPayloads(sender *MultiStreamSender, flatData []byte, offse
 
 		// Periodic GC for very large datasets
 		if batchStart > 0 && batchStart%10000 == 0 {
-			config.LogDebug("Processed %d/%d payloads, triggering GC\n", batchStart, numArrays)
+			LogDebug("Processed %d/%d payloads, triggering GC\n", batchStart, numArrays)
 			runtime.GC()
 		}
 	}

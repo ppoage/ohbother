@@ -1,4 +1,4 @@
-package config
+package ohbother
 
 import (
 	"fmt"

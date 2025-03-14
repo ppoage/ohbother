@@ -1,4 +1,4 @@
-package transmit
+package ohbother
 
 import (
 	"context"
@@ -12,18 +12,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcap"
 	"golang.org/x/time/rate"
-
-	"ohbother/src/config"
-	"ohbother/src/receive"
 )
-
-type Config = config.Config
-type BytePacket = receive.BytePacket
-
-var LogDebug = config.LogDebug
-var LogInfo = config.LogInfo
-var LogWarn = config.LogWarn
-var LogError = config.LogError
 
 // Pool of reusable serialize buffers to reduce GC pressure
 var serializeBufferPool = sync.Pool{

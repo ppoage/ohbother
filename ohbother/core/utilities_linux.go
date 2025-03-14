@@ -1,6 +1,6 @@
 //go:build linux
 
-package utils
+package ohbother
 
 import (
 	"runtime"

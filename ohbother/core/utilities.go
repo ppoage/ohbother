@@ -1,4 +1,4 @@
-package utils
+package ohbother
 
 import (
 	"fmt"
@@ -6,8 +6,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"ohbother/src/config"
 )
 
 // Registry for byte slices with sharded locking
@@ -40,7 +38,7 @@ func init() {
 			data: make(map[int64][]byte),
 		}
 	}
-	config.LogDebug("Initialized registry with %d shards\n", registryShards)
+	LogDebug("Initialized registry with %d shards\n", registryShards)
 }
 
 // newSliceByteFromBytes creates a new byte slice in Go memory
@@ -218,7 +216,7 @@ func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 		// }
 		if startOffset < 0 || length <= 0 || startOffset+length > totalDataSize || length > maxSingleArraySize {
 			// Don't fail the whole operation, just log potential issue
-			config.LogDebug("Invalid array dimensions at index %d: offset=%d, length=%d, dataSize=%d\n",
+			LogDebug("Invalid array dimensions at index %d: offset=%d, length=%d, dataSize=%d\n",
 				i, startOffset, length, totalDataSize)
 		}
 	}
@@ -263,7 +261,7 @@ func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 			defer func() {
 				wg.Done()
 				if r := recover(); r != nil {
-					config.LogDebug("Panic in ReconstructByteArrays worker: %v\n", r)
+					LogDebug("Panic in ReconstructByteArrays worker: %v\n", r)
 					errorCount.Add(1)
 				}
 			}()
@@ -291,7 +289,7 @@ func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 	wg.Wait()
 
 	if errorCount.Load() > 0 {
-		config.LogDebug("ReconstructByteArrays encountered %d errors during processing\n", errorCount.Load())
+		LogDebug("ReconstructByteArrays encountered %d errors during processing\n", errorCount.Load())
 	}
 
 	return result
@@ -332,7 +330,7 @@ func BatchStoreByteSlicesFlat(flatData []byte, offsets []int) []int64 {
 func BatchConvertPythonBytesToSlices(rawBytes [][]byte, numWorkers int) []int64 {
 	size := len(rawBytes)
 	if size == 0 {
-		config.LogDebug("BatchConvertPythonBytesToSlices: No input bytes provided\n")
+		LogDebug("BatchConvertPythonBytesToSlices: No input bytes provided\n")
 		return []int64{}
 	}
 
@@ -347,7 +345,7 @@ func BatchConvertPythonBytesToSlices(rawBytes [][]byte, numWorkers int) []int64 
 		numWorkers = size
 	}
 
-	config.LogDebug("BatchConvertPythonBytesToSlices: Converting %d byte arrays with %d workers\n", size, numWorkers)
+	LogDebug("BatchConvertPythonBytesToSlices: Converting %d byte arrays with %d workers\n", size, numWorkers)
 
 	// Use a wait group to synchronize workers
 	var wg sync.WaitGroup
@@ -386,6 +384,6 @@ func BatchConvertPythonBytesToSlices(rawBytes [][]byte, numWorkers int) []int64 
 	// Wait for all goroutines to complete
 	wg.Wait()
 
-	config.LogDebug("BatchConvertPythonBytesToSlices: Completed converting %d byte arrays\n", size)
+	LogDebug("BatchConvertPythonBytesToSlices: Completed converting %d byte arrays\n", size)
 	return result
 }

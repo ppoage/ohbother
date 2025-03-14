@@ -147,7 +147,7 @@ def build_dev(env):
     
     # Use Python interpreter path
     python_path = sys.executable + "3.12"
-    working_dir = Path("ohbother/core/src").resolve()
+    working_dir = Path("ohbother/core").resolve()
     print(f"Working directory: {working_dir}")
     print(f"Using Python interpreter: {python_path}")
     

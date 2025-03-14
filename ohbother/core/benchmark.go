@@ -1,22 +1,10 @@
-package demo
+package ohbother
 
 import (
 	"crypto/rand"
 	"fmt"
 	"time"
-
-	"ohbother/src/config"
-	"ohbother/src/receive"
-	"ohbother/src/transmit"
 )
-
-type Config = config.Config
-type PacketReceiver = receive.PacketReceiver
-
-var LogDebug = config.LogDebug
-var LogInfo = config.LogInfo
-var LogWarn = config.LogWarn
-var LogError = config.LogError
 
 func BenchmarkSend(cfg *Config, packetCount int, payloadSize int, rateLimit int) (float64, error) {
 	// Debug configuration
@@ -42,7 +30,7 @@ func BenchmarkSend(cfg *Config, packetCount int, payloadSize int, rateLimit int)
 	start := time.Now()
 
 	// Call SendPacketsNative with strongly-typed [][]byte
-	if err := transmit.SendPacketsNative(cfg, payloads, rateLimit); err != nil {
+	if err := SendPacketsNative(cfg, payloads, rateLimit); err != nil {
 		return 0, err
 	}
 
@@ -55,5 +43,5 @@ func BenchmarkSend(cfg *Config, packetCount int, payloadSize int, rateLimit int)
 // and returns an AsyncReceiver pointer. Later, the caller can call Result() on the AsyncReceiver
 // to obtain the full slice of received UDP payloads (each a []byte) or an error.
 func BenchmarkReceiveAsync(cfg *Config, duration float64) *PacketReceiver {
-	return receive.PacketReceiverByTime(cfg, duration)
+	return PacketReceiverByTime(cfg, duration)
 }

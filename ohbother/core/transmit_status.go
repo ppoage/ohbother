@@ -1,4 +1,4 @@
-package transmit
+package ohbother
 
 // PacketSendResult represents the result of sending a packet
 type PacketSendResult struct {

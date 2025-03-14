@@ -13,11 +13,10 @@ from .generated.ohbother import (
     PacketConfig as GoPacketConfig,
     DebugOptions as GoDebugOptions,
     MultiStreamConfig as GoMultiStreamConfig, 
-    Logger
-    
+    Logger,
+    NewDefaultConfig
 )
 from .generated.go import GoClass, HardwareAddr
-#from .core import NewMultiStreamConfig 
 
 
 class PcapConfig:

@@ -17,7 +17,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import from our new library interface
 import ohbother
-from ohbother.config import Config, create_default_config, create_default_multi_stream_config
+from ohbother.config import Config, create_default_config
 from ohbother.config import create_default_config, MultiStreamConfig
 from ohbother.transmit import MultiStreamSender
 from ohbother.receive import ContinuousPacketReceiver

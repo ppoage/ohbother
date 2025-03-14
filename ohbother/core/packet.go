@@ -1,7 +1,6 @@
-package packet
+package ohbother
 
 import (
-	"ohbother/src/config"
 	"runtime"
 	"sync"
 )
@@ -37,7 +36,7 @@ func ReconstructBatch(flatData []byte, offsets []int, numArrays int) [][]byte {
 				defer func() {
 					wg.Done()
 					if r := recover(); r != nil {
-						config.LogDebug("Memory error in batch worker: %v\n", r)
+						LogDebug("Memory error in batch worker: %v\n", r)
 					}
 				}()
 
@@ -53,7 +52,7 @@ func ReconstructBatch(flatData []byte, offsets []int, numArrays int) [][]byte {
 
 					// Create slice with capacity check
 					if length > 100*1024*1024 { // 100MB sanity limit
-						config.LogDebug("Skipping oversized entry: %d bytes\n", length)
+						LogDebug("Skipping oversized entry: %d bytes\n", length)
 						result[i] = make([]byte, 0)
 						continue
 					}
