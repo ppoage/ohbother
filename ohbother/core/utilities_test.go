@@ -218,7 +218,7 @@ func BenchmarkReconstructByteArrays(b *testing.B) {
 	}
 }
 
-// TestParallelismEfficiency tests how well the function scales with more cores
+// TestParallelismEfficiency tests how well the function scales with more workers
 func TestParallelismEfficiency(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping parallelism efficiency test in short mode")
@@ -237,11 +237,15 @@ func TestParallelismEfficiency(t *testing.T) {
 		{"Huge", 10_000_000, 60},          // Extreme small payload case
 	}
 
-	// Test different CPU limits
-	cpuConfigs := []int{1, 2, 4, 8, runtime.NumCPU()}
+	// Test different worker counts
+	workerConfigs := []int{1, 2, 4, 8, runtime.NumCPU()}
 	if runtime.NumCPU() > 16 {
-		cpuConfigs = append(cpuConfigs, 16, runtime.NumCPU()/2)
+		workerConfigs = append(workerConfigs, 16, runtime.NumCPU()*2)
 	}
+
+	// Save the original worker count to restore later
+	originalWorkerCount := GetUtilWorkers()
+	defer SetUtilWorkers(originalWorkerCount) // Restore at the end
 
 	// Process each test case
 	for _, tc := range testCases {
@@ -265,14 +269,10 @@ func TestParallelismEfficiency(t *testing.T) {
 
 			results := make(map[int]time.Duration)
 
-			// Test each CPU configuration
-			for _, cpus := range cpuConfigs {
-				// Skip configurations that don't make sense for this machine
-				if cpus > runtime.NumCPU() {
-					continue
-				}
-
-				runtime.GOMAXPROCS(cpus)
+			// Test each worker configuration
+			for _, workers := range workerConfigs {
+				// Set the worker count for this test run
+				SetUtilWorkers(workers)
 
 				// Run 3 times and take the best result
 				var bestTime time.Duration = 1<<63 - 1 // Max duration
@@ -282,7 +282,7 @@ func TestParallelismEfficiency(t *testing.T) {
 					elapsed := time.Since(start)
 
 					if len(result) != tc.count {
-						t.Fatalf("Invalid result length with %d CPUs: %d", cpus, len(result))
+						t.Fatalf("Invalid result length with %d workers: %d", workers, len(result))
 					}
 
 					if elapsed < bestTime {
@@ -294,27 +294,24 @@ func TestParallelismEfficiency(t *testing.T) {
 					runtime.GC()
 				}
 
-				results[cpus] = bestTime
-				t.Logf("%s - CPUs: %d, Time: %v, Arrays/sec: %.2f, MB/sec: %.2f",
-					tc.name, cpus, bestTime,
+				results[workers] = bestTime
+				t.Logf("%s - Workers: %d, Time: %v, Arrays/sec: %.2f, MB/sec: %.2f",
+					tc.name, workers, bestTime,
 					float64(tc.count)/bestTime.Seconds(),
 					float64(totalSize)/(1024*1024)/bestTime.Seconds())
 			}
 
-			// Restore GOMAXPROCS
-			runtime.GOMAXPROCS(runtime.NumCPU())
-
 			// Report speedup for this test case
 			if baseline, ok := results[1]; ok {
 				t.Logf("--- %s Parallelism Efficiency ---", tc.name)
-				for cpus, duration := range results {
-					if cpus == 1 {
+				for workers, duration := range results {
+					if workers == 1 {
 						continue
 					}
 					speedup := float64(baseline) / float64(duration)
-					efficiency := speedup / float64(cpus) * 100
-					t.Logf("  Speedup with %d CPUs: %.2fx (%.1f%% efficiency)",
-						cpus, speedup, efficiency)
+					efficiency := speedup / float64(workers) * 100
+					t.Logf("  Speedup with %d workers: %.2fx (%.1f%% efficiency)",
+						workers, speedup, efficiency)
 				}
 			}
 		})

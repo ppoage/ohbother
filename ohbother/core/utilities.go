@@ -10,9 +10,15 @@ import (
 
 // Registry for byte slices with sharded locking
 var (
-	registryShards  = 128
-	shardedRegistry []*registryShard
-	nextHandle      int64 = 1
+	registryShards            = 128
+	shardedRegistry           []*registryShard
+	nextHandle                int64        = 1
+	reconstructionWorkerCount atomic.Int32 = *func() *atomic.Int32 {
+		i := new(atomic.Int32)
+		// Default to CPU*2 workers
+		i.Store(int32(runtime.NumCPU() * 2))
+		return i
+	}()
 )
 
 // Each shard protects its own map
@@ -28,6 +34,18 @@ type RegistryStats struct {
 	MemoryUsage int64 `json:"memory_usage"`
 	ShardCount  int   `json:"shard_count"`
 	TimeStamp   int64 `json:"timestamp"`
+}
+
+// SetUtilWorkers safely sets the worker count for ReconstructByteArrays
+func SetUtilWorkers(count int) {
+	if count > 0 {
+		reconstructionWorkerCount.Store(int32(count))
+	}
+}
+
+// GetUtilWorkers safely retrieves the current worker count
+func GetUtilWorkers() int {
+	return int(reconstructionWorkerCount.Load())
 }
 
 func init() {
@@ -209,16 +227,20 @@ func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 		return reconstructSequential(flatData, offsets, numArrays)
 	}
 
-	// Calculate optimal worker count based on CPU and workload
-	numWorkers := runtime.NumCPU() * 2
+	// Get worker count from atomic variable (thread-safe)
+	numWorkers := GetUtilWorkers() * 2
+
+	// Cap at reasonable maximum
 	if numWorkers > 32 {
-		numWorkers = 32 // Cap at reasonable maximum
+		numWorkers = 32
 	}
 
 	// Ensure we don't create more workers than needed
 	if numWorkers > numArrays/100 {
 		numWorkers = max(1, numArrays/100)
 	}
+
+	//fmt.Printf("Number of workers: %d\n", numWorkers)
 
 	// Pre-compute total bytes to estimate memory usage
 	totalBytes := 0
