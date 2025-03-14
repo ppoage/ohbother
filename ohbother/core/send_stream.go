@@ -176,7 +176,6 @@ func (ms *MultiStreamSender) Send() error {
 	// Initialize metrics
 	ms.metrics = &senderMetrics{}
 
-	// Initialize the atomic counter for ordering - ADD THIS LINE
 	ms.nextToSend.Store(0)
 
 	// Set up channels with specified buffer sizes
@@ -844,72 +843,173 @@ func (ms *MultiStreamSender) FastConvertPayloads(payloads [][]byte) [][]byte {
 // AddPayloadsFlat adds multiple payloads from a flattened representation
 // Exported to Python - uses compatible types ([]byte and []int)
 func (ms *MultiStreamSender) AddPayloadsFlat(flatData []byte, offsets []int) int {
-	// Reconstruct the byte slices using optimized function
-	payloads := ReconstructByteArrays(flatData, offsets)
-	count := len(payloads)
+	if len(flatData) == 0 || len(offsets) == 0 {
+		return 0
+	}
 
-	// For small payload counts, add sequentially
-	if count < 100 {
+	totalArrays := len(offsets) / 2
+	if totalArrays == 0 {
+		return 0
+	}
+
+	// Pre-allocate the destination slice to avoid expensive reallocations
+	ms.payloadMutex.Lock()
+	initialLen := len(ms.Payloads)
+	expectedFinalSize := initialLen + totalArrays
+	if cap(ms.Payloads) < expectedFinalSize {
+		newPayloads := make([][]byte, initialLen, expectedFinalSize)
+		copy(newPayloads, ms.Payloads)
+		ms.Payloads = newPayloads
+	}
+	ms.payloadMutex.Unlock()
+
+	// For small datasets, process directly
+	if totalArrays < 100 {
 		ms.payloadMutex.Lock()
 		defer ms.payloadMutex.Unlock()
 
-		for _, payload := range payloads {
-			if payload != nil {
-				safeCopy := make([]byte, len(payload))
-				copy(safeCopy, payload)
-				ms.Payloads = append(ms.Payloads, safeCopy)
+		addedCount := 0
+		for i := 0; i < totalArrays; i++ {
+			startOffset := offsets[i*2]
+			length := offsets[i*2+1]
+
+			// Skip invalid offsets
+			if startOffset < 0 || length <= 0 || startOffset+length > len(flatData) {
+				continue
 			}
+
+			// Create and copy in one step
+			payload := make([]byte, length)
+			copy(payload, flatData[startOffset:startOffset+length])
+			ms.Payloads = append(ms.Payloads, payload)
+			addedCount++
 		}
-		return count
+		return addedCount
 	}
 
-	// For larger payload sets, use parallel processing with local buffers
+	// For large datasets, process in batches to limit memory usage
+	const batchSize = 250000 // Process 250K payloads at a time
+	totalAdded := 0
+
+	for batchStart := 0; batchStart < totalArrays; batchStart += batchSize {
+		batchEnd := min(batchStart+batchSize, totalArrays)
+
+		// Create offset slice for just this batch
+		batchOffsets := make([]int, (batchEnd-batchStart)*2)
+		for i, j := 0, batchStart*2; i < len(batchOffsets); i, j = i+2, j+2 {
+			batchOffsets[i] = offsets[j]
+			batchOffsets[i+1] = offsets[j+1]
+		}
+
+		// Process this batch
+		added := ms.processOrderedBatch(flatData, batchOffsets)
+		totalAdded += added
+
+		// Clear references
+		batchOffsets = nil
+
+		// Help GC between large batches
+		if batchStart > 0 && batchStart%500000 == 0 {
+			runtime.GC()
+		}
+	}
+
+	return totalAdded
+}
+
+// Helper function to process a single batch of payloads while maintaining order
+func (ms *MultiStreamSender) processOrderedBatch(flatData []byte, batchOffsets []int) int {
+	// Reconstruct the byte slices for just this batch
+	payloads := ReconstructByteArrays(flatData, batchOffsets)
+	batchSize := len(payloads)
+
+	// Calculate optimal parameters for parallel processing
+	numWorkers := runtime.NumCPU() * 2
+	if numWorkers > 32 {
+		numWorkers = 32
+	}
+
 	var wg sync.WaitGroup
-	numWorkers := runtime.NumCPU()
-	if numWorkers > 8 {
-		numWorkers = numWorkers * 2
-	}
 
-	// Create worker-local result slices
-	workerResults := make([][][]byte, numWorkers)
+	// Calculate items per worker
+	itemsPerWorker := (batchSize + numWorkers - 1) / numWorkers
 
-	// Calculate items per worker - similar to batchSize in FastConvertPayloads
-	itemsPerWorker := (count + numWorkers - 1) / numWorkers
+	// Create a results array for this batch that maintains order
+	results := make([][]byte, batchSize)
 
-	// Same worker distribution logic...
+	// Process in parallel
 	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
 		startIdx := w * itemsPerWorker
-		endIdx := min(startIdx+itemsPerWorker, count)
+		endIdx := min(startIdx+itemsPerWorker, batchSize)
 
-		go func(start, end, workerID int) {
+		if startIdx >= batchSize {
+			wg.Done()
+			continue
+		}
+
+		go func(start, end int) {
 			defer wg.Done()
-			localResults := make([][]byte, 0, end-start)
 
 			for i := start; i < end; i++ {
-				if payloads[i] != nil {
-					safeCopy := make([]byte, len(payloads[i]))
-					copy(safeCopy, payloads[i])
-					localResults = append(localResults, safeCopy)
+				if payloads[i] == nil || len(payloads[i]) == 0 {
+					continue
 				}
-			}
 
-			workerResults[workerID] = localResults
-		}(startIdx, endIdx, w)
+				safeCopy := make([]byte, len(payloads[i]))
+				copy(safeCopy, payloads[i])
+
+				// Store at correct position
+				results[i] = safeCopy
+
+				// Clear reference to help GC
+				payloads[i] = nil
+			}
+		}(startIdx, endIdx)
 	}
 
 	wg.Wait()
 
-	// Single lock to add all results
-	ms.payloadMutex.Lock()
+	// Help garbage collector
+	payloads = nil
+
+	// Add results to ms.Payloads in order
 	addedCount := 0
-	for _, results := range workerResults {
-		for _, payload := range results {
-			ms.Payloads = append(ms.Payloads, payload)
-			addedCount++
+
+	// Add results in smaller batches to reduce lock contention
+	const addBatchSize = 10000
+	currentBatch := make([][]byte, 0, addBatchSize)
+
+	for i := 0; i < batchSize; i++ {
+		if results[i] != nil {
+			currentBatch = append(currentBatch, results[i])
+			results[i] = nil // Help GC
+
+			if len(currentBatch) >= addBatchSize {
+				ms.payloadMutex.Lock()
+				ms.Payloads = append(ms.Payloads, currentBatch...)
+				addedCount += len(currentBatch)
+				ms.payloadMutex.Unlock()
+
+				// Reset batch
+				currentBatch = currentBatch[:0]
+			}
 		}
 	}
-	ms.payloadMutex.Unlock()
+
+	// Add remaining items
+	if len(currentBatch) > 0 {
+		ms.payloadMutex.Lock()
+		ms.Payloads = append(ms.Payloads, currentBatch...)
+		addedCount += len(currentBatch)
+		ms.payloadMutex.Unlock()
+
+		// Reset batch (for GC)
+		currentBatch = nil
+	}
+
+	// Help GC
+	results = nil
 
 	return addedCount
 }

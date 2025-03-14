@@ -201,95 +201,122 @@ func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 		return [][]byte{}
 	}
 
-	// Pre-validate offsets before processing
-	// This prevents goroutines from encountering invalid memory accesses
-	const maxSingleArraySize = 10 * 1024 * 1024 // 10MB max per array
-	totalDataSize := len(flatData)
-
-	// Pre-check if any offset is clearly invalid
-	for i := 0; i < numArrays; i++ {
-		startOffset := offsets[i*2]
-		length := offsets[i*2+1]
-		//fmt.Println("Payload length: ", len(length))
-		// if length != 60 {
-		// 	fmt.Println("ERROR Payload length: ", length)
-		// }
-		if startOffset < 0 || length <= 0 || startOffset+length > totalDataSize || length > maxSingleArraySize {
-			// Don't fail the whole operation, just log potential issue
-			LogDebug("Invalid array dimensions at index %d: offset=%d, length=%d, dataSize=%d\n",
-				i, startOffset, length, totalDataSize)
-		}
-	}
+	// Pre-allocate result slice with exact capacity needed
+	result := make([][]byte, numArrays)
 
 	// For small arrays, use the sequential version to avoid goroutine overhead
 	if numArrays < 100 {
 		return reconstructSequential(flatData, offsets, numArrays)
 	}
 
-	result := make([][]byte, numArrays)
-
-	// Calculate optimal worker count - cap at reasonable maximum
-	numWorkers := runtime.NumCPU()
-	if numWorkers > 8 {
-		numWorkers = numWorkers * 2 // Leave some CPU for other tasks
+	// Calculate optimal worker count based on CPU and workload
+	numWorkers := runtime.NumCPU() * 2
+	if numWorkers > 32 {
+		numWorkers = 32 // Cap at reasonable maximum
 	}
 
 	// Ensure we don't create more workers than needed
-	if numWorkers > numArrays {
-		numWorkers = numArrays
+	if numWorkers > numArrays/100 {
+		numWorkers = max(1, numArrays/100)
 	}
 
-	var wg sync.WaitGroup
+	// Pre-compute total bytes to estimate memory usage
+	totalBytes := 0
+	maxArraySize := 0
+	for i := 0; i < numArrays; i++ {
+		length := offsets[i*2+1]
+		if length > 0 {
+			totalBytes += length
+			maxArraySize = max(maxArraySize, length)
+		}
+	}
 
-	// Use atomic counter to track progress and identify errors
+	// LogDebug("ReconstructByteArrays: Reconstructing %d byte arrays with %d workers, total bytes: %d, max array size: %d\n",
+	// 	numArrays, numWorkers, totalBytes, maxArraySize)
+
+	// Use worker pool pattern with buffered channels for better throughput
+	type workItem struct {
+		index       int
+		startOffset int
+		length      int
+	}
+
+	// Determine batch size based on array characteristics
+	// This is a key optimization for throughput
+	batchSize := 1000
+	if numArrays > 1_000_000 {
+		batchSize = 5000
+	}
+
+	// Create channels with optimized buffer sizes
+	jobs := make(chan workItem, min(numArrays, 100_000))
+	var wg sync.WaitGroup
 	var errorCount atomic.Int32
 
-	// Calculate workload per worker
-	itemsPerWorker := (numArrays + numWorkers - 1) / numWorkers
-
+	// Launch worker pool
 	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
-
-		startIdx := w * itemsPerWorker
-		endIdx := startIdx + itemsPerWorker
-		if endIdx > numArrays {
-			endIdx = numArrays
-		}
-
-		go func(start, end int) {
-			// Use defer with panic recovery
+		go func() {
 			defer func() {
 				wg.Done()
 				if r := recover(); r != nil {
-					LogDebug("Panic in ReconstructByteArrays worker: %v\n", r)
+					LogDebug("Recovered from panic in ReconstructByteArrays worker: %v", r)
 					errorCount.Add(1)
 				}
 			}()
 
-			// Each worker processes its assigned range
-			for i := start; i < end; i++ {
-				startOffset := offsets[i*2]
-				length := offsets[i*2+1]
+			// Pre-allocate reusable buffer for each worker
+			// This significantly reduces small allocations and GC pressure
+			scratchBuffer := make([]byte, maxArraySize)
 
-				// Check bounds to avoid panics
-				if startOffset < 0 || length <= 0 || startOffset+length > len(flatData) || length > maxSingleArraySize {
-					// Handle invalid offsets gracefully
-					result[i] = make([]byte, 0)
+			// Process jobs until channel is closed
+			for job := range jobs {
+				// Skip invalid ranges without panicking
+				if job.startOffset < 0 || job.length <= 0 ||
+					job.startOffset+job.length > len(flatData) {
+					result[job.index] = make([]byte, 0)
 					continue
 				}
 
-				// Create and copy the slice
-				slice := make([]byte, length)
-				copy(slice, flatData[startOffset:startOffset+length])
-				result[i] = slice
+				// Create slice with exact needed size
+				if job.length > cap(scratchBuffer) {
+					scratchBuffer = make([]byte, job.length)
+				}
+				buffer := scratchBuffer[:job.length]
+
+				// Copy data from flat buffer
+				copy(buffer, flatData[job.startOffset:job.startOffset+job.length])
+
+				// Create new slice to store in result (don't share the scratch buffer)
+				resultSlice := make([]byte, job.length)
+				copy(resultSlice, buffer)
+				result[job.index] = resultSlice
 			}
-		}(startIdx, endIdx)
+		}()
 	}
 
+	// Queue jobs in chunks to reduce channel pressure
+	// This is critical for extremely large workloads
+	for batchStart := 0; batchStart < numArrays; batchStart += batchSize {
+		batchEnd := min(batchStart+batchSize, numArrays)
+
+		for i := batchStart; i < batchEnd; i++ {
+			startOffset := offsets[i*2]
+			length := offsets[i*2+1]
+
+			jobs <- workItem{
+				index:       i,
+				startOffset: startOffset,
+				length:      length,
+			}
+		}
+	}
+
+	close(jobs)
 	wg.Wait()
 
 	if errorCount.Load() > 0 {
-		LogDebug("ReconstructByteArrays encountered %d errors during processing\n", errorCount.Load())
+		LogDebug("ReconstructByteArrays encountered %d errors during processing", errorCount.Load())
 	}
 
 	return result
