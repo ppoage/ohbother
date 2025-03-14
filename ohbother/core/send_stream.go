@@ -48,6 +48,7 @@ type MultiStreamSender struct {
 	started        atomic.Bool            // New flag: transmission started?
 	errorCh        chan *PacketSendResult // Dedicated channel for error reports
 	closeOnce      sync.Once              // Ensures progressCh is closed only once
+	payloadMutex   sync.Mutex             // New mutex to protect Payloads
 }
 
 // NewMultiStreamSender creates a high-performance sender with worker pools
@@ -147,7 +148,10 @@ func (ms *MultiStreamSender) AddPayload(payload []byte) {
 		// Make a copy for memory safety
 		safeCopy := make([]byte, len(payload))
 		copy(safeCopy, payload)
+
+		ms.payloadMutex.Lock()
 		ms.Payloads = append(ms.Payloads, safeCopy)
+		ms.payloadMutex.Unlock()
 	}
 }
 
@@ -843,67 +847,71 @@ func (ms *MultiStreamSender) AddPayloadsFlat(flatData []byte, offsets []int) int
 	// Reconstruct the byte slices using optimized function
 	payloads := ReconstructByteArrays(flatData, offsets)
 	count := len(payloads)
-	LogDebug("Adding flat payloads: %d payloads, %d bytes, %d offsets\n",
-		count, len(flatData), len(offsets))
 
-	// For small payload counts, add sequentially to avoid goroutine overhead
+	// For small payload counts, add sequentially
 	if count < 100 {
+		ms.payloadMutex.Lock()
+		defer ms.payloadMutex.Unlock()
+
 		for _, payload := range payloads {
-			ms.AddPayload(payload)
+			if payload != nil {
+				safeCopy := make([]byte, len(payload))
+				copy(safeCopy, payload)
+				ms.Payloads = append(ms.Payloads, safeCopy)
+			}
 		}
-
-		LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets)\n",
-			count, len(flatData), len(offsets))
-
 		return count
 	}
 
-	// For larger payload sets, use parallel processing
+	// For larger payload sets, use parallel processing with local buffers
 	var wg sync.WaitGroup
-
-	// Calculate optimal worker count
 	numWorkers := runtime.NumCPU()
 	if numWorkers > 8 {
-		numWorkers = numWorkers * 2 // Leave some CPU for other tasks
+		numWorkers = numWorkers * 2
 	}
 
-	// Ensure we don't create more workers than needed
-	if numWorkers > count {
-		numWorkers = count
-	}
+	// Create worker-local result slices
+	workerResults := make([][][]byte, numWorkers)
 
-	// Calculate items per worker
+	// Calculate items per worker - similar to batchSize in FastConvertPayloads
 	itemsPerWorker := (count + numWorkers - 1) / numWorkers
 
+	// Same worker distribution logic...
 	for w := 0; w < numWorkers; w++ {
 		wg.Add(1)
-
 		startIdx := w * itemsPerWorker
-		endIdx := startIdx + itemsPerWorker
-		if endIdx > count {
-			endIdx = count
-		}
+		endIdx := min(startIdx+itemsPerWorker, count)
 
-		go func(start, end int) {
+		go func(start, end, workerID int) {
 			defer wg.Done()
+			localResults := make([][]byte, 0, end-start)
 
-			// Process a batch of payloads
 			for i := start; i < end; i++ {
 				if payloads[i] != nil {
-					// Make a copy for memory safety
-					// (AddPayload already makes a copy, but we ensure consistency)
-					ms.AddPayload(payloads[i])
+					safeCopy := make([]byte, len(payloads[i]))
+					copy(safeCopy, payloads[i])
+					localResults = append(localResults, safeCopy)
 				}
 			}
-		}(startIdx, endIdx)
+
+			workerResults[workerID] = localResults
+		}(startIdx, endIdx, w)
 	}
 
 	wg.Wait()
 
-	LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets) using %d workers\n",
-		count, len(flatData), len(offsets), numWorkers)
+	// Single lock to add all results
+	ms.payloadMutex.Lock()
+	addedCount := 0
+	for _, results := range workerResults {
+		for _, payload := range results {
+			ms.Payloads = append(ms.Payloads, payload)
+			addedCount++
+		}
+	}
+	ms.payloadMutex.Unlock()
 
-	return count
+	return addedCount
 }
 
 // reportError sends an error to the error channel in a non-blocking way

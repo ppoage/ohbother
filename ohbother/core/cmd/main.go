@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"ohbother"
+	"os"
 	"runtime"
+	"runtime/pprof"
 	"sort"
 	"sync"
 	"time"
+	"unsafe"
 )
 
 type Config = ohbother.Config
@@ -22,14 +25,8 @@ const (
 	//PACKET_COUNT = 1_000_000
 	//PACKET_COUNT = 1_000
 	PAYLOAD_SIZE = 60
-	RATE_LIMIT   = 200_000
-
-	// Worker configuration
-	WORKER_COUNT    = 12
-	STREAM_COUNT    = 4
-	BUFFER_COUNT    = 1000 // Channel buffer size
-	REPORT_INTERVAL = 1000 // How often to report progress
-	TURNSTILE_BURST = 16   // Burst size for rate limiting
+	RATE_LIMIT   = 0
+	//RATE_LIMIT   = 200_000
 
 	// Network configuration
 	SNAP_LEN       = 1500
@@ -50,6 +47,13 @@ const (
 	CPU_PINNING    = false
 	DISABLE_ORDER  = true
 	ENABLE_METRICS = true
+
+	// Worker configuration
+	WORKER_COUNT    = 12
+	STREAM_COUNT    = 4
+	BUFFER_COUNT    = BUFFER_SIZE // Channel buffer size
+	REPORT_INTERVAL = 1000        // How often to report progress
+	TURNSTILE_BURST = 16          // Burst size for rate limiting
 )
 
 // flatten_byte_arrays_serial flattens a [][]byte into a single []byte and
@@ -217,7 +221,11 @@ func benchmarkStreamSend(cfg *Config, packetCount int, payloadSize int, rateLimi
 	sender.SetAdvancedConfig(CPU_PINNING, DISABLE_ORDER, TURNSTILE_BURST, ENABLE_METRICS)
 	setupTime := time.Since(start)
 	fmt.Printf("Sender setup in %.3fs\n", setupTime.Seconds())
-
+	f, err := os.Create("cpu.pprof")
+	if err != nil {
+		panic(err)
+	}
+	pprof.StartCPUProfile(f)
 	// Time: Add payloads
 	start = time.Now()
 	// Remove type assertion, use FastConvertPayloads directly
@@ -226,6 +234,24 @@ func benchmarkStreamSend(cfg *Config, packetCount int, payloadSize int, rateLimi
 	fmt.Printf("Converted %d payloads in %.3fs\n", len(converted_payloads), addTime.Seconds())
 	payloads_added := sender.AddPayloadsFlat(converted_payloads, offsets)
 	fmt.Printf("Added %d payloads in %.3fs\n", payloads_added, addTime.Seconds())
+
+	pprof.StopCPUProfile()
+	f.Close()
+
+	payloadsMemory := unsafe.Sizeof(payloads) + uintptr(len(payloads)*24) // Slice headers
+	for _, p := range payloads {
+		payloadsMemory += uintptr(len(p)) // Actual byte data
+	}
+
+	convertedMemory := unsafe.Sizeof(converted_payloads) + uintptr(len(converted_payloads))
+	offsetsMemory := unsafe.Sizeof(offsets) + uintptr(len(offsets)*8) // Each int is 8 bytes
+
+	// fmt.Printf("Memory usage - Payloads: %d bytes, Converted: %d bytes, Offsets: %d bytes\n",
+	// 	payloadsMemory, convertedMemory, offsetsMemory)
+	fmt.Printf("Memory usage - Payloads: %.2f MB, Converted: %.2f MB, Offsets: %.2f MB\n",
+		float64(payloadsMemory)/(1024*1024),
+		float64(convertedMemory)/(1024*1024),
+		float64(offsetsMemory)/(1024*1024))
 
 	// Time: Send
 	start = time.Now()
@@ -243,7 +269,9 @@ func benchmarkStreamSend(cfg *Config, packetCount int, payloadSize int, rateLimi
 			elapsed := time.Since(start)
 			rate := float64(sent) / elapsed.Seconds()
 			completion_status := sender.IsComplete()
-			fmt.Printf("Progress: %d sent, %d errors, %.0f pps, complete: %t \n", sent, errors, rate, completion_status)
+			total_sent := sent + errors
+			percent_done := float64(total_sent*100) / float64(packetCount)
+			fmt.Printf("Progress: %d sent, %d errors, %.0f pps, %.0f percent done complete: %t \n", sent, errors, rate, percent_done, completion_status)
 			lastReport = time.Now()
 		}
 		time.Sleep(100 * time.Millisecond)

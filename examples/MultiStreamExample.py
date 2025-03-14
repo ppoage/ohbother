@@ -46,7 +46,8 @@ else:
     PACKET_COUNT = 2_000_000 #500_000
     PAYLOAD_SIZE = 1200
 
-RATE_LIMIT = 200_000
+#RATE_LIMIT = 200_000
+RATE_LIMIT = 0
 
 WORKER_COUNT = 12
 STREAM_COUNT = 4
@@ -266,7 +267,7 @@ def run_multistream(
         enable_cpu_pinning=True,
         disable_ordering=True,
         turnstile_burst=16,
-        enable_metrics=False,
+        enable_metrics=True,
         rate_limit=RATE_LIMIT  # No rate limit
     )
     # Create the multi-stream sender
