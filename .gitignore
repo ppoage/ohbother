@@ -10,3 +10,4 @@ build/
 .dev/
 /ohbother/generated/
 *__pycache__/
+*.vscode/

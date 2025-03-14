@@ -309,6 +309,9 @@ def parallel_flatten_byte_arrays(byte_arrays: List[bytes], num_workers: int = No
     if len(byte_arrays) < 10000:
         return flatten_byte_arrays(byte_arrays)
     
+    # Calculate expected total size for validation
+    expected_total_size = sum(len(arr) for arr in byte_arrays)
+    
     # For large datasets, use multiprocessing
     if num_workers is None:
         num_workers = max(1, os.cpu_count() - 1)  # Leave one CPU for OS
@@ -326,35 +329,97 @@ def parallel_flatten_byte_arrays(byte_arrays: List[bytes], num_workers: int = No
     # Process in parallel
     start_time = time.perf_counter()
     with multiprocessing.Pool(processes=num_workers) as pool:
-        chunk_results = pool.starmap(_flatten_chunk, chunks)
+        try:
+            chunk_results = pool.starmap(_flatten_chunk, chunks)
+        except Exception as e:
+            # Fall back to single process if parallel processing fails
+            print(f"Parallel flattening failed: {e}, falling back to single process", file=sys.stderr)
+            return flatten_byte_arrays(byte_arrays)
     
-    # Combine results
-    combined_data = bytearray()
-    combined_offsets = []
+    # Verify all chunks were processed successfully
+    if len(chunk_results) != len(chunks):
+        print(f"Warning: Not all chunks processed ({len(chunk_results)} of {len(chunks)})", file=sys.stderr)
+        # Fall back to single process
+        return flatten_byte_arrays(byte_arrays)
     
     # Sort results by chunk_id to maintain order
     chunk_results.sort(key=lambda x: x[2])
     
-    # Combine flattened data and adjust offsets
+    # Pre-allocate bytearray to avoid resizing penalties
+    try:
+        combined_size = sum(len(flattened) for flattened, _, _ in chunk_results)
+        combined_data = bytearray(combined_size)
+        # Add a flag to track if we're using pre-allocation
+        using_prealloc = True
+        current_pos = 0
+    except MemoryError:
+        # If pre-allocation fails, fall back to regular bytearray
+        print("Warning: Pre-allocation failed, falling back to dynamic bytearray", file=sys.stderr)
+        combined_data = bytearray()
+        using_prealloc = False
+        current_pos = 0
+    
+    combined_offsets = []
     offset_adjustment = 0
-    for flattened, offsets, _ in chunk_results:
+    
+    # Verify integrity before processing each chunk
+    for idx, (flattened, offsets, chunk_id) in enumerate(chunk_results):
+        # Verify chunk data format
+        if not isinstance(flattened, bytes) or not isinstance(offsets, list):
+            print(f"Warning: Invalid data format from chunk {chunk_id}", file=sys.stderr)
+            return flatten_byte_arrays(byte_arrays)
+        
+        # Verify offsets consistency
+        if len(offsets) % 2 != 0:
+            print(f"Warning: Invalid offset format from chunk {chunk_id}", file=sys.stderr)
+            return flatten_byte_arrays(byte_arrays)
+        
+        # Verify chunk integrity - data length matches offsets
+        expected_chunk_size = offsets[-2] + offsets[-1] if offsets else 0
+        if len(flattened) != expected_chunk_size:
+            print(f"Warning: Chunk {chunk_id} data size mismatch: {len(flattened)} vs {expected_chunk_size}", 
+                  file=sys.stderr)
+            return flatten_byte_arrays(byte_arrays)
+            
         # Adjust offsets to account for previous chunks
         for i in range(0, len(offsets), 2):
             combined_offsets.append(offsets[i] + offset_adjustment)  # Adjusted start
             combined_offsets.append(offsets[i+1])                    # Length (unchanged)
         
-        # Append flattened data
-        combined_data.extend(flattened)
+        # Append flattened data - handle both pre-allocated and dynamic bytearray
+        try:
+            if using_prealloc:
+                # Using pre-allocated array, copy data to specific position
+                combined_data[current_pos:current_pos+len(flattened)] = flattened
+                current_pos += len(flattened)
+            else:
+                # Using dynamic array
+                combined_data.extend(flattened)
+        except Exception as e:
+            print(f"Error combining chunk {chunk_id}: {e}, falling back to single process", file=sys.stderr)
+            return flatten_byte_arrays(byte_arrays)
         
         # Update offset adjustment for next chunk
         offset_adjustment += len(flattened)
     
+    # Final verification: ensure combined size matches expected size
+    final_result = bytes(combined_data)
+    if len(final_result) != expected_total_size:
+        print(f"Warning: Final data size mismatch: {len(final_result)} vs {expected_total_size}", 
+              file=sys.stderr)
+        return flatten_byte_arrays(byte_arrays)
+    
+    # Check combined offsets integrity
+    if len(combined_offsets) != len(byte_arrays) * 2:
+        print(f"Warning: Offset count mismatch: {len(combined_offsets)//2} vs {len(byte_arrays)}", 
+              file=sys.stderr)
+        return flatten_byte_arrays(byte_arrays)
+    
     duration = time.perf_counter() - start_time
-    total_size = len(combined_data)
-    print(f"Parallel flattening: Combined {len(byte_arrays):,} items ({total_size:,} bytes) in {duration:.3f}s", 
+    print(f"Parallel flattening: Combined {len(byte_arrays):,} items ({len(final_result):,} bytes) in {duration:.3f}s", 
           file=sys.stderr)
     
-    return bytes(combined_data), combined_offsets
+    return final_result, combined_offsets
 
 def prepare_flattened_data_for_go(flat_data: bytes, offsets: List[int]):
     """

@@ -1,6 +1,6 @@
 //go:build linux
 
-package ohbother
+package utils
 
 import (
 	"runtime"
@@ -8,7 +8,7 @@ import (
 	"unsafe"
 )
 
-func pinToCPU(cpuID int) error {
+func PinToCPU(cpuID int) error {
 	runtime.LockOSThread()
 
 	var mask uint64 = 1 << uint(cpuID)

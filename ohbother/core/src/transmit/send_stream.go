@@ -1,444 +1,25 @@
-package ohbother
+package transmit
 
 import (
 	"context"
 	"fmt"
 	"net"
-	"reflect"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"runtime"
-
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcap"
-	"golang.org/x/time/rate"
+
+	"ohbother/src/config"
+	"ohbother/src/packet"
+	"ohbother/src/utils"
 )
 
-// Pool of reusable serialize buffers to reduce GC pressure
-var serializeBufferPool = sync.Pool{
-	New: func() interface{} {
-		return gopacket.NewSerializeBuffer()
-	},
-}
-
-// sendSinglePacket transmits a single UDP packet with the given payload
-func sendSinglePacket(handle *pcap.Handle, cfg *Config, payload []byte) error {
-	// Use the logger if debugging is enabled
-	if cfg.Debug.Enabled && cfg.Debug.Level >= 3 {
-		cfg.Debug.Logger.Debug("sendSinglePacket called")
-		cfg.Debug.Logger.Debug("Source MAC: %s", cfg.Packet.SrcMAC)
-		cfg.Debug.Logger.Debug("Dest MAC: %s", cfg.Packet.DstMAC)
-	}
-
-	// Minimum packet size check
-	minPayloadSize := 18
-	if len(payload) < minPayloadSize {
-		err := fmt.Errorf("payload size %d is below minimum required size of %d bytes",
-			len(payload), minPayloadSize)
-		if cfg.Debug.Enabled && cfg.Debug.Level >= 1 {
-			cfg.Debug.Logger.Error("%v", err)
-		}
-		return err
-	}
-
-	// Ethernet layer.
-	eth := layers.Ethernet{
-		SrcMAC:       cfg.Packet.SrcMAC,
-		DstMAC:       cfg.Packet.DstMAC,
-		EthernetType: layers.EthernetTypeIPv4,
-	}
-
-	// IPv4 layer.
-	ip := layers.IPv4{
-		Version:  4,
-		IHL:      5,
-		TTL:      64,
-		Protocol: layers.IPProtocolUDP,
-		SrcIP:    net.ParseIP(cfg.Packet.SrcIP),
-		DstIP:    net.ParseIP(cfg.Packet.DstIP),
-	}
-
-	// Verify IP addresses were parsed correctly
-	LogDebug("  - Parsed Source IP: %s\n", ip.SrcIP)
-	LogDebug("  - Parsed Dest IP: %s\n", ip.DstIP)
-
-	// UDP layer.
-	udp := layers.UDP{
-		SrcPort: layers.UDPPort(cfg.Packet.SrcPort),
-		DstPort: layers.UDPPort(cfg.Packet.DstPort),
-	}
-	LogDebug("  - UDP Ports: %d -> %d\n", udp.SrcPort, udp.DstPort)
-
-	// Compute UDP checksum over the IPv4 pseudo-header.
-	if err := udp.SetNetworkLayerForChecksum(&ip); err != nil {
-		LogError("Checksum calculation failed: %v\n", err)
-		return fmt.Errorf("failed to set network layer for checksum: %v", err)
-	}
-
-	// Get buffer from pool
-	buffer := serializeBufferPool.Get().(gopacket.SerializeBuffer)
-	buffer.Clear()
-	opts := gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}
-
-	if err := gopacket.SerializeLayers(buffer, opts,
-		&eth,
-		&ip,
-		&udp,
-		gopacket.Payload(payload),
-	); err != nil {
-		LogError("Packet serialization failed: %v\n", err)
-		serializeBufferPool.Put(buffer)
-		return fmt.Errorf("failed to serialize packet: %v", err)
-	}
-
-	packetBytes := buffer.Bytes()
-	LogDebug("  - Total packet size: %d bytes\n", len(packetBytes))
-	LogDebug("  - Handle link type: %v\n", handle.LinkType())
-
-	if err := handle.WritePacketData(packetBytes); err != nil {
-		LogError("Packet transmission failed: %v\n", err)
-		serializeBufferPool.Put(buffer)
-		return fmt.Errorf("failed to send packet: %v", err)
-	}
-
-	serializeBufferPool.Put(buffer)
-	LogDebug("Packet successfully sent\n")
-	return nil
-}
-
-// SendPacket transmits a single UDP packet
-func SendPacket(cfg *Config, payload []byte, rateLimit int) error {
-	done := make(chan error, 1)
-	go func() {
-		handle, err := pcap.OpenLive(cfg.Pcap.Iface, cfg.Pcap.SnapLen, cfg.Pcap.Promisc, pcap.BlockForever)
-		if err != nil {
-			done <- fmt.Errorf("error opening interface: %v", err)
-			return
-		}
-		defer handle.Close()
-
-		if rateLimit > 0 {
-			limiter := rate.NewLimiter(rate.Limit(rateLimit), 1)
-			if err := limiter.Wait(context.Background()); err != nil {
-				done <- fmt.Errorf("rate limiter error: %v", err)
-				return
-			}
-		}
-		err = sendSinglePacket(handle, cfg, payload)
-		done <- err
-	}()
-	return <-done
-}
-
-// PayloadNative converts various payload formats to [][]byte
-func PayloadNative(pyPayload interface{}) [][]byte {
-	LogDebug("PayloadNative called with type %T, concrete type: %v",
-		pyPayload, reflect.TypeOf(pyPayload))
-
-	// Handle Python string type
-	if strPayload, ok := pyPayload.(string); ok {
-		LogDebug("Received payload as string, length: %d", len(strPayload))
-		return [][]byte{[]byte(strPayload)}
-	}
-
-	// Handle Python slices via reflection
-	if reflect.TypeOf(pyPayload).Kind() == reflect.Slice {
-		v := reflect.ValueOf(pyPayload)
-		if v.Len() > 0 {
-			LogDebug("Trying to extract %d items from slice using reflection", v.Len())
-
-			// Check if it's a slice of slices
-			firstItem := v.Index(0).Interface()
-			if reflect.TypeOf(firstItem).Kind() == reflect.Slice ||
-				reflect.TypeOf(firstItem).Kind() == reflect.String {
-
-				result := make([][]byte, v.Len())
-				for i := 0; i < v.Len(); i++ {
-					item := v.Index(i).Interface()
-
-					// Try as []byte
-					if bytes, ok := item.([]byte); ok {
-						result[i] = bytes
-					} else if str, ok := item.(string); ok {
-						// Try as string
-						result[i] = []byte(str)
-					} else {
-						// Last resort: convert via string representation
-						result[i] = []byte(fmt.Sprintf("%v", item))
-					}
-				}
-				LogDebug("Converted %d items using reflection", len(result))
-				return result
-			}
-		}
-	}
-
-	// Handle BytePacket type directly
-	if bytePackets, ok := pyPayload.([]*BytePacket); ok {
-		LogDebug("Converting []*BytePacket directly")
-		packets := make([][]byte, len(bytePackets))
-		for i, bp := range bytePackets {
-			if bp != nil {
-				packets[i] = bp.Data
-			}
-		}
-		return packets
-	}
-
-	// Handle nil case
-	if pyPayload == nil {
-		return [][]byte{}
-	}
-
-	packets := make([][]byte, 0)
-
-	// Handle standard type conversions
-	switch pyList := pyPayload.(type) {
-	case []interface{}:
-		LogDebug("Converting []interface{} with %d elements", len(pyList))
-		packets = make([][]byte, 0, len(pyList))
-		for i, item := range pyList {
-			switch bytes := item.(type) {
-			case []byte:
-				pktCopy := make([]byte, len(bytes))
-				copy(pktCopy, bytes)
-				packets = append(packets, pktCopy)
-			case string:
-				packets = append(packets, []byte(bytes))
-			default:
-				LogWarn("Item %d has unsupported type %T", i, item)
-				if reflect.TypeOf(item).String() == "*py_gopacket.BytePacket" {
-					if bp, ok := item.(*BytePacket); ok && bp != nil {
-						packets = append(packets, bp.Data)
-					}
-				}
-			}
-		}
-	case [][]byte:
-		LogDebug("Already [][]byte, copying directly")
-		packets = make([][]byte, len(pyList))
-		for i, bytes := range pyList {
-			pktCopy := make([]byte, len(bytes))
-			copy(pktCopy, bytes)
-			packets[i] = pktCopy
-		}
-	}
-
-	LogDebug("PayloadNative returning %d converted payloads", len(packets))
-	return packets
-}
-
-// SendPackets transmits multiple packets with optional rate limiting
-func SendPackets(cfg *Config, rawPayloads interface{}, rateLimit int) error {
-	LogDebug("SendPackets called with payload type %T", rawPayloads)
-
-	payloads := PayloadNative(rawPayloads)
-	if len(payloads) == 0 {
-		LogError("No valid payloads found in input")
-		return fmt.Errorf("no valid payloads found in input")
-	}
-
-	LogDebug("Successfully converted %d payloads", len(payloads))
-	return sendPacketsImpl(cfg, payloads, rateLimit)
-}
-
-// SendPacketsNative is a Go-specific function for direct typed parameters
-func sendPacketsNative(cfg *Config, payloads [][]byte, rateLimit int) error {
-	LogDebug("SendPacketsNative called with %d payloads", len(payloads))
-	return sendPacketsImpl(cfg, payloads, rateLimit)
-}
-
-// SendByteArrays accepts a direct [][]byte type for Python integration
-func SendByteArrays(cfg *Config, bytePayloads [][]byte, rateLimit int) error {
-	LogDebug("SendByteArrays called with %d payloads", len(bytePayloads))
-	if len(bytePayloads) == 0 {
-		return fmt.Errorf("no payloads provided")
-	}
-
-	// Make deep copies of all payloads to ensure memory safety
-	safePayloads := make([][]byte, len(bytePayloads))
-	for i, pkt := range bytePayloads {
-		safePayloads[i] = make([]byte, len(pkt))
-		copy(safePayloads[i], pkt)
-	}
-
-	return sendPacketsImpl(cfg, safePayloads, rateLimit)
-}
-
-// Internal implementation for sending packets
-func sendPacketsImpl(cfg *Config, payloads [][]byte, rateLimit int) error {
-	done := make(chan error, 1)
-	go func() {
-		handle, err := pcap.OpenLive(cfg.Pcap.Iface, cfg.Pcap.SnapLen, cfg.Pcap.Promisc, pcap.BlockForever)
-		if err != nil {
-			done <- fmt.Errorf("error opening interface: %v", err)
-			return
-		}
-		defer handle.Close()
-
-		var limiter *rate.Limiter
-		if rateLimit > 0 {
-			limiter = rate.NewLimiter(rate.Limit(rateLimit), 1)
-		}
-
-		for _, payload := range payloads {
-			if limiter != nil {
-				if err := limiter.Wait(context.Background()); err != nil {
-					done <- fmt.Errorf("rate limiter error: %v", err)
-					return
-				}
-			}
-			if err := sendSinglePacket(handle, cfg, payload); err != nil {
-				done <- err
-				return
-			}
-		}
-		done <- nil
-	}()
-	return <-done
-}
-
-// PacketSequenceSender provides a simple API for packet transmission
-type PacketSequenceSender struct {
-	Cfg        *Config
-	RateLimit  int
-	Payloads   [][]byte
-	progressCh chan *PacketSendResult
-	isComplete bool
-}
-
-// NewPacketSequenceSender creates a sender with specified configuration
-func NewPacketSequenceSender(cfg *Config, rateLimit int) *PacketSequenceSender {
-	return &PacketSequenceSender{
-		Cfg:        cfg,
-		RateLimit:  rateLimit,
-		Payloads:   make([][]byte, 0),
-		progressCh: make(chan *PacketSendResult, 100),
-		isComplete: false,
-	}
-}
-
-// AddPayload adds a payload to the sender's queue
-func (bas *PacketSequenceSender) AddPayload(payload []byte) {
-	if payload != nil {
-		LogDebug("AddPayload received payload of %d bytes", len(payload))
-		safeCopy := make([]byte, len(payload))
-		copy(safeCopy, payload)
-		bas.Payloads = append(bas.Payloads, safeCopy)
-	}
-}
-
-// Send initiates transmission of all queued payloads
-func (bas *PacketSequenceSender) Send() error {
-	if len(bas.Payloads) == 0 {
-		return fmt.Errorf("no payloads to send")
-	}
-
-	LogDebug("PacketSequenceSender.Send() called with %d payloads", len(bas.Payloads))
-
-	// Start goroutine to send packets
-	go func() {
-		handle, err := pcap.OpenLive(bas.Cfg.Pcap.Iface, bas.Cfg.Pcap.SnapLen, bas.Cfg.Pcap.Promisc, pcap.BlockForever)
-		if err != nil {
-			bas.progressCh <- &PacketSendResult{
-				Index:      0,
-				TotalCount: len(bas.Payloads),
-				Error:      err,
-			}
-			close(bas.progressCh)
-			bas.isComplete = true
-			return
-		}
-		defer handle.Close()
-
-		var limiter *rate.Limiter
-		if bas.RateLimit > 0 {
-			limiter = rate.NewLimiter(rate.Limit(bas.RateLimit), 1)
-		}
-
-		// Just track start time once
-		startTime := time.Now()
-
-		for i, payload := range bas.Payloads {
-			// Apply rate limiting if needed
-			if limiter != nil {
-				if err := limiter.Wait(context.Background()); err != nil {
-					bas.progressCh <- &PacketSendResult{
-						Index:      i,
-						TotalCount: len(bas.Payloads),
-						Error:      err,
-					}
-					continue
-				}
-			}
-
-			// Send the packet
-			err := sendSinglePacket(handle, bas.Cfg, payload)
-
-			// Report progress
-			bas.progressCh <- &PacketSendResult{
-				Index:      i,
-				TotalCount: len(bas.Payloads),
-				Error:      err,
-			}
-		}
-
-		// Calculate total elapsed time at the end
-		totalElapsed := time.Since(startTime).Seconds()
-
-		// Send a final result with the total elapsed time
-		select {
-		case bas.progressCh <- &PacketSendResult{
-			Index:      len(bas.Payloads) - 1,
-			TotalCount: len(bas.Payloads),
-			Elapsed:    totalElapsed,
-			Error:      nil,
-		}:
-		default:
-			// If channel is full, skip sending the final result.
-		}
-
-		// Signal completion
-		close(bas.progressCh)
-		bas.isComplete = true
-	}()
-
-	return nil
-}
-
-// GetNextResult returns the result of the next packet send operation
-// Returns nil when all packets have been sent
-func (bas *PacketSequenceSender) GetNextResult() *PacketSendResult {
-	result, ok := <-bas.progressCh
-	if !ok {
-		return nil // Channel closed
-	}
-	return result
-}
-
-// IsComplete returns true when all packets have been sent
-func (bas *PacketSequenceSender) IsComplete() bool {
-	return bas.isComplete
-}
-
-// PacketSendResult represents the result of sending a single packet
-type PacketSendResult struct {
-	Index      int     // Index of the packet in the original payload array
-	TotalCount int     // Total number of packets
-	Elapsed    float64 // Time elapsed since Send was called (in seconds)
-	Error      error   // Error if any
-}
-
-// GetError returns error as string or empty string
-func (psr *PacketSendResult) GetError() string {
-	if psr.Error == nil {
-		return ""
-	}
-	return psr.Error.Error()
-}
+var ReconstructByteArrays = utils.ReconstructByteArrays
+var NewDefaultConfig = config.NewDefaultConfig
 
 // MultiStreamConfig holds configuration for the multi-stream sender
 type MultiStreamConfig struct {
@@ -452,9 +33,23 @@ type MultiStreamConfig struct {
 	EnableMetrics    bool // Enable lightweight performance metrics
 }
 
+// NewDefaultConfig creates a MultiStreamConfig with sensible defaults
+func NewMultiStreamConfig() *MultiStreamConfig {
+	return &MultiStreamConfig{
+		PacketWorkers:    runtime.NumCPU(),
+		StreamCount:      4,
+		ChannelBuffers:   1000,
+		ReportInterval:   1000,
+		EnableCPUPinning: false,
+		DisableOrdering:  false,
+		TurnstileBurst:   1,
+		EnableMetrics:    true,
+	}
+}
+
 // MultiStreamSender provides high-performance parallel packet sending
 type MultiStreamSender struct {
-	Cfg            *Config
+	Cfg            *config.Config
 	StreamConfig   *MultiStreamConfig
 	RateLimit      int
 	Payloads       [][]byte
@@ -471,26 +66,19 @@ type MultiStreamSender struct {
 	metrics        *senderMetrics // Lightweight metrics
 	channelClosed  atomic.Bool    // Atomic flag: progressCh closed
 	mutex          sync.Mutex
-	started        atomic.Bool // New flag: transmission started?
+	started        atomic.Bool            // New flag: transmission started?
+	errorCh        chan *PacketSendResult // Dedicated channel for error reports
+	closeOnce      sync.Once              // Ensures progressCh is closed only once
 }
 
 // NewMultiStreamSender creates a high-performance sender with worker pools
-func NewMultiStreamSender(cfg *Config, rateLimit int) *MultiStreamSender {
+func NewMultiStreamSender(cfg *config.Config, rateLimit int) *MultiStreamSender {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Default configuration with all fields initialized
-	streamConfig := &MultiStreamConfig{
-		PacketWorkers:    8,
-		StreamCount:      4,
-		ChannelBuffers:   1000,
-		ReportInterval:   1000,
-		EnableCPUPinning: false, // Default to false for wider compatibility
-		DisableOrdering:  false, // Default to ordered transmission
-		TurnstileBurst:   1,     // Default to single packet burst
-		EnableMetrics:    true,  // Default to metrics enabled
-	}
+	// Use new package path
+	streamConfig := NewMultiStreamConfig()
 
-	return &MultiStreamSender{
+	ms := &MultiStreamSender{
 		Cfg:            cfg,
 		RateLimit:      rateLimit,
 		StreamConfig:   streamConfig,
@@ -502,7 +90,31 @@ func NewMultiStreamSender(cfg *Config, rateLimit int) *MultiStreamSender {
 		schedulerDone:  make(chan bool),
 		cancelCtx:      ctx,
 		cancelFunc:     cancel,
+		errorCh:        make(chan *PacketSendResult, 1000), // Will try 30M if sigsev
 	}
+
+	// Start error handling goroutine
+	go func() {
+		for errResult := range ms.errorCh {
+			// Lock to ensure thread-safe access to progressCh
+			ms.mutex.Lock()
+			if !ms.channelClosed.Load() {
+				// Non-blocking send to progressCh
+				select {
+				case ms.progressCh <- errResult:
+					// Successfully sent
+				default:
+					// Channel full, drop the error
+					if ms.metrics != nil {
+						ms.metrics.packetsDropped.Add(1)
+					}
+				}
+			}
+			ms.mutex.Unlock()
+		}
+	}()
+
+	return ms
 }
 
 // SetStreamConfig configures the multi-stream sender parameters
@@ -521,7 +133,7 @@ func (ms *MultiStreamSender) SetStreamConfig(packetWorkers, streamCount, channel
 	}
 
 	// Log the configuration for debugging
-	LogDebug("MultiStreamSender configured with: workers=%d, streams=%d, buffers=%d, report=%d",
+	config.LogDebug("MultiStreamSender configured with: workers=%d, streams=%d, buffers=%d, report=%d",
 		ms.StreamConfig.PacketWorkers,
 		ms.StreamConfig.StreamCount,
 		ms.StreamConfig.ChannelBuffers,
@@ -707,10 +319,8 @@ func (ms *MultiStreamSender) sendPackets(streamID int, handle *pcap.Handle, in <
 	// Pin to CPU if enabled
 	if ms.StreamConfig.EnableCPUPinning {
 		cpuID := 1 + streamID // Skip CPU 0
-		if err := pinToCPU(cpuID); err != nil {
-			ms.progressCh <- &PacketSendResult{
-				Error: fmt.Errorf("stream %d: failed to pin to CPU %d: %v", streamID, cpuID, err),
-			}
+		if err := utils.PinToCPU(cpuID); err != nil {
+			ms.reportError(-1, fmt.Errorf("stream %d: failed to pin to CPU %d: %v", streamID, cpuID, err))
 		}
 	}
 
@@ -751,19 +361,43 @@ func (ms *MultiStreamSender) sendPackets(streamID int, handle *pcap.Handle, in <
 			startSend = time.Now()
 		}
 
-		// Send the packet
-		if err := handle.WritePacketData(packet.packetBytes); err != nil {
-			select {
-			case ms.progressCh <- &PacketSendResult{
-				Index:      packet.originalIndex,
-				TotalCount: len(ms.Payloads),
-				Error:      fmt.Errorf("stream %d: failed to send packet: %v", streamID, err),
-			}:
-			default:
-				// If full, drop the error to avoid blocking.
+		// CRITICAL FIX: Safely check packet and packet.packetBytes before using
+		if packet == nil {
+			ms.reportError(-1, fmt.Errorf("stream %d: received nil packet", streamID))
+			// Still advance the counter to prevent deadlock
+			if !ms.StreamConfig.DisableOrdering {
+				ms.nextToSend.Add(1)
 			}
-			ms.metrics.packetsDropped.Add(1)
 			continue
+		}
+
+		if packet.packetBytes == nil || len(packet.packetBytes) == 0 {
+			ms.reportError(packet.originalIndex, fmt.Errorf("stream %d: nil or empty packet bytes", streamID))
+			ms.metrics.packetsDropped.Add(1)
+
+			// Still advance the counter to prevent deadlock
+			if !ms.StreamConfig.DisableOrdering {
+				ms.nextToSend.Add(1)
+			}
+			continue
+		}
+
+		// CRITICAL FIX: Try-catch equivalent for WritePacketData to prevent SIGSEGV
+		var sendErr error
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					sendErr = fmt.Errorf("panic in WritePacketData: %v", r)
+				}
+			}()
+
+			sendErr = handle.WritePacketData(packet.packetBytes)
+		}()
+
+		if sendErr != nil {
+			// Use reportError instead of direct channel write
+			ms.reportError(packet.originalIndex, fmt.Errorf("stream %d: failed to send packet: %v", streamID, sendErr))
+			ms.metrics.packetsDropped.Add(1)
 		}
 
 		if !ms.StreamConfig.DisableOrdering {
@@ -842,7 +476,7 @@ func (ms *MultiStreamSender) preparePackets(in <-chan struct {
 	index   int
 	payload []byte
 }, out chan<- *preparedPacket) {
-	// Initialize header template
+	// Initialize header template once per worker
 	eth := layers.Ethernet{
 		SrcMAC:       ms.Cfg.Packet.SrcMAC,
 		DstMAC:       ms.Cfg.Packet.DstMAC,
@@ -866,63 +500,143 @@ func (ms *MultiStreamSender) preparePackets(in <-chan struct {
 	// Set up UDP checksum - do this once
 	udp.SetNetworkLayerForChecksum(&ip)
 
+	// Reusable serialization options
+	opts := gopacket.SerializeOptions{
+		FixLengths:       true,
+		ComputeChecksums: true,
+	}
+
+	// Define maximum safe payload size (typical MTU minus headers)
+	const maxSafePayloadSize = 1472 // 1500 (MTU) - 20 (IP) - 8 (UDP)
+
 	for item := range in {
 		var startPrepare time.Time
 		if ms.StreamConfig.EnableMetrics {
 			startPrepare = time.Now()
 		}
 
-		// Create a new packet from the template
+		// Get a fresh buffer for this iteration
+		buffer := serializeBufferPool.Get().(gopacket.SerializeBuffer)
+		buffer.Clear()
+
+		// Thorough payload validation - prevent nil pointer derefs and overlarge packets
+		if item.payload == nil {
+			ms.reportError(item.index, fmt.Errorf("invalid nil payload"))
+			serializeBufferPool.Put(buffer)
+			continue
+		}
+
+		payloadLen := len(item.payload)
+		if payloadLen < 1 {
+			ms.reportError(item.index, fmt.Errorf("payload too small: %d bytes", payloadLen))
+			serializeBufferPool.Put(buffer)
+			continue
+		}
+
+		if payloadLen > maxSafePayloadSize {
+			ms.reportError(item.index, fmt.Errorf("payload too large: %d bytes (max %d)", payloadLen, maxSafePayloadSize))
+			serializeBufferPool.Put(buffer)
+			continue
+		}
+
+		// Calculate exact buffer size needed - headers plus payload
+		estimatedSize := 42 + payloadLen // Ethernet (14) + IPv4 (20) + UDP (8) + payload
+
+		// Safely prepare buffer for serialization
+		var allocationErr error
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					allocationErr = fmt.Errorf("buffer allocation failed: %v", r)
+				}
+			}()
+			// This can panic if memory allocation fails
+			buffer.PrependBytes(estimatedSize)
+		}()
+		if allocationErr != nil {
+			ms.reportError(item.index, allocationErr)
+			serializeBufferPool.Put(buffer)
+			continue
+		}
+
+		// Check if PrependBytes succeeded
+		if buffer.Bytes() == nil {
+			ms.reportError(item.index, fmt.Errorf("failed to allocate packet buffer"))
+			serializeBufferPool.Put(buffer)
+			continue
+		}
+
+		// Create a new packet but defer payload copying until after validation
 		packet := &preparedPacket{
 			originalIndex: item.index,
 			eth:           eth,
 			ip:            ip,
 			udp:           udp,
-			payload:       item.payload,
 		}
 
-		// Serialize the packet
-		buffer := serializeBufferPool.Get().(gopacket.SerializeBuffer)
-		buffer.Clear()
-
-		opts := gopacket.SerializeOptions{
-			FixLengths:       true,
-			ComputeChecksums: true,
+		// Copy payload with additional safety checks
+		if item.payload != nil && len(item.payload) > 0 {
+			// Allocate and copy in one atomic operation with bounds checking
+			packet.payload = append([]byte(nil), item.payload...)
+		} else {
+			packet.payload = []byte{} // Empty but non-nil payload
 		}
 
-		err := gopacket.SerializeLayers(buffer, opts,
-			&packet.eth,
-			&packet.ip,
-			&packet.udp,
-			gopacket.Payload(packet.payload),
-		)
-
+		// Safe serialization with panic recovery
+		var err error
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					err = fmt.Errorf("serialization panic: %v", r)
+				}
+			}()
+			err = gopacket.SerializeLayers(buffer, opts,
+				&packet.eth,
+				&packet.ip,
+				&packet.udp,
+				gopacket.Payload(packet.payload),
+			)
+		}()
 		if err != nil {
+			ms.reportError(item.index, fmt.Errorf("failed to serialize packet: %v", err))
 			serializeBufferPool.Put(buffer)
-			select {
-			case ms.progressCh <- &PacketSendResult{
-				Index:      item.index,
-				TotalCount: len(ms.Payloads),
-				Error:      fmt.Errorf("failed to serialize packet: %v", err),
-			}:
-			default:
-				// Drop error if progressCh is full.
-			}
 			continue
 		}
 
-		// Store serialized data
-		packet.packetBytes = make([]byte, len(buffer.Bytes()))
-		copy(packet.packetBytes, buffer.Bytes())
+		// Copy serialized data with bounds checking
+		serializedData := buffer.Bytes()
+		if serializedData == nil {
+			ms.reportError(item.index, fmt.Errorf("serialization produced nil buffer"))
+			serializeBufferPool.Put(buffer)
+			continue
+		}
+		dataLen := len(serializedData)
+		if dataLen == 0 {
+			ms.reportError(item.index, fmt.Errorf("serialization produced empty buffer"))
+			serializeBufferPool.Put(buffer)
+			continue
+		}
 
-		serializeBufferPool.Put(buffer)
+		// Ensure we don't create massive packets
+		if dataLen > 9000 { // Jumbo Ethernet MTU + header
+			ms.reportError(item.index, fmt.Errorf("packet too large: %d bytes", dataLen))
+			serializeBufferPool.Put(buffer)
+			continue
+		}
+
+		// Safe copy with exact size allocation
+		packet.packetBytes = make([]byte, dataLen)
+		copy(packet.packetBytes, serializedData)
 
 		if ms.StreamConfig.EnableMetrics {
 			prepNs := time.Since(startPrepare).Nanoseconds()
 			ms.metrics.prepareTime.Add(uint64(prepNs))
 		}
 
-		// Send to output channel
+		// Return the buffer to the pool after use
+		serializeBufferPool.Put(buffer)
+
+		// Send to output channel with non-blocking cancellation check
 		select {
 		case <-ms.cancelCtx.Done():
 			return
@@ -937,7 +651,7 @@ func (ms *MultiStreamSender) IsComplete() bool {
 	return ms.isComplete.Load()
 }
 
-// GetNextResult returns the next result with smart buffering
+// GetNextResult returns the next result with improved buffer management
 func (ms *MultiStreamSender) GetNextResult() *PacketSendResult {
 	ms.mutex.Lock()
 	defer ms.mutex.Unlock()
@@ -945,7 +659,15 @@ func (ms *MultiStreamSender) GetNextResult() *PacketSendResult {
 	// If we have buffered results, return one
 	if len(ms.progressBuffer) > 0 {
 		result := ms.progressBuffer[0]
-		ms.progressBuffer = ms.progressBuffer[1:]
+
+		// Efficient slice management to avoid growing/copying the slice
+		if len(ms.progressBuffer) > 1 {
+			copy(ms.progressBuffer, ms.progressBuffer[1:])
+			ms.progressBuffer = ms.progressBuffer[:len(ms.progressBuffer)-1]
+		} else {
+			ms.progressBuffer = ms.progressBuffer[:0]
+		}
+
 		return result
 	}
 
@@ -955,9 +677,21 @@ func (ms *MultiStreamSender) GetNextResult() *PacketSendResult {
 	}
 
 	// Try to get multiple results at once to prevent blocking
-	// This helps decouple Go and Python speeds
 	resultCount := 0
-	for resultCount < 100 { // Get up to 100 at a time
+	maxResultsToBuffer := 100 // Get up to 100 at a time
+
+	// Make sure we don't exceed our buffer capacity
+	if cap(ms.progressBuffer) < maxResultsToBuffer {
+		// Grow the buffer if needed
+		newBuffer := make([]*PacketSendResult, 0, max(maxResultsToBuffer, ms.maxBufferSize))
+		ms.progressBuffer = newBuffer
+	}
+
+	// Clear existing buffer (capacity remains)
+	ms.progressBuffer = ms.progressBuffer[:0]
+
+	// Fill the buffer without blocking
+	for resultCount < maxResultsToBuffer {
 		select {
 		case result, ok := <-ms.progressCh:
 			if !ok {
@@ -1056,6 +790,7 @@ func (ms *MultiStreamSender) FastConvertPayloads(payloads [][]byte) [][]byte {
 	results := make([][]byte, size)
 
 	// Use a wait group to synchronize workers
+
 	var wg sync.WaitGroup
 
 	// Process in batches using goroutines - calculate chunk sizes more efficiently
@@ -1120,6 +855,8 @@ func (ms *MultiStreamSender) AddPayloadsFlat(flatData []byte, offsets []int) int
 	// Reconstruct the byte slices using optimized function
 	payloads := ReconstructByteArrays(flatData, offsets)
 	count := len(payloads)
+	config.LogDebug("Adding flat payloads: %d payloads, %d bytes, %d offsets\n",
+		count, len(flatData), len(offsets))
 
 	// For small payload counts, add sequentially to avoid goroutine overhead
 	if count < 100 {
@@ -1127,7 +864,7 @@ func (ms *MultiStreamSender) AddPayloadsFlat(flatData []byte, offsets []int) int
 			ms.AddPayload(payload)
 		}
 
-		LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets)\n",
+		config.LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets)\n",
 			count, len(flatData), len(offsets))
 
 		return count
@@ -1139,7 +876,7 @@ func (ms *MultiStreamSender) AddPayloadsFlat(flatData []byte, offsets []int) int
 	// Calculate optimal worker count
 	numWorkers := runtime.NumCPU()
 	if numWorkers > 8 {
-		numWorkers = 8
+		numWorkers = numWorkers * 2 // Leave some CPU for other tasks
 	}
 
 	// Ensure we don't create more workers than needed
@@ -1175,8 +912,200 @@ func (ms *MultiStreamSender) AddPayloadsFlat(flatData []byte, offsets []int) int
 
 	wg.Wait()
 
-	LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets) using %d workers\n",
+	config.LogDebug("Added %d payloads from flattened data (%d bytes, %d offsets) using %d workers\n",
 		count, len(flatData), len(offsets), numWorkers)
 
 	return count
 }
+
+// reportError sends an error to the error channel in a non-blocking way
+func (ms *MultiStreamSender) reportError(index int, err error) {
+	if err == nil {
+		return
+	}
+
+	// Create error result
+	errResult := &PacketSendResult{
+		Index:      index,
+		TotalCount: len(ms.Payloads),
+		Error:      err,
+	}
+
+	// Non-blocking send to error channel
+	select {
+	case ms.errorCh <- errResult:
+		// Error sent successfully
+	default:
+		// Error channel full, increment dropped count
+		if ms.metrics != nil {
+			ms.metrics.packetsDropped.Add(1)
+		}
+	}
+}
+
+// safeCloseProgressCh ensures progressCh is closed exactly once
+func (ms *MultiStreamSender) safeCloseProgressCh() {
+	ms.closeOnce.Do(func() {
+		ms.mutex.Lock()
+		defer ms.mutex.Unlock()
+		close(ms.progressCh)
+		ms.channelClosed.Store(true)
+
+		// Also close the error channel to stop the handler goroutine
+		close(ms.errorCh)
+	})
+}
+
+// RegisterFlattenedPayloads registers flattened payloads with a MultiStreamSender
+// Internal function - not exported to Python
+func RegisterFlattenedPayloads(sender *MultiStreamSender, flatData []byte, offsets []int) int {
+	// Validate input parameters
+	if flatData == nil || len(offsets) == 0 || sender == nil {
+		return 0
+	}
+
+	numArrays := len(offsets) / 2
+	if numArrays == 0 || len(offsets)%2 != 0 {
+		return 0
+	}
+
+	totalDataSize := len(flatData)
+	const maxSingleArraySize = 10 * 1024 * 1024 // 10MB max per array
+
+	// For small data sets (under 10MB total), use the simple approach
+	if totalDataSize < 10*1024*1024 && numArrays < 1000 {
+		// Original approach for small data
+		payloads := ReconstructByteArrays(flatData, offsets)
+		count := 0
+		for _, payload := range payloads {
+			sender.AddPayload(payload)
+			count++
+		}
+		return count
+	}
+
+	// For large data sets, process in batches to reduce peak memory usage
+	count := 0
+	maxBatchSize := 1000 // Process 1000 payloads at a time
+
+	// Process in batches
+	for batchStart := 0; batchStart < numArrays; batchStart += maxBatchSize {
+		batchEnd := batchStart + maxBatchSize
+		if batchEnd > numArrays {
+			batchEnd = numArrays
+		}
+
+		// Create a batch of offsets
+		batchOffsets := make([]int, 0, (batchEnd-batchStart)*2)
+		for i := batchStart; i < batchEnd; i++ {
+			batchOffsets = append(batchOffsets, offsets[i*2], offsets[i*2+1])
+		}
+
+		// Process this batch with memory safety checks
+		func() {
+			// Memory safety - recover from OOM conditions
+			defer func() {
+				if r := recover(); r != nil {
+					config.LogDebug("Memory error in payload batch %d-%d: %v\n", batchStart, batchEnd, r)
+
+					// If we hit memory issues, process one by one as a fallback
+					for i := batchStart; i < batchEnd; i++ {
+						startOffset := offsets[i*2]
+						length := offsets[i*2+1]
+
+						// Skip invalid offsets
+						if startOffset < 0 || length <= 0 || startOffset+length > totalDataSize || length > maxSingleArraySize {
+							continue
+						}
+
+						// Try to process this single payload with additional recovery
+						func() {
+							defer func() {
+								if r := recover(); r != nil {
+									// Individual payload caused OOM, skip it
+									config.LogDebug("Skipping payload %d due to memory error: %v\n", i, r)
+								}
+							}()
+
+							// Create a single slice
+							slice := make([]byte, length)
+							copy(slice, flatData[startOffset:startOffset+length])
+							//fmt.Println("Payload slice length: ", len(slice))
+							// Add to sender
+							sender.AddPayload(slice)
+							count++
+
+							// Force incremental GC on high memory pressure
+							if i%10 == 0 && runtime.NumGoroutine() > 1000 {
+								runtime.GC()
+							}
+						}()
+					}
+				}
+			}()
+
+			// Try to process the batch normally
+			payloads := packet.ReconstructBatch(flatData, batchOffsets, batchEnd-batchStart)
+			for _, payload := range payloads {
+				if payload != nil && len(payload) > 0 {
+					sender.AddPayload(payload)
+					count++
+				}
+			}
+
+			// Help GC after each large batch
+			payloads = nil
+			runtime.GC()
+		}()
+
+		// Periodic GC for very large datasets
+		if batchStart > 0 && batchStart%10000 == 0 {
+			config.LogDebug("Processed %d/%d payloads, triggering GC\n", batchStart, numArrays)
+			runtime.GC()
+		}
+	}
+
+	return count
+}
+
+// func detectMemorySwapPressure() (bool, error) {
+// 	// Retrieve virtual memory stats
+// 	vm, err := mem.VirtualMemory()
+// 	if err != nil {
+// 		return false, err
+// 	}
+// 	// Retrieve swap memory stats
+// 	swap, err := mem.SwapMemory()
+// 	if err != nil {
+// 		return false, err
+// 	}
+
+// 	// Calculate physical memory usage in percent (provided by gopsutil)
+// 	physicalUsagePercent := vm.UsedPercent
+
+// 	// Compute swap used as a percentage of total physical memory.
+// 	swapUsedPercentOfPhysical := (float64(swap.Used) / float64(vm.Total)) * 100
+
+// 	// Compute available physical memory as a percentage.
+// 	availablePercent := (float64(vm.Available) / float64(vm.Total)) * 100
+
+// 	// Define thresholds (these can be adjusted to match your environment).
+// 	const memUsageThreshold = 99.0  // 50.0 e.g. physical memory usage threshold in percent
+// 	const swapUsageThreshold = 99.0 // 45.0 e.g. swap used relative to physical memory
+// 	const availableThreshold = 99.0 // 40.0 e.g. available memory threshold in percent
+
+// 	// Log the values for debugging or monitoring purposes.
+// 	fmt.Printf("Physical Memory Usage: %.1f%%\n", physicalUsagePercent)
+// 	fmt.Printf("Swap Used as %% of Physical Memory: %.1f%%\n", swapUsedPercentOfPhysical)
+// 	fmt.Printf("Available Physical Memory: %.1f%%\n", availablePercent)
+
+// 	// If physical memory usage is high and either swap usage is high or available memory is very low,
+// 	// then we consider the system under heavy memory pressure.
+// 	if physicalUsagePercent >= memUsageThreshold &&
+// 		(swapUsedPercentOfPhysical >= swapUsageThreshold && availablePercent <= availableThreshold) {
+// 		fmt.Println("System is under memory pressure (high physical memory usage and/or swap usage).")
+// 		return true, nil
+// 	}
+
+// 	return false, nil
+// }

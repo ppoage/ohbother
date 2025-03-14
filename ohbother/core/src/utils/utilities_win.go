@@ -1,6 +1,6 @@
 //go:build windows
 
-package ohbother
+package utils
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-func pinToCPU(cpuID int) error {
+func PinToCPU(cpuID int) error {
 	runtime.LockOSThread()
 
 	// Get current thread handle (using the proper windows package function)

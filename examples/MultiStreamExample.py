@@ -35,11 +35,19 @@ INTERFACE = "en0"
 BPF_FILTER = f"udp and dst port {DST_PORT}"
 
 # Test parameters
-#PACKET_COUNT = 35_000_000 #500_000
-PACKET_COUNT = 2_000_000
-RATE_LIMIT = 0
-PAYLOAD_SIZE = 1200
-#PAYLOAD_SIZE = 60
+
+stress_a = True
+
+if stress_a:
+    PACKET_COUNT = 35_000_000 #500_000
+    #PACKET_COUNT = 25_000_000
+    PAYLOAD_SIZE = 60
+else:
+    PACKET_COUNT = 2_000_000 #500_000
+    PAYLOAD_SIZE = 1200
+
+RATE_LIMIT = 200_000
+
 WORKER_COUNT = 12
 STREAM_COUNT = 4
 SNAP_LEN = 1500
@@ -141,6 +149,8 @@ def process_results(sender, packet_count):
         
         # Exit when all packets are processed or on error
         if packets_processed >= packet_count:
+            break
+        if sender.is_complete:
             break
             
         # Report progress periodically
@@ -256,7 +266,7 @@ def run_multistream(
         enable_cpu_pinning=True,
         disable_ordering=True,
         turnstile_burst=16,
-        enable_metrics=True,
+        enable_metrics=False,
         rate_limit=RATE_LIMIT  # No rate limit
     )
     # Create the multi-stream sender
@@ -305,4 +315,10 @@ def run_multistream(
 
 
 if __name__ == "__main__":
+    import os
+
+    pid = os.getpid()
+    print(f"The process ID is: {pid}")
+    print(f"The process ID is: {pid}")
+    print(f"The process ID is: {pid}")
     run_multistream()

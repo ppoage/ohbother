@@ -10,18 +10,27 @@ import time
 import threading
 from dataclasses import dataclass
 
-from .generated.ohbother import (
-    PacketReceiver as GoPacketReceiver,
-    ContinuousPacketReceiver as GoContinuousPacketReceiver,
-    PacketReceiverByTime as go_packet_receiver_by_time,
-    PacketReceiverByCount as go_packet_receiver_by_count,
-    ReceivePacketsByTimeSync as go_receive_packets_by_time_sync,
-    ReceivePacketsByCountSync as go_receive_packets_by_count_sync,
-    NewReceiver as new_go_receiver,
-    AsyncResult
-)
-from .config import Config
+from .generated.go import (
+    receive_PacketReceiver as GoPacketReceiver,
+    receive_AsyncResult as AsyncResult,
+    #receive_ContinuousPacketReceiver as GoContinuousPacketReceiver
+    
 
+)
+
+# from .generated.ohbother import (
+#     #PacketReceiver as GoPacketReceiver,
+#     #ContinuousPacketReceiver as GoContinuousPacketReceiver
+# )
+from .config import Config
+from .receive import (
+    #GoPacketReceiver, ContinuousPacketReceiver,
+    PacketReceiverByTime as go_packet_receiver_by_time,
+    PacketReceiverByCount, ReceivePacketsByTimeSync, 
+    ReceivePacketsByCountSync
+)
+
+#from .receive import NewReceiver as new_go_receiver
 
 def receive_packets_by_time(
     config: Config,

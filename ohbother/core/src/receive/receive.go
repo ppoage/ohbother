@@ -1,4 +1,4 @@
-package ohbother
+package receive
 
 import (
 	"fmt"
@@ -7,7 +7,13 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcap"
+
+	"ohbother/src/config"
 )
+
+type Config = config.Config
+
+var LogError = config.LogError
 
 // CallReceivePacketsByTime starts a goroutine that collects UDP packets for the specified duration (in seconds).
 // It returns two channels: one for the resulting packet payloads (as a slice of []byte) and one for any error.

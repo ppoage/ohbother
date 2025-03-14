@@ -147,7 +147,7 @@ def build_dev(env):
     
     # Use Python interpreter path
     python_path = sys.executable + "3.12"
-    working_dir = Path("ohbother/core").resolve()
+    working_dir = Path("ohbother/core/src").resolve()
     print(f"Working directory: {working_dir}")
     print(f"Using Python interpreter: {python_path}")
     
@@ -156,6 +156,9 @@ def build_dev(env):
         "gopy",
         "build",
         #"-build-tags=" + "GOEXPERIMENT=cgocheck2",
+        #"-build-tags=" + "-race Send",
+        "-build-tags=" + '“debug” -gcflags=“all=-N -l”',
+        # "-build-tags=" +"debug",
         "-output=" + str(temp_dir.resolve()),
         "-no-make=true",
         "-vm=" + python_path,

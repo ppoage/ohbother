@@ -1,4 +1,4 @@
-package ohbother
+package utils
 
 import (
 	"fmt"
@@ -6,6 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"ohbother/src/config"
 )
 
 // Registry for byte slices with sharded locking
@@ -38,7 +40,7 @@ func init() {
 			data: make(map[int64][]byte),
 		}
 	}
-	LogDebug("Initialized registry with %d shards\n", registryShards)
+	config.LogDebug("Initialized registry with %d shards\n", registryShards)
 }
 
 // newSliceByteFromBytes creates a new byte slice in Go memory
@@ -190,10 +192,35 @@ func DeleteByteSlice(handle int64) {
 
 // ReconstructByteArrays rebuilds a [][]byte from flattened data and offsets
 func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
+	// Validate input parameters first
+	if flatData == nil {
+		return [][]byte{}
+	}
+
 	// Offsets come in pairs: (start, length)
 	numArrays := len(offsets) / 2
-	if numArrays == 0 {
+	if numArrays == 0 || len(offsets)%2 != 0 {
 		return [][]byte{}
+	}
+
+	// Pre-validate offsets before processing
+	// This prevents goroutines from encountering invalid memory accesses
+	const maxSingleArraySize = 10 * 1024 * 1024 // 10MB max per array
+	totalDataSize := len(flatData)
+
+	// Pre-check if any offset is clearly invalid
+	for i := 0; i < numArrays; i++ {
+		startOffset := offsets[i*2]
+		length := offsets[i*2+1]
+		//fmt.Println("Payload length: ", len(length))
+		// if length != 60 {
+		// 	fmt.Println("ERROR Payload length: ", length)
+		// }
+		if startOffset < 0 || length <= 0 || startOffset+length > totalDataSize || length > maxSingleArraySize {
+			// Don't fail the whole operation, just log potential issue
+			config.LogDebug("Invalid array dimensions at index %d: offset=%d, length=%d, dataSize=%d\n",
+				i, startOffset, length, totalDataSize)
+		}
 	}
 
 	// For small arrays, use the sequential version to avoid goroutine overhead
@@ -206,7 +233,7 @@ func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 	// Calculate optimal worker count - cap at reasonable maximum
 	numWorkers := runtime.NumCPU()
 	if numWorkers > 8 {
-		numWorkers = 8
+		numWorkers = numWorkers * 2 // Leave some CPU for other tasks
 	}
 
 	// Ensure we don't create more workers than needed
@@ -215,6 +242,9 @@ func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 	}
 
 	var wg sync.WaitGroup
+
+	// Use atomic counter to track progress and identify errors
+	var errorCount atomic.Int32
 
 	// Calculate workload per worker
 	itemsPerWorker := (numArrays + numWorkers - 1) / numWorkers
@@ -229,7 +259,14 @@ func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 		}
 
 		go func(start, end int) {
-			defer wg.Done()
+			// Use defer with panic recovery
+			defer func() {
+				wg.Done()
+				if r := recover(); r != nil {
+					config.LogDebug("Panic in ReconstructByteArrays worker: %v\n", r)
+					errorCount.Add(1)
+				}
+			}()
 
 			// Each worker processes its assigned range
 			for i := start; i < end; i++ {
@@ -237,7 +274,7 @@ func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 				length := offsets[i*2+1]
 
 				// Check bounds to avoid panics
-				if startOffset < 0 || length <= 0 || startOffset+length > len(flatData) {
+				if startOffset < 0 || length <= 0 || startOffset+length > len(flatData) || length > maxSingleArraySize {
 					// Handle invalid offsets gracefully
 					result[i] = make([]byte, 0)
 					continue
@@ -252,6 +289,11 @@ func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
 	}
 
 	wg.Wait()
+
+	if errorCount.Load() > 0 {
+		config.LogDebug("ReconstructByteArrays encountered %d errors during processing\n", errorCount.Load())
+	}
+
 	return result
 }
 
@@ -290,7 +332,7 @@ func BatchStoreByteSlicesFlat(flatData []byte, offsets []int) []int64 {
 func BatchConvertPythonBytesToSlices(rawBytes [][]byte, numWorkers int) []int64 {
 	size := len(rawBytes)
 	if size == 0 {
-		LogDebug("BatchConvertPythonBytesToSlices: No input bytes provided\n")
+		config.LogDebug("BatchConvertPythonBytesToSlices: No input bytes provided\n")
 		return []int64{}
 	}
 
@@ -305,7 +347,7 @@ func BatchConvertPythonBytesToSlices(rawBytes [][]byte, numWorkers int) []int64 
 		numWorkers = size
 	}
 
-	LogDebug("BatchConvertPythonBytesToSlices: Converting %d byte arrays with %d workers\n", size, numWorkers)
+	config.LogDebug("BatchConvertPythonBytesToSlices: Converting %d byte arrays with %d workers\n", size, numWorkers)
 
 	// Use a wait group to synchronize workers
 	var wg sync.WaitGroup
@@ -344,22 +386,6 @@ func BatchConvertPythonBytesToSlices(rawBytes [][]byte, numWorkers int) []int64 
 	// Wait for all goroutines to complete
 	wg.Wait()
 
-	LogDebug("BatchConvertPythonBytesToSlices: Completed converting %d byte arrays\n", size)
+	config.LogDebug("BatchConvertPythonBytesToSlices: Completed converting %d byte arrays\n", size)
 	return result
-}
-
-// RegisterFlattenedPayloads registers flattened payloads with a MultiStreamSender
-// Internal function - not exported to Python
-func RegisterFlattenedPayloads(sender *MultiStreamSender, flatData []byte, offsets []int) int {
-	// Reconstruct the byte slices
-	payloads := ReconstructByteArrays(flatData, offsets)
-
-	// Add each payload to the sender
-	count := 0
-	for _, payload := range payloads {
-		sender.AddPayload(payload)
-		count++
-	}
-
-	return count
 }
