@@ -10,6 +10,7 @@ import time
 from dataclasses import dataclass
 import os
 import sys
+import gc
 import multiprocessing
 
 from .generated.ohbother import (
@@ -281,16 +282,27 @@ class MultiStreamSender:
               f"in {flatten_time:.3f}s ({len(payloads)/flatten_time:,.0f}/s)", 
               file=sys.stderr, flush=True)
         
+        payloads = None  # Free memory
+        gc.collect()  # Force garbage collection to free memory
+        
         # Step 2: Convert to Go types
         convert_start = time.perf_counter()
         go_flat_data, go_offsets = prepare_flattened_data_for_go(flat_data, offsets)
         convert_time = time.perf_counter() - convert_start
         if perf_measure: print(f"Converted to Go types in {convert_time:.3f}s", file=sys.stderr, flush=True)
         
+        flat_data = None  # Free memory
+        offsets = None  # Free memory
+        gc.collect()  # Force garbage collection to free memory
+
         # Step 3: Add to sender using the flattened method
         add_start = time.perf_counter()
         added_count = self._sender.AddPayloadsFlat(go_flat_data, go_offsets)
         add_time = time.perf_counter() - add_start
+
+        go_flat_data = None  # Free memory
+        go_offsets = None  # Free memory
+        gc.collect()  # Force garbage collection to free memory
         
         if not perf_measure: 
             return added_count

@@ -11,3 +11,4 @@ build/
 /ohbother/generated/
 *__pycache__/
 *.vscode/
+*.pprof

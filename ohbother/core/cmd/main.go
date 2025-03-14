@@ -59,21 +59,25 @@ const (
 // flatten_byte_arrays_serial flattens a [][]byte into a single []byte and
 // generates an offsets slice where each array's offsets are stored as [start, length] pairs.
 func flatten_byte_arrays_serial(arrays [][]byte) ([]byte, []int) {
-	total_length := 0
-	num_arrays := len(arrays)
-	// Allocate offsets with two integers per array.
-	offsets := make([]int, num_arrays*2)
+	if len(arrays) == 0 {
+		return []byte{}, []int{}
+	}
 
-	// Compute the total length and record start offset and length.
-	for i, arr := range arrays {
-		offsets[i*2] = total_length // start offset
-		offsets[i*2+1] = len(arr)   // length of the array
+	// Pre-calculate total length in one pass
+	total_length := 0
+	for _, arr := range arrays {
 		total_length += len(arr)
 	}
 
+	// Pre-allocate exactly what we need
 	flat_data := make([]byte, total_length)
+	offsets := make([]int, len(arrays)*2)
+
+	// Copy data and record offsets in a single pass
 	current_pos := 0
-	for _, arr := range arrays {
+	for i, arr := range arrays {
+		offsets[i*2] = current_pos // start offset
+		offsets[i*2+1] = len(arr)  // length of the array
 		copy(flat_data[current_pos:], arr)
 		current_pos += len(arr)
 	}
@@ -213,6 +217,10 @@ func benchmarkStreamSend(cfg *Config, packetCount int, payloadSize int, rateLimi
 	}
 	genTime := time.Since(start)
 	fmt.Printf("Generated %d payloads in %.3fs\n", packetCount, genTime.Seconds())
+	payloadsMemory := unsafe.Sizeof(payloads) + uintptr(len(payloads)*24) // Slice headers
+	for _, p := range payloads {
+		payloadsMemory += uintptr(len(p)) // Actual byte data
+	}
 
 	// Time: Create sender
 	start = time.Now()
@@ -225,26 +233,33 @@ func benchmarkStreamSend(cfg *Config, packetCount int, payloadSize int, rateLimi
 	if err != nil {
 		panic(err)
 	}
+
 	pprof.StartCPUProfile(f)
 	// Time: Add payloads
 	start = time.Now()
 	// Remove type assertion, use FastConvertPayloads directly
 	converted_payloads, offsets := flatten_byte_arrays(payloads)
+	payloads = nil // Free memory
 	addTime := time.Since(start)
 	fmt.Printf("Converted %d payloads in %.3fs\n", len(converted_payloads), addTime.Seconds())
 	payloads_added := sender.AddPayloadsFlat(converted_payloads, offsets)
 	fmt.Printf("Added %d payloads in %.3fs\n", payloads_added, addTime.Seconds())
 
-	pprof.StopCPUProfile()
-	f.Close()
-
-	payloadsMemory := unsafe.Sizeof(payloads) + uintptr(len(payloads)*24) // Slice headers
-	for _, p := range payloads {
-		payloadsMemory += uintptr(len(p)) // Actual byte data
-	}
-
 	convertedMemory := unsafe.Sizeof(converted_payloads) + uintptr(len(converted_payloads))
 	offsetsMemory := unsafe.Sizeof(offsets) + uintptr(len(offsets)*8) // Each int is 8 bytes
+
+	converted_payloads = nil // Free memory
+	offsets = nil            // Free memory
+	runtime.GC()
+
+	pprof.StopCPUProfile()
+	m, err := os.Create("mem.pprof")
+	if err != nil {
+		panic(err)
+	}
+	pprof.WriteHeapProfile(m)
+	f.Close()
+	m.Close()
 
 	// fmt.Printf("Memory usage - Payloads: %d bytes, Converted: %d bytes, Offsets: %d bytes\n",
 	// 	payloadsMemory, convertedMemory, offsetsMemory)
