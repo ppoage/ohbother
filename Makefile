@@ -1,7 +1,9 @@
 -include .env
-
 # Ensure Poetry creates the virtual environment in the project directory.
 export POETRY_VIRTUALENVS_IN_PROJECT = true
+# Include extra Poetry PATH settings if available (Windows only)
+-include poetry_path.mk
+
 
 # Directories
 SOURCE_DIR = src
@@ -27,9 +29,23 @@ install-poetry:
 	    curl -sSL https://install.python-poetry.org | $(PYTHON_CMD); \
 	    echo "Please ensure $$HOME/.local/bin is in your PATH"; \
 	}
+ifeq ($(OS),Windows_NT)
+	@echo "Waiting for Poetry to be available..."
+	@setlocal enabledelayedexpansion & ( \
+	    set count=0 & \
+	    :waitLoop & \
+	    if not exist "$(APPDATA)\Python\Scripts\poetry.exe" ( \
+	        timeout /t 1 >nul & set /a count+=1 & if !count! lss 30 goto waitLoop else (echo "Poetry did not appear in time" && exit /b 1) \
+	    ) \
+	)
+	@echo "Poetry found in %APPDATA%\Python\Scripts"
+	@echo "export PATH := $(APPDATA)\Python\Scripts;$(PATH)" > poetry_path.mk
+endif
 
 # Initialize environment variables file.
 init-env:
+	@echo "Checking poetry install"
+	@poetry --version
 	@echo "Initializing environment..."
 	@$(PYTHON_CMD) -c "open('.env', 'a').close()"
 	@echo "PROJECT_NAME=$(PROJECT_NAME)" >> .env
