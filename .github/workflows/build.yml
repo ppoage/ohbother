@@ -108,7 +108,7 @@ jobs:
 
       # Build the library (gopy build)
       - name: Build library
-        run: ${{ steps.set-python-cmd.outputs.python_cmd }} build.py
+        run: poetry run build.py
         env:
           LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}:.
           GOPY_LIBDIR: ${{ runner.os == 'Windows' && format('{0}/libs', env.pythonLocation) || '' }}
