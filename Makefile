@@ -31,7 +31,7 @@ install-poetry:
 # Initialize environment variables file.
 init-env:
 	@echo "Initializing environment..."
-	@touch .env
+	@$(PYTHON_CMD) -c "open('.env', 'a').close()"
 	@echo "PROJECT_NAME=$(PROJECT_NAME)" >> .env
 	@echo "PYTHON_VERSION=$(PYTHON_VERSION)" >> .env
 
