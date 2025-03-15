@@ -31,6 +31,7 @@ build = "build:main"
 
 [tool.poetry.dependencies]
 python = ">=3.10"
+PyBindGen = "0.22.1"
 
 
 # Include everything under ohbother
