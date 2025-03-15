@@ -23,6 +23,9 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest]
         python-version: ['3.10', '3.11', '3.12']
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - uses: actions/checkout@v4
@@ -97,7 +100,21 @@ jobs:
           go install github.com/go-python/gopy@latest
           go install golang.org/x/tools/cmd/goimports@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Load cached venv
+        id: cached-pip-wheels
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+      - name: Install dependencies
+        run: poetry install --no-interaction --no-root
+      - name: Install library
+        run: poetry install --no-interaction
       # Use Makefile for common environment setup (creates .env, installs Poetry and dependencies)
       - name: Initialize Environment via Makefile
         run: make init

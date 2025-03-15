@@ -1,8 +1,6 @@
 -include .env
 # Ensure Poetry creates the virtual environment in the project directory.
 export POETRY_VIRTUALENVS_IN_PROJECT = true
-# Include extra Poetry PATH settings if available (Windows only)
--include poetry_path.mk
 
 
 # Directories
@@ -20,27 +18,8 @@ PYTHON_CMD ?= python
 
 .DEFAULT_GOAL := all
 
-.PHONY: install-poetry init-env init format lint audit test build build-poetry wheel info clean all
+.PHONY: init-env init format lint audit test build build-poetry wheel info clean all
 
-# Target to install Poetry if not already installed
-install-poetry:
-	@command -v poetry >/dev/null 2>&1 || { \
-	    echo "Poetry not found. Installing Poetry..."; \
-	    curl -sSL https://install.python-poetry.org | $(PYTHON_CMD); \
-	    echo "Please ensure $$HOME/.local/bin is in your PATH"; \
-	}
-ifeq ($(OS),Windows_NT)
-	@echo "Waiting for Poetry to be available..."
-	@setlocal enabledelayedexpansion & ( \
-	    set count=0 & \
-	    :waitLoop & \
-	    if not exist "$(APPDATA)\Python\Scripts\poetry.exe" ( \
-	        timeout /t 1 >nul & set /a count+=1 & if !count! lss 30 goto waitLoop else (echo "Poetry did not appear in time" && exit /b 1) \
-	    ) \
-	)
-	@echo "Poetry found in %APPDATA%\Python\Scripts"
-	@echo "export PATH := $(APPDATA)\Python\Scripts;$(PATH)" > poetry_path.mk
-endif
 
 # Initialize environment variables file.
 init-env:
@@ -52,7 +31,7 @@ init-env:
 	@echo "PYTHON_VERSION=$(PYTHON_VERSION)" >> .env
 
 # Initialize environment: install Poetry and then dependencies.
-init: install-poetry init-env
+init: init-env
 	@echo "Installing dependencies via Poetry..."
 	poetry install
 
