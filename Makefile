@@ -15,16 +15,25 @@ PYTHON_CMD ?= python
 
 .DEFAULT_GOAL := all
 
-.PHONY: init-env init format lint audit test build build-poetry wheel info clean all
+.PHONY: install-poetry init-env init format lint audit test build build-poetry wheel info clean all
 
-# Initialize environment variables file and install dependencies.
+# Target to install Poetry if not already installed
+install-poetry:
+	@command -v poetry >/dev/null 2>&1 || { \
+	    echo "Poetry not found. Installing Poetry..."; \
+	    curl -sSL https://install.python-poetry.org | $(PYTHON_CMD); \
+	    echo "Please ensure $$HOME/.local/bin is in your PATH"; \
+	}
+
+# Initialize environment variables file.
 init-env:
 	@echo "Initializing environment..."
 	@touch .env
 	@echo "PROJECT_NAME=$(PROJECT_NAME)" >> .env
 	@echo "PYTHON_VERSION=$(PYTHON_VERSION)" >> .env
 
-init: init-env
+# Initialize environment: install Poetry and then dependencies.
+init: install-poetry init-env
 	@echo "Installing dependencies via Poetry..."
 	poetry install
 
