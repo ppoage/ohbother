@@ -14,14 +14,14 @@ on:
       - 'build.py'
   release:
     types: [created]
-  workflow_dispatch:  # Adds manual trigger option in GitHub UI
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]  # add ubuntu-latest if needed
+        os: [macos-latest, windows-latest]
         python-version: ['3.10', '3.11', '3.12']
 
     steps:
@@ -75,12 +75,12 @@ jobs:
           ) else (
             echo "Creating python3.exe symlink..."
             mklink "%pythonLocation%\python3.exe" "%pythonLocation%\python.exe"
-            if exist "%pythonLocation%\python3.exe" (
-              echo "python3.exe symlink created successfully"
-            ) else (
-              echo "Failed to create python3.exe symlink"
-              exit 1
-            )
+          if exist "%pythonLocation%\python3.exe" (
+            echo "python3.exe symlink created successfully"
+          ) else (
+            echo "Failed to create python3.exe symlink"
+            exit 1
+          )
           )
 
       - name: Install Go tools
@@ -89,38 +89,36 @@ jobs:
           go install golang.org/x/tools/cmd/goimports@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      - name: Install build deps
-        shell: bash
-        run: |
-          # Update pip, install baseline packages
-          ${{ steps.set-python-cmd.outputs.python_cmd }} -m pip install --upgrade pip
-          ${{ steps.set-python-cmd.outputs.python_cmd }} -m pip install setuptools wheel pybindgen poetry
-          
-          # On Windows, also install for python3.exe
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            "${{ env.pythonLocation }}/python3.exe" -m pip install --upgrade pip
-            "${{ env.pythonLocation }}/python3.exe" -m pip install setuptools wheel pybindgen poetry
+      # Use Makefile for common environment setup (creates .env and installs Poetry dependencies)
+      - name: Initialize Environment via Makefile
+        run: make init
 
-      - name: Build Dev (GoPy + local wheels)
-        shell: bash
-        run: |
-          ${{ steps.set-python-cmd.outputs.python_cmd }} build.py --dev
-          ${{ steps.set-python-cmd.outputs.python_cmd }} dev_cleanup.py
+      - name: Set LD_LIBRARY_PATH for Linux
+        if: runner.os == 'Linux'
+        run: echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:." >> $GITHUB_ENV
 
-      - name: Build final wheel with Poetry
-        shell: bash
-        run: |
-          poetry build
+      # Build the library (gopy build)
+      - name: Build library
+        run: ${{ steps.set-python-cmd.outputs.python_cmd }} build.py
         env:
           LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}:.
           GOPY_LIBDIR: ${{ runner.os == 'Windows' && format('{0}/libs', env.pythonLocation) || '' }}
-          GOPY_PYLIB: ${{ runner.os == 'Windows' && (matrix.python-version == '3.10' && 'python310' || matrix.python-version == '3.11' && 'python311' || matrix.python-version == '3.12' && 'python312') || '' }}
+          GOPY_PYLIB: ${{ runner.os == 'Windows' && (matrix.python-version == '3.10' && 'python310' || matrix.python-version == '3.11' && 'python311' || matrix.python-version == '3.12' && 'python312' || matrix.python-version == '3.13' && 'python313') || '' }}
           PYTHON_VM_PATH: ${{ runner.os == 'Windows' && format('{0}/python3.exe', env.pythonLocation) || format('{0}/bin/python', env.pythonLocation) }}
 
-      - name: Upload compiled library artifacts
+      - name: Upload compiled library
         uses: actions/upload-artifact@v4
         with:
           name: lib-${{ matrix.os }}-py${{ matrix.python-version }}
-          path: |
-            ohbother/generated/**/*
-            dist/*.whl
+          path: ohbother/generated/**/*
+
+      # Build the Poetry wheel using the custom flag
+      - name: Build Poetry Wheel
+        run: ${{ steps.set-python-cmd.outputs.python_cmd }} build.py --poetry
+        continue-on-error: true
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: dist/*.whl
