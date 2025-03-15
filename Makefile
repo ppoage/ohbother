@@ -1,5 +1,8 @@
 -include .env
 
+# Ensure Poetry creates the virtual environment in the project directory.
+export POETRY_VIRTUALENVS_IN_PROJECT = true
+
 # Directories
 SOURCE_DIR = src
 TEST_DIR = tests

@@ -33,7 +33,7 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('ohbother/core/**/*.go') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('ohbother/ohbother/core/go.sum') }}-${{ hashFiles('ohbother/ohbother/core/**/*.go') }}
           restore-keys: |
             ${{ runner.os }}-go-
 
@@ -44,6 +44,15 @@ jobs:
           key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
+
+      # Cache Poetry virtual environment (in-project .venv)
+      - name: Cache Poetry virtual environment
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -89,7 +98,7 @@ jobs:
           go install golang.org/x/tools/cmd/goimports@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      # Use Makefile for common environment setup (creates .env and installs Poetry dependencies)
+      # Use Makefile for common environment setup (creates .env, installs Poetry and dependencies)
       - name: Initialize Environment via Makefile
         run: make init
 
