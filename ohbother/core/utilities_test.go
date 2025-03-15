@@ -153,6 +153,208 @@ func TestReconstructByteArrays(t *testing.T) {
 	})
 }
 
+// TestOrderIntegrity verifies packet order and content integrity are perfectly maintained
+func TestOrderIntegrity(t *testing.T) {
+	// Define test sizes - includes both easy and challenging cases
+	testSizes := []struct {
+		name       string
+		count      int
+		maxWorkers int
+	}{
+		{"Small", 1000, 8},
+		{"Medium", 100_000, 16},
+		{"Large", 1_000_000, 32},
+	}
+
+	// Save original worker count to restore later
+	originalWorkerCount := GetUtilWorkers()
+	defer SetUtilWorkers(originalWorkerCount)
+
+	for _, tc := range testSizes {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create deterministically patterned test data with encoded positions
+			arrays := make([][]byte, tc.count)
+			totalSize := 0
+
+			// Each array has a size based on its position (for easier debugging)
+			// and contains its index encoded in the data
+			for i := 0; i < tc.count; i++ {
+				// Create a unique size pattern based on position
+				// This helps detect if arrays get mixed up
+				size := 20 + (i % 13)
+
+				// Create data with position-based pattern
+				data := make([]byte, size)
+
+				// Encode the array index in the first 4 bytes
+				// This ensures we can detect any reordering
+				data[0] = byte((i >> 24) & 0xFF)
+				data[1] = byte((i >> 16) & 0xFF)
+				data[2] = byte((i >> 8) & 0xFF)
+				data[3] = byte(i & 0xFF)
+
+				// Fill the rest with a deterministic but position-dependent pattern
+				for j := 4; j < size; j++ {
+					data[j] = byte((i * j) & 0xFF)
+				}
+
+				arrays[i] = data
+				totalSize += size
+			}
+
+			// Create flattened representation
+			flatData := make([]byte, totalSize)
+			offsets := make([]int, tc.count*2)
+
+			position := 0
+			for i, arr := range arrays {
+				offsets[i*2] = position
+				offsets[i*2+1] = len(arr)
+				copy(flatData[position:], arr)
+				position += len(arr)
+			}
+
+			// First test: Verify that our test can detect corruption
+			// This is a "test of the test" to ensure our validation logic works
+			t.Run("ValidateTestDetection", func(t *testing.T) {
+				// Use a clean copy of the flattened data
+				corruptFlatData := make([]byte, len(flatData))
+				copy(corruptFlatData, flatData)
+
+				// Deliberately corrupt a byte in the middle of the data
+				corruptPos := len(corruptFlatData) / 2
+				corruptFlatData[corruptPos] = corruptFlatData[corruptPos] ^ 0xFF // Flip all bits
+
+				// Reconstruct with the corrupted data
+				reconstructed := ReconstructByteArrays(corruptFlatData, offsets)
+
+				// Our validation code should detect this corruption
+				errorFound := false
+				for i := 0; i < tc.count && !errorFound; i++ {
+					result := reconstructed[i]
+					if len(result) < 4 {
+						continue
+					}
+
+					encodedIndex := (int(result[0]) << 24) |
+						(int(result[1]) << 16) |
+						(int(result[2]) << 8) |
+						int(result[3])
+
+					// Skip arrays with wrong length
+					if len(result) != len(arrays[i]) {
+						errorFound = true
+						break
+					}
+
+					// Skip arrays with wrong index
+					if encodedIndex != i {
+						errorFound = true
+						break
+					}
+
+					// Check for content corruption
+					for j := 4; j < len(result); j++ {
+						expected := byte((i * j) & 0xFF)
+						if result[j] != expected {
+							errorFound = true
+							break
+						}
+					}
+				}
+
+				// The test SHOULD find an error with our corrupted data
+				if !errorFound {
+					t.Errorf("Validation failure: Test did not detect deliberately corrupted data")
+				} else {
+					t.Logf("Corruption detection validated successfully")
+				}
+			})
+
+			// Test with different worker counts
+			workerCounts := []int{1, 2, 4, tc.maxWorkers}
+
+			for _, workers := range workerCounts {
+				SetUtilWorkers(workers)
+
+				t.Logf("Testing with %d workers...", workers)
+
+				// Reconstruct the arrays
+				start := time.Now()
+				reconstructed := ReconstructByteArrays(flatData, offsets)
+				elapsed := time.Since(start)
+
+				// Verify length
+				if len(reconstructed) != tc.count {
+					t.Fatalf("Worker count %d: Length mismatch - expected %d arrays, got %d",
+						workers, tc.count, len(reconstructed))
+				}
+
+				// Verify order and content of each array
+				errorCount := 0
+				for i := 0; i < tc.count; i++ {
+					original := arrays[i]
+					result := reconstructed[i]
+
+					// Verify length
+					if len(result) != len(original) {
+						errorCount++
+						if errorCount <= 5 {
+							t.Errorf("Worker count %d: Size mismatch at position %d - expected %d bytes, got %d bytes",
+								workers, i, len(original), len(result))
+						}
+						continue
+					}
+
+					// Extract the encoded index
+					encodedIndex := (int(result[0]) << 24) |
+						(int(result[1]) << 16) |
+						(int(result[2]) << 8) |
+						int(result[3])
+
+					// Verify the encoded index matches the array position
+					if encodedIndex != i {
+						errorCount++
+						if errorCount <= 5 {
+							t.Errorf("Worker count %d: Order violation at position %d - found array with encoded index %d",
+								workers, i, encodedIndex)
+						}
+						continue
+					}
+
+					// Verify content
+					for j := 4; j < len(result); j++ {
+						expected := byte((i * j) & 0xFF)
+						if result[j] != expected {
+							errorCount++
+							if errorCount <= 5 {
+								t.Errorf("Worker count %d: Content corruption at position %d, byte %d - expected %d, got %d",
+									workers, i, j, expected, result[j])
+							}
+							break
+						}
+					}
+				}
+
+				if errorCount > 0 {
+					t.Fatalf("Worker count %d: Found %d errors in reconstructed data",
+						workers, errorCount)
+				}
+
+				// Log performance metrics
+				t.Logf("Worker count %d: Processed %d arrays in %v (%.2f arrays/sec, %.2f MB/sec)",
+					workers, tc.count, elapsed,
+					float64(tc.count)/elapsed.Seconds(),
+					float64(totalSize)/(1024*1024)/elapsed.Seconds())
+
+				// Help GC between tests
+				reconstructed = nil
+				runtime.GC()
+			}
+		})
+	}
+}
+
 func BenchmarkReconstructByteArrays(b *testing.B) {
 	// Create different sized test datasets
 	benchCases := []struct {

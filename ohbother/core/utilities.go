@@ -208,139 +208,61 @@ func DeleteByteSlice(handle int64) {
 
 // ReconstructByteArrays rebuilds a [][]byte from flattened data and offsets
 func ReconstructByteArrays(flatData []byte, offsets []int) [][]byte {
-	// Validate input parameters first
 	if flatData == nil {
 		return [][]byte{}
 	}
-
-	// Offsets come in pairs: (start, length)
 	numArrays := len(offsets) / 2
 	if numArrays == 0 || len(offsets)%2 != 0 {
 		return [][]byte{}
 	}
 
-	// Pre-allocate result slice with exact capacity needed
+	// Pre-allocate result slice to maintain order
 	result := make([][]byte, numArrays)
 
-	// For small arrays, use the sequential version to avoid goroutine overhead
+	// For small workloads, use the sequential version
 	if numArrays < 100 {
 		return reconstructSequential(flatData, offsets, numArrays)
 	}
 
-	// Get worker count from atomic variable (thread-safe)
+	// Determine worker count based on utility settings, capped at 32 and not exceeding numArrays
 	numWorkers := GetUtilWorkers() * 2
-
-	// Cap at reasonable maximum
 	if numWorkers > 32 {
 		numWorkers = 32
 	}
-
-	// Ensure we don't create more workers than needed
-	if numWorkers > numArrays/100 {
-		numWorkers = max(1, numArrays/100)
+	if numWorkers > numArrays {
+		numWorkers = numArrays
 	}
 
-	//fmt.Printf("Number of workers: %d\n", numWorkers)
-
-	// Pre-compute total bytes to estimate memory usage
-	totalBytes := 0
-	maxArraySize := 0
-	for i := 0; i < numArrays; i++ {
-		length := offsets[i*2+1]
-		if length > 0 {
-			totalBytes += length
-			maxArraySize = max(maxArraySize, length)
-		}
-	}
-
-	// LogDebug("ReconstructByteArrays: Reconstructing %d byte arrays with %d workers, total bytes: %d, max array size: %d\n",
-	// 	numArrays, numWorkers, totalBytes, maxArraySize)
-
-	// Use worker pool pattern with buffered channels for better throughput
-	type workItem struct {
-		index       int
-		startOffset int
-		length      int
-	}
-
-	// Determine batch size based on array characteristics
-	// This is a key optimization for throughput
-	batchSize := 1000
-	if numArrays > 1_000_000 {
-		batchSize = 5000
-	}
-
-	// Create channels with optimized buffer sizes
-	jobs := make(chan workItem, min(numArrays, 100_000))
+	// Divide work evenly among workers
+	chunkSize := (numArrays + numWorkers - 1) / numWorkers
 	var wg sync.WaitGroup
-	var errorCount atomic.Int32
+	wg.Add(numWorkers)
 
-	// Launch worker pool
 	for w := 0; w < numWorkers; w++ {
-		wg.Add(1)
-		go func() {
-			defer func() {
-				wg.Done()
-				if r := recover(); r != nil {
-					LogDebug("Recovered from panic in ReconstructByteArrays worker: %v", r)
-					errorCount.Add(1)
-				}
-			}()
-
-			// Pre-allocate reusable buffer for each worker
-			// This significantly reduces small allocations and GC pressure
-			scratchBuffer := make([]byte, maxArraySize)
-
-			// Process jobs until channel is closed
-			for job := range jobs {
-				// Skip invalid ranges without panicking
-				if job.startOffset < 0 || job.length <= 0 ||
-					job.startOffset+job.length > len(flatData) {
-					result[job.index] = make([]byte, 0)
+		start := w * chunkSize
+		end := start + chunkSize
+		if end > numArrays {
+			end = numArrays
+		}
+		go func(start, end int) {
+			defer wg.Done()
+			for i := start; i < end; i++ {
+				startOffset := offsets[i*2]
+				length := offsets[i*2+1]
+				// Validate bounds; assign empty slice if invalid
+				if startOffset < 0 || length <= 0 || startOffset+length > len(flatData) {
+					result[i] = []byte{}
 					continue
 				}
-
-				// Create slice with exact needed size
-				if job.length > cap(scratchBuffer) {
-					scratchBuffer = make([]byte, job.length)
-				}
-				buffer := scratchBuffer[:job.length]
-
-				// Copy data from flat buffer
-				copy(buffer, flatData[job.startOffset:job.startOffset+job.length])
-
-				// Create new slice to store in result (don't share the scratch buffer)
-				resultSlice := make([]byte, job.length)
-				copy(resultSlice, buffer)
-				result[job.index] = resultSlice
+				// Allocate a new slice and copy the data
+				out := make([]byte, length)
+				copy(out, flatData[startOffset:startOffset+length])
+				result[i] = out
 			}
-		}()
+		}(start, end)
 	}
 
-	// Queue jobs in chunks to reduce channel pressure
-	// This is critical for extremely large workloads
-	for batchStart := 0; batchStart < numArrays; batchStart += batchSize {
-		batchEnd := min(batchStart+batchSize, numArrays)
-
-		for i := batchStart; i < batchEnd; i++ {
-			startOffset := offsets[i*2]
-			length := offsets[i*2+1]
-
-			jobs <- workItem{
-				index:       i,
-				startOffset: startOffset,
-				length:      length,
-			}
-		}
-	}
-
-	close(jobs)
 	wg.Wait()
-
-	if errorCount.Load() > 0 {
-		LogDebug("ReconstructByteArrays encountered %d errors during processing", errorCount.Load())
-	}
-
 	return result
 }
 

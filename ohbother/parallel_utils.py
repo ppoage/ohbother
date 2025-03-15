@@ -421,6 +421,16 @@ def parallel_flatten_byte_arrays(byte_arrays: List[bytes], num_workers: int = No
     
     return final_result, combined_offsets
 
+# Function to process a chunk of bytes
+def _convert_slice_chunk(chunk_bytes):
+    try:
+        from .generated.go import Slice_byte
+        return Slice_byte.from_bytes(chunk_bytes)
+    except Exception as e:
+        print(f"Error converting chunk: {e}", file=sys.stderr)
+        # Return empty slice on error
+        raise ValueError(f"Failed to convert chunk: {e}")
+
 def prepare_flattened_data_for_go(flat_data: bytes, offsets: List[int]):
     """
     Convert flattened Python data to Go-compatible types.
@@ -435,13 +445,87 @@ def prepare_flattened_data_for_go(flat_data: bytes, offsets: List[int]):
     try:
         from .generated.go import Slice_byte, Slice_int
         
-        # Convert flat_data to Go Slice_byte
-        go_flat_data = Slice_byte.from_bytes(flat_data)
+        # For small data, use the direct approach (avoid multiprocessing overhead)
+        if len(flat_data) < 10_000_000:  # 10MB threshold
+            go_flat_data = Slice_byte.from_bytes(flat_data)
+            go_offsets = Slice_int(offsets)
+            return go_flat_data, go_offsets
+            
         
-        # Convert offsets to Go Slice_int
+
+        
+        # Determine optimal chunk size and worker count
+        num_workers = os.cpu_count()
+        # Target ~50MB chunks for optimal throughput
+        target_chunk_size = 50_000_000
+        
+        # Calculate actual chunk size based on data size and worker count
+        total_bytes = len(flat_data)
+        chunk_size = max(1_000_000, min(target_chunk_size, 
+                                       (total_bytes + num_workers - 1) // num_workers))
+        
+        # Split the data into chunks
+        chunks = []
+        for i in range(0, len(flat_data), chunk_size):
+            chunks.append(flat_data[i:i+chunk_size])
+            
+        print(f"Processing {len(flat_data):,} bytes in {len(chunks)} chunks of ~{chunk_size:,} bytes each",
+              file=sys.stderr)
+        
+        # Process chunks in parallel
+        start_time = time.perf_counter()
+        with multiprocessing.Pool(processes=min(num_workers, len(chunks))) as pool:
+            try:
+                chunk_results = pool.map(_convert_slice_chunk, chunks)
+                
+                # Verify all chunks were processed
+                if len(chunk_results) != len(chunks):
+                    print(f"Warning: Not all chunks processed. Expected {len(chunks)}, got {len(chunk_results)}", 
+                          file=sys.stderr)
+                    # Fall back to single-process approach
+                    go_flat_data = Slice_byte.from_bytes(flat_data)
+                    go_offsets = Slice_int(offsets)
+                    return go_flat_data, go_offsets
+                    
+                # Combine the chunks into one Slice_byte
+                # Start with the first chunk
+                combined = chunk_results[0]
+                
+                # Append remaining chunks
+                for chunk in chunk_results[1:]:
+                    # Verify the combined object has an append method
+                    if hasattr(combined, 'append'):
+                        try:
+                            combined.append(chunk)
+                        except Exception as e:
+                            print(f"Error appending chunk: {e}", file=sys.stderr)
+                            # Fall back to direct conversion
+                            combined = Slice_byte.from_bytes(flat_data)
+                            break
+                    else:
+                        # If append isn't available, fall back to direct method
+                        print("Warning: Slice_byte doesn't support append, using direct method", 
+                              file=sys.stderr)
+                        combined = Slice_byte.from_bytes(flat_data)
+                        break
+                
+                duration = time.perf_counter() - start_time
+                print(f"Parallel conversion: Processed {len(flat_data):,} bytes in {duration:.3f}s", 
+                      file=sys.stderr)
+                
+                go_flat_data = combined
+                
+            except Exception as e:
+                print(f"Error in parallel processing: {e}, falling back to direct method", 
+                      file=sys.stderr)
+                # Fall back to direct method
+                go_flat_data = Slice_byte.from_bytes(flat_data)
+        
+        # Convert offsets to Go Slice_int (this is usually fast enough to not need parallelization)
         go_offsets = Slice_int(offsets)
         
         return go_flat_data, go_offsets
+        
     except ImportError:
         print("Warning: Go types not available, returning Python types", file=sys.stderr)
         return flat_data, offsets

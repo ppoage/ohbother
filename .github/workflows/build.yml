@@ -3,7 +3,6 @@ name: Build Library
 on:
   push:
     branches: [ main, dev/wip/new_linkages ]
-
     paths:
       - 'ohbother/core/**'
       - 'build.py'
@@ -22,108 +21,106 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest] #[ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest, windows-latest]  # add ubuntu-latest if needed
         python-version: ['3.10', '3.11', '3.12']
 
     steps:
-    - uses: actions/checkout@v4
-      # Cache Go modules
-    - name: Cache Go modules
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('ohbother/core/**/*.go') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    # Cache Python packages
-    - name: Cache Python packages
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-${{ matrix.python-version }}-
+      - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ hashFiles('ohbother/core/**/*.go') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.24.1'
-        
-    - name: Set Python command based on OS
-      id: set-python-cmd
-      shell: bash
-      run: |
-        if [ "${{ runner.os }}" == "Windows" ]; then
-          echo "python_cmd=py" >> $GITHUB_OUTPUT
-        else
-          echo "python_cmd=python" >> $GITHUB_OUTPUT
-        fi
+      - name: Cache Python packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
 
-    - name: Ensure python3.exe exists for Windows
-      if: runner.os == 'Windows'
-      shell: cmd
-      run: |
-        echo "Checking for python3.exe..."
-        if exist "%pythonLocation%\python3.exe" (
-          echo "python3.exe already exists"
-        ) else (
-          echo "Creating python3.exe symlink..."
-          mklink "%pythonLocation%\python3.exe" "%pythonLocation%\python.exe"
-        if exist "%pythonLocation%\python3.exe" (
-          echo "python3.exe symlink created successfully"
-        ) else (
-          echo "Failed to create python3.exe symlink"
-          exit 1
-        )
-        )
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install Go tools
-      run: |
-        go install github.com/go-python/gopy@latest
-        go install golang.org/x/tools/cmd/goimports@latest
-        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.1'
 
-    - name: Install build deps
-      shell: bash
-      run: |
-        # Install for the primary Python environment
-        ${{ steps.set-python-cmd.outputs.python_cmd }} -m pip install --upgrade pip
-        ${{ steps.set-python-cmd.outputs.python_cmd }} -m pip install setuptools wheel pybindgen
-        
-        # For Windows, also install packages for python3.exe
-        if [ "${{ runner.os }}" == "Windows" ]; then
-          echo "Installing packages for python3.exe environment"
-          "${{ env.pythonLocation }}/python3.exe" -m pip install --upgrade pip
-          "${{ env.pythonLocation }}/python3.exe" -m pip install setuptools wheel pybindgen
-        fi
+      - name: Set Python command based on OS
+        id: set-python-cmd
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            echo "python_cmd=py" >> $GITHUB_OUTPUT
+          else
+            echo "python_cmd=python" >> $GITHUB_OUTPUT
+          fi
 
-    # Linux: Add LD_LIBRARY_PATH
-    - name: Set LD_LIBRARY_PATH for Linux
-      if: runner.os == 'Linux'
-      run: echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:." >> $GITHUB_ENV
+      - name: Ensure python3.exe exists for Windows
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          echo "Checking for python3.exe..."
+          if exist "%pythonLocation%\python3.exe" (
+            echo "python3.exe already exists"
+          ) else (
+            echo "Creating python3.exe symlink..."
+            mklink "%pythonLocation%\python3.exe" "%pythonLocation%\python.exe"
+            if exist "%pythonLocation%\python3.exe" (
+              echo "python3.exe symlink created successfully"
+            ) else (
+              echo "Failed to create python3.exe symlink"
+              exit 1
+            )
+          )
 
-    # Build library with the new build.py script
-    - name: Build library
-      run: ${{ steps.set-python-cmd.outputs.python_cmd }} build.py
-      env:
-        LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}:. 
-        # Windows-specific environment variables
-        GOPY_LIBDIR: ${{ runner.os == 'Windows' && format('{0}/libs', env.pythonLocation) || '' }}
-        # Fix Python version number without .dll extension
-        GOPY_PYLIB: ${{ runner.os == 'Windows' && (matrix.python-version == '3.10' && 'python310' || matrix.python-version == '3.11' && 'python311' || matrix.python-version == '3.12' && 'python312' || matrix.python-version == '3.13' && 'python313') || '' }}
-        # Be explicit about the Python VM path for Windows
-        PYTHON_VM_PATH: ${{ runner.os == 'Windows' && format('{0}/python3.exe', env.pythonLocation) || format('{0}/bin/python', env.pythonLocation) }}
+      - name: Install Go tools
+        run: |
+          go install github.com/go-python/gopy@latest
+          go install golang.org/x/tools/cmd/goimports@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-    # Upload compiled library artifacts
-    - name: Upload compiled library
-      uses: actions/upload-artifact@v4
-      with:
-        name: lib-${{ matrix.os }}-py${{ matrix.python-version }}
-        path: ohbother/generated/**/*
+      - name: Install build deps
+        shell: bash
+        run: |
+          # Update pip, install baseline packages
+          ${{ steps.set-python-cmd.outputs.python_cmd }} -m pip install --upgrade pip
+          ${{ steps.set-python-cmd.outputs.python_cmd }} -m pip install setuptools wheel pybindgen poetry
+          
+          # On Windows, also install for python3.exe
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            "${{ env.pythonLocation }}/python3.exe" -m pip install --upgrade pip
+            "${{ env.pythonLocation }}/python3.exe" -m pip install setuptools wheel pybindgen poetry
+
+      - name: Build Dev (GoPy + local wheels)
+        shell: bash
+        run: |
+          ${{ steps.set-python-cmd.outputs.python_cmd }} build.py --dev
+          ${{ steps.set-python-cmd.outputs.python_cmd }} dev_cleanup.py
+
+      - name: Build final wheel with Poetry
+        shell: bash
+        run: |
+          poetry build
+        env:
+          LD_LIBRARY_PATH: ${{ env.LD_LIBRARY_PATH }}:.
+          GOPY_LIBDIR: ${{ runner.os == 'Windows' && format('{0}/libs', env.pythonLocation) || '' }}
+          GOPY_PYLIB: ${{ runner.os == 'Windows' && (matrix.python-version == '3.10' && 'python310' || matrix.python-version == '3.11' && 'python311' || matrix.python-version == '3.12' && 'python312') || '' }}
+          PYTHON_VM_PATH: ${{ runner.os == 'Windows' && format('{0}/python3.exe', env.pythonLocation) || format('{0}/bin/python', env.pythonLocation) }}
+
+      - name: Upload compiled library artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lib-${{ matrix.os }}-py${{ matrix.python-version }}
+          path: |
+            ohbother/generated/**/*
+            dist/*.whl
