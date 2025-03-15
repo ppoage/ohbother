@@ -52,6 +52,26 @@ def setup_environment():
     
     return env
 
+def get_poetry_python():
+    try:
+        # Get the active Poetry virtual environment path
+        venv_path = subprocess.check_output(
+            ['poetry', 'env', 'info', '--path'], text=True
+        ).strip()
+        
+        # Construct the full path to the Python executable
+        if os.name == 'nt':
+            python_exe = os.path.join(venv_path, 'Scripts', 'python.exe')
+        else:
+            python_exe = os.path.join(venv_path, 'bin', 'python')
+        
+        if os.path.exists(python_exe):
+            return python_exe
+        else:
+            return sys.executable
+    except Exception as e:
+        print(f"Failed to get Poetry venv Python: {e}")
+        return sys.executable
 
 def install_go_deps():
     """Install required Go tools"""
@@ -75,7 +95,8 @@ def build_standard(env):
     print(f"Final output directory: {final_dir.resolve()}")
     
     # Use Python interpreter path
-    python_path = os.environ.get("PYTHON_VM_PATH", sys.executable)
+    #python_path = os.environ.get("PYTHON_VM_PATH", sys.executable)
+    python_path = get_poetry_python()
     working_dir = Path("ohbother/core").resolve()
     print(f"Working directory: {working_dir}")
     print(f"Using Python interpreter: {python_path}")
