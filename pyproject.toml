@@ -1,5 +1,6 @@
 [build-system]
-requires = ["poetry-core>=1.0.0", "wheel", "setuptools", "Cython>=0.29.0"]
+requires = ["poetry-core>=1.0.0", "wheel", "setuptools", PyBindGen = "^0.22.1"]
+#requires = ["poetry-core>=1.0.0", "wheel", "setuptools", "Cython>=0.29.0", PyBindGen = "^0.22.1"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
@@ -12,17 +13,26 @@ license = "MIT"
 
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
 ]
 
 #include = [
 #    { path = "/ohbother/generated/", format = "sdist" }
 #]
 
+# Expose build.py as a CLI command
+[tool.poetry.scripts]
+build = "build:main"
+
+
 [tool.poetry.dependencies]
 python = ">=3.10"
-PyBindGen = "^0.22.1"
+
 
 # Include everything under ohbother
 [[tool.poetry.include]]
