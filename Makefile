@@ -23,8 +23,8 @@ PYTHON_CMD ?= python
 
 # Initialize environment variables file.
 init-env:
-	@echo "Checking poetry install"
-	@poetry --version
+#	# @echo "Checking poetry install"
+#	# @poetry --version
 	@echo "Initializing environment..."
 	@$(PYTHON_CMD) -c "open('.env', 'a').close()"
 	@echo "PROJECT_NAME=$(PROJECT_NAME)" >> .env
