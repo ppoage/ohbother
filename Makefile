@@ -32,8 +32,8 @@ init-env:
 
 # Initialize environment: install Poetry and then dependencies.
 init: init-env
-	@echo "Installing dependencies via Poetry..."
-	poetry install
+	@echo "Setting Env variables..."
+
 
 # Check the pyproject.toml for issues.
 -check-toml:
