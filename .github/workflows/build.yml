@@ -140,7 +140,7 @@ jobs:
 
       # Build the Poetry wheel using the custom flag
       - name: Build Poetry Wheel
-        run: ${{ steps.set-python-cmd.outputs.python_cmd }} build.py --poetry
+        run: poetry run python build.py --poetry
         continue-on-error: true
 
       - name: Upload wheel artifact
