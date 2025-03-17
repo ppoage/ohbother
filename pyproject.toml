@@ -20,9 +20,18 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
 ]
 
-#include = [
-#    { path = "/ohbother/generated/", format = "sdist" }
-#]
+[tool.pytest.ini_options]
+testpaths = ["ohbother/python_tests", "ohbother/core"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "--verbose --color=yes --durations=10"
+log_cli = "true"
+log_cli_level = "INFO"
+
+[tool.pytest.markers]
+quick = "marks tests as quick (deselect with '-m \"not quick\"')"
+slow = "marks tests as slow (deselect with '-m \"not slow\"')"
+go = "marks tests that require Go runtime"
+python = "marks pure Python tests"
 
 # Expose build.py as a CLI command
 [tool.poetry.scripts]
