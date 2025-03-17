@@ -431,7 +431,7 @@ def _convert_slice_chunk(chunk_bytes):
         # Return empty slice on error
         raise ValueError(f"Failed to convert chunk: {e}")
 
-def prepare_flattened_data_for_go(flat_data: bytes, offsets: List[int]):
+def prepare_flattened_data_for_go(flat_data: bytes, offsets: List[int], method="fallback"):
     """
     Convert flattened Python data to Go-compatible types.
     
@@ -447,6 +447,11 @@ def prepare_flattened_data_for_go(flat_data: bytes, offsets: List[int]):
         
         # For small data, use the direct approach (avoid multiprocessing overhead)
         if len(flat_data) < 10_000_000:  # 10MB threshold
+            go_flat_data = Slice_byte.from_bytes(flat_data)
+            go_offsets = Slice_int(offsets)
+            return go_flat_data, go_offsets
+        
+        if method == "fallback":
             go_flat_data = Slice_byte.from_bytes(flat_data)
             go_offsets = Slice_int(offsets)
             return go_flat_data, go_offsets

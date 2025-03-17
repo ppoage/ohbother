@@ -40,7 +40,7 @@ BPF_FILTER = f"udp and dst port {DST_PORT}"
 stress_a = True
 
 if stress_a:
-    PACKET_COUNT = 35_000_000 #500_000
+    PACKET_COUNT = 35_000_000
     #PACKET_COUNT = 25_000_000
     PAYLOAD_SIZE = 60
 else:
